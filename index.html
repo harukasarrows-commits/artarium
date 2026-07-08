@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Artarium">
     <title>Artarium - 名画の庭</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260708-57">
-    <link rel="icon" href="./icon.svg?v=20260708-57" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="./icon.svg?v=20260708-57">
-    <link rel="stylesheet" href="./styles.css?v=20260708-57">
+    <link rel="manifest" href="./manifest.webmanifest?v=20260708-59">
+    <link rel="icon" href="./icon.svg?v=20260708-59" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon.svg?v=20260708-59">
+    <link rel="stylesheet" href="./styles.css?v=20260708-59">
   </head>
   <body>
     <div class="app-shell">
@@ -23,6 +23,7 @@
         <nav class="tabbar" aria-label="画面切り替え">
           <button class="tab-button is-active" data-view="home" type="button">ホーム</button>
           <button class="tab-button" data-view="gallery" type="button">コレクション</button>
+          <button class="tab-button" data-view="codex" type="button">図鑑</button>
           <button class="tab-button" data-view="settings" type="button">設定</button>
         </nav>
       </header>
@@ -119,6 +120,17 @@
           <div class="gallery-wall" id="gallery-wall"></div>
         </section>
 
+        <section class="view" id="codex-view" aria-labelledby="codex-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Field guide — 名画の由来</p>
+              <h2 id="codex-title">図鑑</h2>
+            </div>
+            <p class="codex-summary" id="codex-summary"></p>
+          </div>
+          <div class="codex-grid" id="codex-grid"></div>
+        </section>
+
         <section class="view" id="settings-view" aria-labelledby="settings-title">
           <div class="settings-page">
             <div class="section-head">
@@ -145,6 +157,10 @@
                 <button class="settings-row" id="settings-sync-button" type="button">
                   <span>歩数データを同期</span>
                   <strong>確認</strong>
+                </button>
+                <button class="settings-row" id="settings-weekly-recap-button" type="button">
+                  <span>今週の振り返り</span>
+                  <strong>表示</strong>
                 </button>
                 <button class="settings-row" id="settings-test-steps-button" type="button">
                   <span>開発用テスト加算</span>
@@ -200,6 +216,18 @@
 
     <div class="gallery-focus-modal" id="gallery-focus-modal" hidden></div>
 
+    <div class="frame-choice-modal weekly-recap-modal" id="weekly-recap-modal" hidden>
+      <div class="frame-choice-panel weekly-recap-panel" role="dialog" aria-modal="true" aria-labelledby="weekly-recap-title">
+        <button class="frame-choice-close" data-recap-close type="button" aria-label="閉じる">×</button>
+        <p class="eyebrow">Weekly review — 週の振り返り</p>
+        <h2 id="weekly-recap-title">今週の歩み</h2>
+        <p id="weekly-recap-range"></p>
+        <div class="recap-chart" id="weekly-recap-chart" aria-hidden="true"></div>
+        <p class="recap-total" id="weekly-recap-total"></p>
+        <p id="weekly-recap-growth"></p>
+      </div>
+    </div>
+
     <div class="frame-choice-modal name-entry-modal" id="name-entry-modal" hidden>
       <form class="frame-choice-panel name-entry-panel" id="name-entry-form" role="dialog" aria-modal="true" aria-labelledby="name-entry-title">
         <p class="eyebrow">Artist name</p>
@@ -213,6 +241,6 @@
       </form>
     </div>
 
-    <script src="./app.js?v=20260708-57" type="module"></script>
+    <script src="./app.js?v=20260708-59" type="module"></script>
   </body>
 </html>

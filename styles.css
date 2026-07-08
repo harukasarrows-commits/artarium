@@ -1599,7 +1599,7 @@ body.is-viewing-mode {
   }
 
   .gallery-wall {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .intro-panel {
@@ -1637,7 +1637,7 @@ body.is-viewing-mode {
   }
 
   .gallery-wall {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
     padding-inline: 10px;
   }
@@ -1720,7 +1720,7 @@ body.is-viewing-mode {
     bottom: max(12px, env(safe-area-inset-bottom));
     width: min(406px, calc(100% - 24px));
     transform: translateX(-50%);
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     border-color: var(--hairline);
     background: rgba(26, 25, 23, 0.92);
     box-shadow: 0 8px 28px rgba(20, 20, 19, 0.1);
@@ -1770,7 +1770,7 @@ body.is-viewing-mode {
   }
 
   .daily-progress-card {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .daily-progress-card div {
@@ -1890,7 +1890,7 @@ body.is-viewing-mode {
   }
 
   .gallery-wall {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     padding: 26px 16px 34px;
   }
 }
@@ -1977,7 +1977,7 @@ body.is-viewing-mode {
   }
 
   .gallery-wall {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -2898,7 +2898,7 @@ body::after {
   }
 
   .tabbar {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -2908,7 +2908,7 @@ body::after {
   }
 
   .tabbar {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -3138,6 +3138,7 @@ body.is-demo-mode .demo-control {
 .tap-hint {
   position: absolute;
   left: 50%;
+  white-space: nowrap;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 112px);
   transform: translateX(-50%);
   z-index: 3;
@@ -3255,4 +3256,163 @@ body.is-demo-mode .demo-control {
 
 .empty-gallery .secondary-action {
   margin: 14px auto 0;
+}
+
+
+/* ===== 図鑑（Codex）: 名画の由来 ===== */
+.codex-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.codex-card {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 16px;
+  padding: 18px;
+  align-items: start;
+}
+
+.codex-thumb {
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--hairline);
+  background:
+    radial-gradient(circle at 48% 34%, color-mix(in srgb, var(--c2), transparent 74%), transparent 26%),
+    var(--surface-dark-soft);
+  display: grid;
+  place-items: center;
+}
+
+.codex-thumb svg,
+.codex-thumb > * {
+  width: 82%;
+  height: 82%;
+}
+
+.codex-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.codex-title-row h3 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.codex-status {
+  flex: none;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: var(--muted-soft);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.codex-status.is-collected {
+  color: var(--primary);
+  border-color: var(--primary-soft);
+}
+
+.codex-source {
+  margin: 6px 0 8px;
+  color: var(--primary);
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+}
+
+.codex-note {
+  margin: 0;
+  color: var(--body);
+  font-size: 0.84rem;
+  line-height: 1.8;
+}
+
+.codex-summary {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+}
+
+/* ===== 週間振り返りカード ===== */
+.weekly-recap-panel {
+  place-self: center;
+  text-align: center;
+}
+
+.recap-chart {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  align-items: end;
+  height: 120px;
+  margin: 10px 0 4px;
+  padding: 0 6px;
+}
+
+.recap-day {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 6px;
+  height: 100%;
+}
+
+.recap-bar-track {
+  position: relative;
+  border-radius: 4px 4px 2px 2px;
+  background: rgba(237, 234, 224, 0.06);
+}
+
+.recap-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: var(--accent-teal);
+  transition: height 0.6s ease;
+}
+
+.recap-bar.is-goal {
+  background: linear-gradient(180deg, var(--primary), var(--accent-teal));
+}
+
+.recap-day small {
+  color: var(--muted-soft);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+}
+
+.recap-total {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  letter-spacing: 0.04em;
+}
+
+#weekly-recap-growth {
+  color: var(--body);
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+#weekly-recap-range {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* 天気の挨拶は初回ヒントより上の段に */
+.weather-greet {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 158px);
 }

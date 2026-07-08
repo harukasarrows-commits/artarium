@@ -1,10 +1,50 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-57";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-57";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-57";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-57";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-57";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-59";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-59";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-59";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-59";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-59";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
+
+// 図鑑: 各植物の元になった名画の解説（教養コンテンツ）
+const CODEX_NOTES = {
+  "scream-bloom": {
+    source: "エドヴァルド・ムンク《叫び》1893",
+    note: "フィヨルドに沈む夕日が空を血の色に染めた夕暮れ、ムンクは「自然を貫く果てしない叫び」を聴いたと日記に残しました。この植物のうねる葉と金色の花は、その波打つ空気そのものを育てます。"
+  },
+  "sunflower-bloom": {
+    source: "フィンセント・ファン・ゴッホ《ひまわり》1888",
+    note: "南仏アルルの光を集めて描かれた連作。ゴッホにとってひまわりは「感謝」の象徴でした。歩くたびに深まる黄金の花弁は、画家が塗り重ねた厚いインパストの筆致に倣っています。"
+  },
+  "water-lily-bloom": {
+    source: "クロード・モネ《睡蓮》1899頃",
+    note: "モネは晩年の約30年を、ジヴェルニーの水の庭に映る光だけを描いて過ごしました。空と雲が水面に溶け、花がその境界に浮かぶ——この庭の水面が時刻と天気で移ろうのは、モネの眼差しへのオマージュです。"
+  },
+  "aquatic-bloom": {
+    source: "クロード・モネ《水の庭（日本の橋）》1899",
+    note: "モネが自ら設計した庭には日本の太鼓橋が架かり、藤と柳が水面に垂れていました。淡い藤色の花は、画家が愛した日本趣味（ジャポニスム）の記憶を宿しています。"
+  },
+  "renaissance-smile-bloom": {
+    source: "レオナルド・ダ・ヴィンチ《モナ・リザ》1503頃",
+    note: "輪郭を煙のようにぼかすスフマート技法が、見る者ごとに違う微笑を生みます。この植物の金褐色の花は、500年間答えを明かさないその静けさを目指して、ゆっくりと開きます。"
+  },
+  "nocturne-sky-bloom": {
+    source: "フィンセント・ファン・ゴッホ《星月夜》1889",
+    note: "サン＝レミの療養院の窓から見た夜空を、ゴッホは渦を巻く生き物のように描きました。深い青に金の渦を宿すこの花は、夜にいちばん美しく光ります。"
+  },
+  "golden-embrace-bloom": {
+    source: "グスタフ・クリムト《接吻》1907-08",
+    note: "ウィーン分離派の頂点で、クリムトは本物の金箔を画面に貼り込みました。抱擁する二人を包む金のマントのように、この花はきらめく金の粒子をまとって咲きます。"
+  },
+  "monochrome-fracture-bloom": {
+    source: "パブロ・ピカソ《ゲルニカ》1937",
+    note: "色を捨てた白と黒だけの大画面が、どんな色彩よりも強く時代の痛みを語りました。モノクロームに咲くこの花は、色がなくても失われない生命の形を示します。"
+  },
+  "pearl-light-bloom": {
+    source: "ヨハネス・フェルメール《真珠の耳飾りの少女》1665頃",
+    note: "暗闇の中、少女の耳元で一粒の真珠だけが光を集めます。フェルメールが愛した「一点の光」を、この植物は真珠色の球にたたえて育ちます。"
+  }
+};
 const COMPLETION_THRESHOLD = 6000;
 const STEPS_PER_POINT = 10;
 const DAILY_STEP_GOAL = 8000; // 光の道の演出が最大になる1日の歩数
@@ -17,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260708-57";
+const ASSET_VERSION = "20260708-59";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -101,6 +141,7 @@ function applyWeatherToScene(weather) {
 
 function setDebugWeather(key) {
   debugWeatherKey = WEATHER_PRESETS[key] ? key : "";
+  if (debugWeatherKey) maybeShowWeatherGreeting(WEATHER_PRESETS[debugWeatherKey]);
   if (debugWeatherKey) {
     applyWeatherToScene(WEATHER_PRESETS[debugWeatherKey]);
   } else {
@@ -605,8 +646,12 @@ async function init() {
   observeWaterSurfaces();
   initWeatherSync((weather) => {
     lastRealWeather = weather;
-    if (!debugWeatherKey) applyWeatherToScene(weather);
+    if (!debugWeatherKey) {
+      applyWeatherToScene(weather);
+      maybeShowWeatherGreeting(weather);
+    }
   });
+  maybeOfferWeeklyRecap();
   if (DEMO_MODE) {
     // デモ版のみ: URLの ?weather=rain などで天気を強制できる
     const forcedWeather = new URLSearchParams(window.location.search).get("weather");
@@ -1068,6 +1113,14 @@ function bindEvents() {
     syncSmartphoneSteps();
   });
 
+  document.getElementById("settings-weekly-recap-button")?.addEventListener("click", () => {
+    openWeeklyRecap();
+  });
+
+  document.querySelector("[data-recap-close]")?.addEventListener("click", () => {
+    document.getElementById("weekly-recap-modal").hidden = true;
+  });
+
   document.getElementById("settings-test-steps-button").addEventListener("click", () => {
     addStepsToSelectedPlant(100, "開発用に100歩分を加算しました");
   });
@@ -1376,6 +1429,7 @@ function render() {
   renderPlantSelector();
   renderGrowView();
   renderGallery();
+  renderCodex();
   renderSettings();
   renderFrameChoiceModal();
   renderGalleryFocusModal();
@@ -1555,6 +1609,42 @@ function renderSeedPreview(hero, plant) {
 const TAP_HINT_KEY = "artarium-tap-hinted";
 let tapHintDismissed = false;
 
+// 雨や雷の日にアプリを開いたら、その日一度だけシーンに一言添える
+const WEATHER_GREET_KEY = "artarium-weather-greet";
+const WEATHER_GREETINGS = {
+  rain: "雨の日の水面も、きれいですよ",
+  drizzle: "細い雨が、水面に輪を描いています",
+  thunder: "荒れる空も、名画の一部です",
+  snow: "雪の日の庭は、いちばん静かです"
+};
+
+function weatherGreetingFor(weather) {
+  if (!weather) return "";
+  if (weather.thunder) return WEATHER_GREETINGS.thunder;
+  if (weather.snow > 0.3) return WEATHER_GREETINGS.snow;
+  if (weather.rain >= 0.6) return WEATHER_GREETINGS.rain;
+  if (weather.rain > 0) return WEATHER_GREETINGS.drizzle;
+  return "";
+}
+
+function maybeShowWeatherGreeting(weather) {
+  const message = weatherGreetingFor(weather);
+  if (!message) return;
+  const today = getTodayKey();
+  if (localStorage.getItem(WEATHER_GREET_KEY) === today) return;
+  const container = document.getElementById("home-active-artwork");
+  if (!container || !getSelectedPlant()) return;
+  localStorage.setItem(WEATHER_GREET_KEY, today);
+  const greet = document.createElement("div");
+  greet.className = "tap-hint weather-greet";
+  greet.textContent = message;
+  container.appendChild(greet);
+  window.setTimeout(() => {
+    greet.classList.add("is-done");
+    window.setTimeout(() => greet.remove(), 700);
+  }, 6000);
+}
+
 function maybeShowTapHint(container) {
   if (tapHintDismissed || localStorage.getItem(TAP_HINT_KEY)) return;
   if (container.querySelector(".tap-hint")) return;
@@ -1733,6 +1823,7 @@ function applyStepSnapshot(data, status) {
   state.steps.todaySteps = Math.max(state.steps.todaySteps, Math.floor(nextTodaySteps));
   state.steps.totalSteps = Math.max(state.steps.totalSteps + deltaSteps, Math.floor(nextTotalSteps));
   addGrowthFromSteps(deltaSteps);
+  recordDailySteps();
   state.steps.sourceStatus = deltaSteps > 0 ? status : "歩数は同期済みです。新しい歩数はありません。";
   saveProgress();
   render();
@@ -1743,6 +1834,7 @@ function addStepsToSelectedPlant(steps, status) {
   state.steps.todaySteps += steps;
   state.steps.totalSteps += steps;
   addGrowthFromSteps(steps);
+  recordDailySteps();
   state.steps.sourceStatus = status;
   saveProgress();
   render();
@@ -1906,6 +1998,15 @@ function resetDailyStepsIfNeeded() {
   if (state.steps.date === today) return;
   state.steps.date = today;
   state.steps.todaySteps = 0;
+  recordDailySteps();
+}
+
+// 日ごとの歩数履歴（直近21日）。週間振り返りに使う
+function recordDailySteps() {
+  if (!state.steps.history) state.steps.history = {};
+  state.steps.history[state.steps.date || getTodayKey()] = state.steps.todaySteps;
+  const keys = Object.keys(state.steps.history).sort();
+  while (keys.length > 21) delete state.steps.history[keys.shift()];
 }
 
 function getTodayKey() {
@@ -1920,27 +2021,87 @@ function formatNumber(value) {
   return new Intl.NumberFormat("ja-JP").format(value);
 }
 
+// 直近7日の歩数と成長を1枚のカードで振り返る
+const WEEKLY_RECAP_KEY = "artarium-recap-week";
+
+function getWeekKey() {
+  const date = new Date();
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+  return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+}
+
+function openWeeklyRecap() {
+  const modal = document.getElementById("weekly-recap-modal");
+  if (!modal) return;
+  recordDailySteps();
+  const history = state.steps.history || {};
+  const days = [];
+  const dayLabels = ["日", "月", "火", "水", "木", "金", "土"];
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    days.push({ label: dayLabels[date.getDay()], steps: history[key] || 0 });
+  }
+  const weekTotal = days.reduce((sum, day) => sum + day.steps, 0);
+  const max = Math.max(DAILY_STEP_GOAL, ...days.map((day) => day.steps));
+  document.getElementById("weekly-recap-range").textContent = "直近7日間の歩み";
+  document.getElementById("weekly-recap-chart").innerHTML = days.map((day) => `
+    <div class="recap-day">
+      <div class="recap-bar-track"><span class="recap-bar ${day.steps >= DAILY_STEP_GOAL ? "is-goal" : ""}" style="height:${Math.max(3, Math.round((day.steps / max) * 100))}%"></span></div>
+      <small>${day.label}</small>
+    </div>
+  `).join("");
+  document.getElementById("weekly-recap-total").textContent = `${formatNumber(weekTotal)}歩`;
+  const plant = getSelectedPlant();
+  const growthEl = document.getElementById("weekly-recap-growth");
+  if (plant) {
+    const stage = getStage(state.progress[plant.id].points);
+    const STAGE_NAMES = ["", "種", "芽生え", "つぼみ", "ふくらむ蕾", "ほころび", "開花"];
+    growthEl.textContent = isPlantComplete(state.progress[plant.id])
+      ? `${plant.name} は開花し、作品になりました。`
+      : `この歩みで、${plant.name} は「${STAGE_NAMES[stage]}」まで育っています。`;
+  } else {
+    growthEl.textContent = "";
+  }
+  modal.hidden = false;
+  localStorage.setItem(WEEKLY_RECAP_KEY, getWeekKey());
+}
+
+// 日曜の夕方以降に一度だけ、自動でそっと差し出す
+function maybeOfferWeeklyRecap() {
+  const now = new Date();
+  if (now.getDay() !== 0 || now.getHours() < 18) return;
+  if (localStorage.getItem(WEEKLY_RECAP_KEY) === getWeekKey()) return;
+  if (!getSelectedPlant()) return;
+  openWeeklyRecap();
+}
+
 function renderCodex() {
-  const completed = state.plants.filter((plant) => isPlantComplete(state.progress[plant.id])).length;
+  const summary = document.getElementById("codex-summary");
+  const grid = document.getElementById("codex-grid");
+  if (!summary || !grid) return;
   const displayed = state.plants.filter((plant) => state.progress[plant.id].displayed).length;
-  document.getElementById("codex-summary").textContent = `${completed} / ${state.plants.length} 開花完了`;
-  document.getElementById("codex-total-steps").textContent = formatNumber(state.steps.totalSteps);
-  document.getElementById("codex-completed-count").textContent = completed;
-  document.getElementById("codex-displayed-count").textContent = displayed;
-  document.getElementById("codex-grid").innerHTML = state.plants.map((plant) => {
+  summary.textContent = `収蔵 ${displayed} / ${state.plants.length}`;
+  grid.innerHTML = state.plants.map((plant) => {
     const progress = state.progress[plant.id];
     const stage = getStage(progress.points);
-    const status = getCollectionStatus(plant);
+    const codex = CODEX_NOTES[plant.id];
+    const isDisplayed = progress.displayed;
+    const isGrowing = plant.id === state.selectedPlantId && !isDisplayed;
+    const statusLabel = isDisplayed ? "収蔵済み" : isGrowing ? "育成中" : "未収蔵";
     return `
-      <article class="collection-row ${status.className}" style="${paletteVars(plant)}">
-        <div class="collection-thumb">${plantMarkup(stage)}</div>
-        <div class="collection-copy">
-          <p class="eyebrow">${getArchiveLine(plant)}</p>
-          <h3>${getCollectionTitle(plant)}</h3>
-          <p>${plant.copy?.collectionLabel ?? "Artarium botanical work"}</p>
-          <small>開花段階 ${stage}: ${plant.stageNames[stage - 1]}</small>
+      <article class="codex-card ${isDisplayed ? "is-collected" : ""}" style="${paletteVars(plant)}">
+        <div class="codex-thumb">${plantMarkup(isDisplayed ? 6 : stage)}</div>
+        <div class="codex-copy">
+          <div class="codex-title-row">
+            <h3>${plant.name}</h3>
+            <span class="codex-status ${isDisplayed ? "is-collected" : ""}">${statusLabel}</span>
+          </div>
+          <p class="codex-source">${codex?.source ?? `${plant.motif} / ${plant.artist}, ${plant.year}`}</p>
+          <p class="codex-note">${codex?.note ?? plant.temperament ?? ""}</p>
         </div>
-        <span class="collection-status">${status.label}</span>
       </article>
     `;
   }).join("");
