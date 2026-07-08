@@ -3416,3 +3416,44 @@ body.is-demo-mode .demo-control {
 .weather-greet {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 158px);
 }
+
+/* 完成プレートの折りたたみ: 植物を隠さない */
+.plaque-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  color: rgba(237, 234, 224, 0.75);
+  background: transparent;
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+.completion-plaque {
+  position: relative;
+}
+
+.completion-plaque.is-instant {
+  animation-delay: 0s;
+}
+
+.plaque-reopen {
+  position: absolute;
+  left: 18px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+  z-index: 3;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid var(--primary-soft);
+  border-radius: 999px;
+  color: var(--primary);
+  background: rgba(12, 18, 14, 0.66);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}

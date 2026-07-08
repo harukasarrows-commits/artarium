@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-59";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-59";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-59";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-59";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-59";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-60";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-60";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-60";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-60";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-60";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260708-59";
+const ASSET_VERSION = "20260708-60";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -978,6 +978,11 @@ function bindEvents() {
     saveArtworkImage();
   });
 
+  document.querySelector("[data-plaque-close]")?.addEventListener("click", () => {
+    completionPlaqueCollapsed = true;
+    render();
+  });
+
   document.querySelector("[data-completion-action]")?.addEventListener("click", () => {
     const plant = getSelectedPlant();
     if (!plant) return;
@@ -1710,11 +1715,37 @@ function saveArtworkImage() {
   link.click();
 }
 
+let completionPlaqueCollapsed = false;
+let completionPlaqueInstant = false;
+
 function renderCompletionPlaque(plant, shouldShow) {
   const plaque = document.getElementById("completion-plaque");
   if (!plaque) return;
-  plaque.hidden = !plant || !shouldShow;
-  if (!plant || !shouldShow) return;
+  const hero = document.querySelector(".daily-hero");
+  hero?.querySelector(".plaque-reopen")?.remove();
+  if (!plant || !shouldShow) {
+    plaque.hidden = true;
+    completionPlaqueCollapsed = false;
+    completionPlaqueInstant = false;
+    return;
+  }
+  if (completionPlaqueCollapsed) {
+    // 折りたたみ中: 植物を隠さない小さなチップだけ残す
+    plaque.hidden = true;
+    const chip = document.createElement("button");
+    chip.className = "plaque-reopen";
+    chip.type = "button";
+    chip.textContent = "額装へ";
+    chip.addEventListener("click", () => {
+      completionPlaqueCollapsed = false;
+      completionPlaqueInstant = true;
+      render();
+    });
+    hero?.appendChild(chip);
+    return;
+  }
+  plaque.hidden = false;
+  plaque.classList.toggle("is-instant", completionPlaqueInstant);
   document.getElementById("completion-title").textContent = plant.name;
   document.getElementById("completion-subtitle").textContent = plant.copy?.completionNote ?? `${plant.motif} / ${plant.artist}, ${plant.year}`;
   const action = plaque.querySelector("[data-completion-action]");
