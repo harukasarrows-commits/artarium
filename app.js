@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-60";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-60";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-60";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-60";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-60";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-61";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-61";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-61";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-61";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-61";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -17,8 +17,8 @@ const CODEX_NOTES = {
     note: "南仏アルルの光を集めて描かれた連作。ゴッホにとってひまわりは「感謝」の象徴でした。歩くたびに深まる黄金の花弁は、画家が塗り重ねた厚いインパストの筆致に倣っています。"
   },
   "water-lily-bloom": {
-    source: "クロード・モネ《睡蓮》1899頃",
-    note: "モネは晩年の約30年を、ジヴェルニーの水の庭に映る光だけを描いて過ごしました。空と雲が水面に溶け、花がその境界に浮かぶ——この庭の水面が時刻と天気で移ろうのは、モネの眼差しへのオマージュです。"
+    source: "葛飾北斎《神奈川沖浪裏》1831頃",
+    note: "『富嶽三十六景』の一枚。爪を立てるような大波が船を呑み、遠くに小さな富士が座る——北斎が70歳を過ぎて到達した一瞬の構図は、海を渡ってモネやゴッホをも驚かせました。波頭の白い飛沫をまとって水面に咲くこの花は、あの止まった波の永遠を育てます。"
   },
   "aquatic-bloom": {
     source: "クロード・モネ《水の庭（日本の橋）》1899",
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260708-60";
+const ASSET_VERSION = "20260708-61";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
