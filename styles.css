@@ -3468,3 +3468,8 @@ body.is-demo-mode .demo-control {
 [hidden] {
   display: none !important;
 }
+
+/* コードで組み立てた額縁があるときはCSSの額を消す（二重額の防止） */
+.model-stage.is-3d.has-procedural-frame .fallback-frame {
+  opacity: 0;
+}

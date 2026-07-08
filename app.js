@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-68";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-68";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-68";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-68";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-68";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-73";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-73";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-73";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-73";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-73";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260708-68";
+const ASSET_VERSION = "20260708-73";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -2848,6 +2848,61 @@ async function createGalleryScene(container, runtime, token) {
     renderer.render(scene, camera);
   };
   resize();
+  // 額縁: シーンの世界（水面など）は画面より広いので、作品を少し縮めて
+  // 持ち上げ、カメラ可視範囲から計算した開口の中に収めて額装する
+  if (container.dataset.frameType) {
+    const ART_SCALE = 0.85; // 額装時に作品全体を縮める率
+    const ART_LIFT = 0.25;  // 額装時に作品全体を持ち上げる量
+    artworkGroup.scale.setScalar(ART_SCALE);
+    artworkGroup.position.y += ART_LIFT;
+    displayGroup.updateMatrixWorld(true);
+    const plantBox = new THREE.Box3().setFromObject(plantGroup);
+    const toWorldY = (y) => y * ART_SCALE + ART_LIFT;
+    const toWorldZ = (z) => z * ART_SCALE;
+    // 仮の開口幅（植物基準）を出してから、水面を箱に収まる寸法へ縮める
+    // （幅・奥行きとも。着水UVは surfaceSize 経由で追随する）
+    const provisionalDist = Math.max(0.5, camera.position.z - (plantBox.max.z + 0.4));
+    const provisionalViewH = 2 * Math.tan((camera.fov * Math.PI) / 360) * provisionalDist;
+    const provisionalInnerW = provisionalViewH * Math.max(0.4, camera.aspect || 1) * 0.78;
+    if (waterSurface) {
+      const worldWaterW = waterSurface.surfaceSize.width * ART_SCALE;
+      if (worldWaterW > provisionalInnerW + 0.3) {
+        const shrink = (provisionalInnerW + 0.3) / worldWaterW;
+        waterSurface.mesh.scale.x *= shrink;
+        waterSurface.surfaceSize.width *= shrink;
+      }
+      const worldWaterD = waterSurface.surfaceSize.depth * ART_SCALE;
+      if (worldWaterD > provisionalInnerW * 1.05) {
+        const shrinkZ = (provisionalInnerW * 1.05) / worldWaterD;
+        waterSurface.mesh.scale.y *= shrinkZ;
+        waterSurface.surfaceSize.depth *= shrinkZ;
+      }
+    }
+    const waterY = waterSurface ? toWorldY(waterSurface.mesh.position.y) : plantBox.min.y;
+    const waterHalfDepth = waterSurface ? (waterSurface.surfaceSize.depth * ART_SCALE) / 2 : 0.75;
+    const waterFrontZ = waterSurface ? toWorldZ(waterSurface.mesh.position.z) + waterHalfDepth : plantBox.max.z;
+    const waterBackZ = waterSurface ? toWorldZ(waterSurface.mesh.position.z) - waterHalfDepth : plantBox.min.z;
+    const frontZ = Math.max(plantBox.max.z + 0.4, waterFrontZ + 0.22);
+    const dist = Math.max(0.5, camera.position.z - frontZ);
+    const viewH = 2 * Math.tan((camera.fov * Math.PI) / 360) * dist;
+    const viewW = viewH * Math.max(0.4, camera.aspect || 1);
+    const innerW = viewW * 0.78;
+    // 開口の下端は水面の少し下、上端は植物の少し上（画面内に収まる範囲で）
+    const viewBottom = camera.position.y - viewH / 2;
+    const bottomY = Math.max(waterY - 0.22, viewBottom + 0.14);
+    const innerH = Math.min(viewH * 0.82, Math.max(viewH * 0.5, plantBox.max.y + 0.3 - bottomY));
+    const frameGroup = buildShadowBoxFrame(THREE, container.dataset.frameType, {
+      innerW,
+      innerH,
+      centerX: 0,
+      bottomY,
+      frontZ,
+      boxDepth: frontZ - waterBackZ + 0.25
+    });
+    displayGroup.add(frameGroup);
+    container.classList.add("has-procedural-frame");
+    renderer.render(scene, camera);
+  }
   new ResizeObserver(resize).observe(container);
   renderer.render(scene, camera);
   removeOldCanvases(oldCanvases);
@@ -2872,8 +2927,11 @@ async function createGalleryScene(container, runtime, token) {
       dragTarget.setPointerCapture(event.pointerId);
       dragTarget.style.cursor = "grabbing";
     });
-    // 展示品なので裏側までは回さない（左右±40度に制限）
-    const MAX_FOCUS_YAW = Math.PI * 0.22;
+    // 展示品なので裏側までは回さない。シャドーボックスは箱が深く、
+    // 深い角度だと開口が画面外へ流れるためさらに浅く制限する
+    const MAX_FOCUS_YAW = container.classList.contains("has-procedural-frame")
+      ? Math.PI * 0.09
+      : Math.PI * 0.22;
     dragTarget.addEventListener("pointermove", (event) => {
       if (!dragging) return;
       const nextYaw = displayGroup.rotation.y + (event.clientX - lastPointerX) * 0.008;
@@ -2889,6 +2947,59 @@ async function createGalleryScene(container, runtime, token) {
     dragTarget.addEventListener("pointerup", endDrag);
     dragTarget.addEventListener("pointercancel", endDrag);
   }
+}
+
+// 額縁: GLBを使わず、カメラ可視範囲に合わせてコードで組み立てるシャドーボックス。
+// 見付け（前面の枠板）は開口の外から画面端の先まで覆い、外側の水面などを隠す。
+function buildShadowBoxFrame(THREE, frameType, { innerW, innerH, centerX, bottomY, frontZ, faceW, faceH, boxDepth }) {
+  const spec = FRAME_TYPES[frameType] ?? {};
+  const frameColor = new THREE.Color(spec.material ?? "#5a3b25");
+  const group = new THREE.Group();
+  const barDepth = 0.18;                 // 額の前後厚
+  const depth = Math.max(0.6, boxDepth ?? 1.15); // 箱の奥行き
+  const cx = centerX;
+  const cy = bottomY + innerH / 2;
+  // faceW/faceH 指定時は画面端まで覆う面、未指定なら壁に掛かる有限幅の額
+  const margin = 0.7; // 回転しても画面端から外が見えない余白
+  const finiteBar = Math.max(0.1, innerW * 0.075);
+  const barX = faceW ? Math.max(0.12, (faceW - innerW) / 2 + margin) : finiteBar;
+  const barY = faceH ? Math.max(0.12, (faceH - innerH) / 2 + margin) : finiteBar;
+  const outerW = innerW + barX * 2;
+  const faceZ = frontZ - barDepth / 2;
+
+  const frameMat = new THREE.MeshStandardMaterial({ color: frameColor, metalness: 0.3, roughness: 0.5 });
+  const lipMat = new THREE.MeshStandardMaterial({ color: new THREE.Color("#c2a45e"), metalness: 0.75, roughness: 0.35 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: frameColor.clone().multiplyScalar(0.4), metalness: 0.1, roughness: 0.9 });
+  const backMat = new THREE.MeshStandardMaterial({ color: new THREE.Color("#0d1410"), roughness: 1 });
+
+  const addBox = (w, h, d, x, y, z, material) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+    mesh.position.set(x, y, z);
+    group.add(mesh);
+  };
+
+  // 額の4辺（開口の外側を画面端まで覆う）
+  addBox(outerW, barY, barDepth, cx, cy + innerH / 2 + barY / 2, faceZ, frameMat);
+  addBox(outerW, barY, barDepth, cx, cy - innerH / 2 - barY / 2, faceZ, frameMat);
+  addBox(barX, innerH, barDepth, cx - innerW / 2 - barX / 2, cy, faceZ, frameMat);
+  addBox(barX, innerH, barDepth, cx + innerW / 2 + barX / 2, cy, faceZ, frameMat);
+  // 開口の内側に走る金の細縁
+  const lip = Math.max(0.045, innerW * 0.025);
+  const lipZ = frontZ - barDepth - lip / 2;
+  addBox(innerW, lip, lip, cx, cy + innerH / 2 - lip / 2, lipZ, lipMat);
+  addBox(innerW, lip, lip, cx, cy - innerH / 2 + lip / 2, lipZ, lipMat);
+  addBox(lip, innerH, lip, cx - innerW / 2 + lip / 2, cy, lipZ, lipMat);
+  addBox(lip, innerH, lip, cx + innerW / 2 - lip / 2, cy, lipZ, lipMat);
+  // 箱の側壁と背板（回転したときに立体標本らしく見える）
+  const wallT = 0.06;
+  const wallLen = depth - barDepth;
+  const wallZ = frontZ - barDepth - wallLen / 2;
+  addBox(innerW + wallT * 2, wallT, wallLen, cx, cy + innerH / 2 + wallT / 2, wallZ, wallMat);
+  addBox(innerW + wallT * 2, wallT, wallLen, cx, cy - innerH / 2 - wallT / 2, wallZ, wallMat);
+  addBox(wallT, innerH, wallLen, cx - innerW / 2 - wallT / 2, cy, wallZ, wallMat);
+  addBox(wallT, innerH, wallLen, cx + innerW / 2 + wallT / 2, cy, wallZ, wallMat);
+  addBox(innerW + wallT * 2, innerH + wallT * 2, 0.05, cx, cy, frontZ - depth, backMat);
+  return group;
 }
 
 async function createPlantScene(container, runtime, token) {
@@ -2958,6 +3069,27 @@ async function createPlantScene(container, runtime, token) {
     roll: modelSettings.plantRotZ
   });
   artworkGroup.add(plantGroup);
+  // 額縁: 作品の実寸から額の開口を計算して組み立てる
+  if (container.dataset.frameType) {
+    const plantBox = new THREE.Box3().setFromObject(plantGroup);
+    const plantW = Math.max(0.2, plantBox.max.x - plantBox.min.x);
+    const plantH = Math.max(0.2, plantBox.max.y - plantBox.min.y);
+    const poolW = waterSurface?.surfaceSize?.width ?? plantW * 1.7;
+    const innerW = Math.max(poolW * 0.92, plantW * 1.25);
+    const innerH = Math.max(innerW * 1.12, plantH * 1.45);
+    const waterY = waterSurface ? waterSurface.mesh.position.y : plantBox.min.y;
+    const bottomY = waterY - innerH * 0.16;
+    const frontZ = plantBox.max.z + 0.45;
+    const frameGroup = buildShadowBoxFrame(THREE, container.dataset.frameType, {
+      innerW,
+      innerH,
+      centerX: (plantBox.min.x + plantBox.max.x) / 2,
+      bottomY,
+      frontZ
+    });
+    artworkGroup.add(frameGroup);
+    container.classList.add("has-procedural-frame");
+  }
   const plantEffects = createPlantEffects(THREE, plantDefinition, plantGroup, {
     x: modelSettings.plantX,
     y: modelSettings.plantY,
