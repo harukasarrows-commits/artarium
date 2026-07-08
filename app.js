@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-62";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-62";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-62";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-62";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-62";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-64";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-64";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-64";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-64";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-64";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260708-62";
+const ASSET_VERSION = "20260708-64";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -2113,23 +2113,26 @@ function maybeOfferWeeklyRecap() {
 function renderCodex() {
   const summary = document.getElementById("codex-summary");
   const grid = document.getElementById("codex-grid");
+  const head = document.querySelector(".codex-head");
   if (!summary || !grid) return;
-  const displayed = state.plants.filter((plant) => state.progress[plant.id].displayed).length;
-  summary.textContent = `収蔵 ${displayed} / ${state.plants.length}`;
-  grid.innerHTML = state.plants.map((plant) => {
-    const progress = state.progress[plant.id];
-    const stage = getStage(progress.points);
+  // 名画の由来は、収蔵した作品のぶんだけ増えていく（美術館のキャプション）
+  const collectedPlants = state.plants.filter((plant) => state.progress[plant.id].displayed);
+  const hasCollection = collectedPlants.length > 0;
+  if (head) head.hidden = !hasCollection;
+  grid.hidden = !hasCollection;
+  if (!hasCollection) {
+    grid.innerHTML = "";
+    return;
+  }
+  summary.textContent = `収蔵 ${collectedPlants.length} / ${state.plants.length}`;
+  grid.innerHTML = collectedPlants.map((plant) => {
     const codex = CODEX_NOTES[plant.id];
-    const isDisplayed = progress.displayed;
-    const isGrowing = plant.id === state.selectedPlantId && !isDisplayed;
-    const statusLabel = isDisplayed ? "収蔵済み" : isGrowing ? "育成中" : "未収蔵";
     return `
-      <article class="codex-card ${isDisplayed ? "is-collected" : ""}" style="${paletteVars(plant)}">
-        <div class="codex-thumb">${plantMarkup(isDisplayed ? 6 : stage)}</div>
+      <article class="codex-card is-collected" style="${paletteVars(plant)}">
+        <div class="codex-thumb">${plantMarkup(6)}</div>
         <div class="codex-copy">
           <div class="codex-title-row">
             <h3>${plant.name}</h3>
-            <span class="codex-status ${isDisplayed ? "is-collected" : ""}">${statusLabel}</span>
           </div>
           <p class="codex-source">${codex?.source ?? `${plant.motif} / ${plant.artist}, ${plant.year}`}</p>
           <p class="codex-note">${codex?.note ?? plant.temperament ?? ""}</p>

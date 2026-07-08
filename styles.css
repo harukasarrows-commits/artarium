@@ -3463,3 +3463,8 @@ body.is-demo-mode .demo-control {
 .codex-head {
   margin-top: 40px;
 }
+
+/* hidden属性は display 指定より常に優先する */
+[hidden] {
+  display: none !important;
+}
