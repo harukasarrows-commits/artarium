@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-67";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-67";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-67";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-67";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-67";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-68";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-68";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-68";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-68";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-68";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260708-67";
+const ASSET_VERSION = "20260708-68";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -2872,9 +2872,12 @@ async function createGalleryScene(container, runtime, token) {
       dragTarget.setPointerCapture(event.pointerId);
       dragTarget.style.cursor = "grabbing";
     });
+    // 展示品なので裏側までは回さない（左右±40度に制限）
+    const MAX_FOCUS_YAW = Math.PI * 0.22;
     dragTarget.addEventListener("pointermove", (event) => {
       if (!dragging) return;
-      displayGroup.rotation.y += (event.clientX - lastPointerX) * 0.008;
+      const nextYaw = displayGroup.rotation.y + (event.clientX - lastPointerX) * 0.008;
+      displayGroup.rotation.y = Math.max(-MAX_FOCUS_YAW, Math.min(MAX_FOCUS_YAW, nextYaw));
       lastPointerX = event.clientX;
       state.galleryFocusAngle = displayGroup.rotation.y;
       renderer.render(scene, camera);
