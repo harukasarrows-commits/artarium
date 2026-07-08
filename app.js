@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-74";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-74";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-74";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-74";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-74";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-75";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-75";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-75";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-75";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-75";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260708-74";
+const ASSET_VERSION = "20260708-75";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -2918,37 +2918,59 @@ async function createGalleryScene(container, runtime, token) {
     startSceneAnimationLoop(container, token, renderer, scene, camera, { waterSurface, plantEffects });
   }
 
-  // 拡大表示（フォーカス）ではドラッグで作品をゆっくり回して鑑賞できる
+  // 拡大表示（フォーカス）: トレーディングカードを愛でるように、正面を
+  // 向いたまま触れた方向へ少しだけ傾く。指を離すとゆっくり正面に戻る
   if (container.classList.contains("gallery-focus-stage")) {
     const dragTarget = renderer.domElement;
-    let dragging = false;
-    let lastPointerX = 0;
+    displayGroup.rotation.set(0, 0, 0);
+    const MAX_TILT_YAW = 0.13;   // 左右の傾き（約7.5度）
+    const MAX_TILT_PITCH = 0.08; // 上下の傾き（約4.5度）
+    const tilt = { x: 0, y: 0, targetX: 0, targetY: 0 };
+    let pressing = false;
+    let rafId = 0;
+    const animateTilt = () => {
+      tilt.x += (tilt.targetX - tilt.x) * 0.16;
+      tilt.y += (tilt.targetY - tilt.y) * 0.16;
+      displayGroup.rotation.x = tilt.x;
+      displayGroup.rotation.y = tilt.y;
+      renderer.render(scene, camera);
+      const settled = !pressing
+        && Math.abs(tilt.x - tilt.targetX) < 0.001
+        && Math.abs(tilt.y - tilt.targetY) < 0.001;
+      rafId = settled ? 0 : requestAnimationFrame(animateTilt);
+    };
+    const startTiltAnimation = () => {
+      if (!rafId) rafId = requestAnimationFrame(animateTilt);
+    };
+    // 触れた位置をカードの角を押し込むように奥へ傾ける
+    const applyPointer = (event) => {
+      const rect = dragTarget.getBoundingClientRect();
+      const nx = Math.max(-1, Math.min(1, ((event.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1));
+      const ny = Math.max(-1, Math.min(1, ((event.clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1));
+      tilt.targetY = nx * MAX_TILT_YAW;
+      tilt.targetX = ny * MAX_TILT_PITCH;
+    };
     dragTarget.style.cursor = "grab";
     dragTarget.addEventListener("pointerdown", (event) => {
-      dragging = true;
-      lastPointerX = event.clientX;
+      pressing = true;
       dragTarget.setPointerCapture(event.pointerId);
       dragTarget.style.cursor = "grabbing";
+      applyPointer(event);
+      startTiltAnimation();
     });
-    // 展示品なので裏側までは回さない。シャドーボックスは箱が深く、
-    // 深い角度だと開口が画面外へ流れるためさらに浅く制限する
-    const MAX_FOCUS_YAW = container.classList.contains("has-procedural-frame")
-      ? Math.PI * 0.09
-      : Math.PI * 0.22;
     dragTarget.addEventListener("pointermove", (event) => {
-      if (!dragging) return;
-      const nextYaw = displayGroup.rotation.y + (event.clientX - lastPointerX) * 0.008;
-      displayGroup.rotation.y = Math.max(-MAX_FOCUS_YAW, Math.min(MAX_FOCUS_YAW, nextYaw));
-      lastPointerX = event.clientX;
-      state.galleryFocusAngle = displayGroup.rotation.y;
-      renderer.render(scene, camera);
+      if (!pressing) return;
+      applyPointer(event);
     });
-    const endDrag = () => {
-      dragging = false;
+    const endTilt = () => {
+      pressing = false;
+      tilt.targetX = 0;
+      tilt.targetY = 0;
       dragTarget.style.cursor = "grab";
+      startTiltAnimation();
     };
-    dragTarget.addEventListener("pointerup", endDrag);
-    dragTarget.addEventListener("pointercancel", endDrag);
+    dragTarget.addEventListener("pointerup", endTilt);
+    dragTarget.addEventListener("pointercancel", endTilt);
   }
 }
 
