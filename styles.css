@@ -1599,7 +1599,7 @@ body.is-viewing-mode {
   }
 
   .gallery-wall {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .intro-panel {
@@ -1637,7 +1637,7 @@ body.is-viewing-mode {
   }
 
   .gallery-wall {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     padding-inline: 10px;
   }
@@ -1720,7 +1720,7 @@ body.is-viewing-mode {
     bottom: max(12px, env(safe-area-inset-bottom));
     width: min(406px, calc(100% - 24px));
     transform: translateX(-50%);
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     border-color: var(--hairline);
     background: rgba(26, 25, 23, 0.92);
     box-shadow: 0 8px 28px rgba(20, 20, 19, 0.1);
@@ -1770,7 +1770,7 @@ body.is-viewing-mode {
   }
 
   .daily-progress-card {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .daily-progress-card div {
@@ -1890,7 +1890,7 @@ body.is-viewing-mode {
   }
 
   .gallery-wall {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     padding: 26px 16px 34px;
   }
 }
@@ -1977,7 +1977,7 @@ body.is-viewing-mode {
   }
 
   .gallery-wall {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -2898,7 +2898,7 @@ body::after {
   }
 
   .tabbar {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -2908,7 +2908,7 @@ body::after {
   }
 
   .tabbar {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -3456,4 +3456,10 @@ body.is-demo-mode .demo-control {
   letter-spacing: 0.1em;
   backdrop-filter: blur(8px);
   cursor: pointer;
+}
+
+
+/* コレクション内の「名画の由来」セクション */
+.codex-head {
+  margin-top: 40px;
 }

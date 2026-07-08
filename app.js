@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-61";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-61";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-61";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-61";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-61";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-62";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-62";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-62";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-62";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-62";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260708-61";
+const ASSET_VERSION = "20260708-62";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -1424,6 +1424,7 @@ function reloadProductionStateFromStorage() {
 }
 
 function render() {
+  if (!document.getElementById(`${state.currentView}-view`)) state.currentView = "home";
   document.body.dataset.currentView = state.currentView;
   // 今日の歩数の達成度を湖の「光の道」の長さに反映する（デバッグの強制値が優先）
   setSkyStepProgress(debugGlintOverride ?? (state.steps?.todaySteps || 0) / DAILY_STEP_GOAL);

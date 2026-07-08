@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Artarium">
     <title>Artarium - 名画の庭</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260708-61">
-    <link rel="icon" href="./icon.svg?v=20260708-61" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="./icon.svg?v=20260708-61">
-    <link rel="stylesheet" href="./styles.css?v=20260708-61">
+    <link rel="manifest" href="./manifest.webmanifest?v=20260708-62">
+    <link rel="icon" href="./icon.svg?v=20260708-62" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon.svg?v=20260708-62">
+    <link rel="stylesheet" href="./styles.css?v=20260708-62">
   </head>
   <body>
     <div class="app-shell">
@@ -23,7 +23,6 @@
         <nav class="tabbar" aria-label="画面切り替え">
           <button class="tab-button is-active" data-view="home" type="button">ホーム</button>
           <button class="tab-button" data-view="gallery" type="button">コレクション</button>
-          <button class="tab-button" data-view="codex" type="button">図鑑</button>
           <button class="tab-button" data-view="settings" type="button">設定</button>
         </nav>
       </header>
@@ -119,13 +118,10 @@
             <span id="gallery-summary"></span>
           </div>
           <div class="gallery-wall" id="gallery-wall"></div>
-        </section>
-
-        <section class="view" id="codex-view" aria-labelledby="codex-title">
-          <div class="section-head">
+          <div class="section-head codex-head">
             <div>
-              <p class="eyebrow">Field guide — 名画の由来</p>
-              <h2 id="codex-title">図鑑</h2>
+              <p class="eyebrow">Field guide</p>
+              <h2 id="codex-title">名画の由来</h2>
             </div>
             <p class="codex-summary" id="codex-summary"></p>
           </div>
@@ -242,6 +238,6 @@
       </form>
     </div>
 
-    <script src="./app.js?v=20260708-61" type="module"></script>
+    <script src="./app.js?v=20260708-62" type="module"></script>
   </body>
 </html>
