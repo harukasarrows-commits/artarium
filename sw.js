@@ -1,20 +1,20 @@
-const CACHE_NAME = "artarium-shell-v199";
+const CACHE_NAME = "artarium-shell-v202";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=20260708-64",
-  "./app.js?v=20260708-64",
-  "./water-surface.js?v=20260708-64",
-  "./sky-background.js?v=20260708-64",
-  "./weather.js?v=20260708-64",
-  "./ambient-sound.js?v=20260708-64",
-  "./plant-effects.js?v=20260708-64",
-  "./data/plants.json?v=20260708-64",
+  "./styles.css?v=20260708-67",
+  "./app.js?v=20260708-67",
+  "./water-surface.js?v=20260708-67",
+  "./sky-background.js?v=20260708-67",
+  "./weather.js?v=20260708-67",
+  "./ambient-sound.js?v=20260708-67",
+  "./plant-effects.js?v=20260708-67",
+  "./data/plants.json?v=20260708-67",
   "./vendor/three.module.js",
   "./vendor/GLTFLoader.js",
   "./vendor/BufferGeometryUtils.js",
-  "./manifest.webmanifest?v=20260708-64",
-  "./icon.svg?v=20260708-64"
+  "./manifest.webmanifest?v=20260708-67",
+  "./icon.svg?v=20260708-67"
 ];
 
 self.addEventListener("install", (event) => {

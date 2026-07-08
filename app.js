@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-64";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-64";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-64";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-64";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-64";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-67";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-67";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-67";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-67";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-67";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260708-64";
+const ASSET_VERSION = "20260708-67";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -2784,8 +2784,10 @@ async function createGalleryScene(container, runtime, token) {
   scene.add(keyLight);
   addArtworkMaterialLights(THREE, scene, plantDefinition);
 
-  const frame = frameModel ? normalizeModel(THREE, frameModel.scene, 3.8) : null;
-  container.classList.toggle("has-frame-model", Boolean(frame));
+  // 額はCSSの額（.fallback-frame）で描く。GLBの額は箱の奥行きが深く、
+  // 作品と重ねると板が植物を隠すため使わない（モデルは残置、frameModelは読み込むが未使用）
+  const frame = null;
+  container.classList.toggle("has-frame-model", false);
   const plant = normalizeModel(THREE, plantModel.scene, modelSettings.plantScale);
   preparePlantSurfaceModel(THREE, plant, plantDefinition, Number(container.dataset.stage) || 1);
   const reflectionPlant = environmentType === "water" ? prepareReflectionModel(THREE, plant.clone(true), Number(container.dataset.stage) || 1, modelSettings) : null;
@@ -2802,10 +2804,6 @@ async function createGalleryScene(container, runtime, token) {
     yaw: modelSettings.plantRotY,
     roll: modelSettings.plantRotZ
   });
-  if (frame) {
-    prepareFrameModel(frame);
-    displayGroup.add(frame);
-  }
   if (soil) {
     artworkGroup.add(createTunedModelGroup(THREE, soil, {
       x: modelSettings.soilX,
