@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#111813">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Artarium">
+    <title>Artarium - 名画の庭</title>
+    <link rel="manifest" href="./manifest.webmanifest?v=20260708-57">
+    <link rel="icon" href="./icon.svg?v=20260708-57" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon.svg?v=20260708-57">
+    <link rel="stylesheet" href="./styles.css?v=20260708-57">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">ARTARIUM</p>
+          <h1>名画の庭</h1>
+        </div>
+        <nav class="tabbar" aria-label="画面切り替え">
+          <button class="tab-button is-active" data-view="home" type="button">ホーム</button>
+          <button class="tab-button" data-view="gallery" type="button">コレクション</button>
+          <button class="tab-button" data-view="settings" type="button">設定</button>
+        </nav>
+      </header>
+
+      <main>
+        <section class="view is-active" id="home-view" aria-labelledby="home-title">
+          <div class="daily-home">
+            <section class="daily-hero" aria-live="polite">
+              <div class="daily-copy">
+                <p class="eyebrow">Today's artwork</p>
+                <h2 id="home-title">歩いて、名画の庭を育てる。</h2>
+                <p id="home-active-caption"></p>
+              </div>
+              <div class="daily-artwork" id="home-active-artwork"></div>
+              <div class="daily-progress-line" id="daily-progress-line" hidden aria-hidden="false" role="img">
+                <span id="daily-progress-fill"></span>
+              </div>
+              <div class="completion-plaque" id="completion-plaque" hidden>
+                <p class="eyebrow">Collection acquired</p>
+                <h3 id="completion-title"></h3>
+                <p id="completion-subtitle"></p>
+                <button class="secondary-action" data-completion-action type="button">額装を選ぶ</button>
+                <button class="plaque-save" data-save-artwork type="button">画像を保存</button>
+              </div>
+            </section>
+            <section class="settings-group demo-settings home-demo-settings" id="demo-model-settings" hidden></section>
+          </div>
+        </section>
+
+        <section class="view" id="grow-view" aria-labelledby="grow-title">
+          <div class="workspace">
+            <aside class="plant-list" aria-label="植物一覧">
+              <p class="eyebrow">Atelier selection</p>
+              <h2 id="grow-title">展示準備中の作品</h2>
+              <div id="plant-selector"></div>
+            </aside>
+            <section class="grow-stage" aria-live="polite">
+              <div class="stage-card">
+                <div class="plant-scene" id="grow-scene"></div>
+                <div class="growth-info">
+                  <div class="work-label">
+                    <div>
+                      <p class="eyebrow" id="grow-motif"></p>
+                      <h2 id="grow-name"></h2>
+                    </div>
+                    <p id="grow-description"></p>
+                  </div>
+                  <div class="step-dashboard" aria-label="歩数と育成状況">
+                    <div>
+                      <span>今日の歩数</span>
+                      <strong id="today-steps-label">0歩</strong>
+                    </div>
+                    <div>
+                      <span>累計歩数</span>
+                      <strong id="total-steps-label">0歩</strong>
+                    </div>
+                    <div>
+                      <span>成長ポイント</span>
+                      <strong id="growth-points-label">0pt</strong>
+                    </div>
+                    <div>
+                      <span>現在ステージ</span>
+                      <strong id="current-stage-label">Stage 1</strong>
+                    </div>
+                  </div>
+                  <div class="stage-meter" aria-label="開花段階">
+                    <div class="stage-meter-fill" id="stage-meter-fill"></div>
+                  </div>
+                  <div class="stats-row">
+                    <span id="grow-stage-label"></span>
+                    <span id="grow-points-label"></span>
+                  </div>
+                  <p class="step-status" id="step-status-label"></p>
+                  <div class="action-row">
+                    <button class="secondary-action" id="test-step-button" type="button">水やり</button>
+                    <button class="secondary-action" id="motion-button" type="button">歩数計を開始</button>
+                    <button class="primary-action" id="step-sync-button" type="button">成長確認</button>
+                    <button class="secondary-action" id="display-button" type="button">鑑賞</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="gallery-view" aria-labelledby="gallery-title">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Private collection</p>
+              <h2 id="gallery-title">コレクション</h2>
+            </div>
+            <span id="gallery-summary"></span>
+          </div>
+          <div class="gallery-wall" id="gallery-wall"></div>
+        </section>
+
+        <section class="view" id="settings-view" aria-labelledby="settings-title">
+          <div class="settings-page">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Preferences</p>
+                <h2 id="settings-title">設定</h2>
+              </div>
+            </div>
+            <section class="settings-group">
+              <p class="settings-label">歩数連携</p>
+              <div class="settings-list">
+                <div class="settings-row">
+                  <span>今日の歩数</span>
+                  <strong id="settings-today-steps">0歩</strong>
+                </div>
+                <div class="settings-row">
+                  <span>成長換算</span>
+                  <strong>10歩 = 1pt</strong>
+                </div>
+                <button class="settings-row" id="settings-motion-button" type="button">
+                  <span>スマホ歩数計を開始</span>
+                  <strong id="settings-motion-state">未接続</strong>
+                </button>
+                <button class="settings-row" id="settings-sync-button" type="button">
+                  <span>歩数データを同期</span>
+                  <strong>確認</strong>
+                </button>
+                <button class="settings-row" id="settings-test-steps-button" type="button">
+                  <span>開発用テスト加算</span>
+                  <strong>100歩</strong>
+                </button>
+                <div class="settings-note" id="settings-step-status">歩数データは未同期です</div>
+              </div>
+            </section>
+            <section class="settings-group">
+              <p class="settings-label">Artariumについて</p>
+              <div class="settings-list">
+                <div class="settings-row">
+                  <span>作者名</span>
+                  <strong id="settings-author-name">未設定</strong>
+                </div>
+                <button class="settings-row" id="settings-sound-button" type="button">
+                  <span>環境音（波・雨・雷）</span>
+                  <strong id="settings-sound-state">オフ</strong>
+                </button>
+                <div class="settings-row">
+                  <span>テーマ</span>
+                  <strong>黒と真鍮</strong>
+                </div>
+                <div class="settings-row">
+                  <span>植物データ</span>
+                  <strong>JSON管理</strong>
+                </div>
+                <button class="settings-row is-danger" id="settings-reset-button" type="button">
+                  <span>進行を初期化</span>
+                  <strong>Reset</strong>
+                </button>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="frame-choice-modal" id="frame-choice-modal" hidden>
+      <div class="frame-choice-panel" role="dialog" aria-modal="true" aria-labelledby="frame-choice-title">
+        <button class="frame-choice-close" data-frame-choice-close type="button" aria-label="閉じる">×</button>
+        <p class="eyebrow">Final curation</p>
+        <h2 id="frame-choice-title">額装を選ぶ</h2>
+        <p id="frame-choice-copy"></p>
+        <div class="frame-choice-preview" id="frame-choice-preview"></div>
+        <section>
+          <h3>額縁</h3>
+          <div class="choice-grid" id="frame-choice-options"></div>
+        </section>
+        <button class="primary-action frame-choice-confirm" data-frame-choice-confirm type="button">この額装で飾る</button>
+      </div>
+    </div>
+
+    <div class="gallery-focus-modal" id="gallery-focus-modal" hidden></div>
+
+    <div class="frame-choice-modal name-entry-modal" id="name-entry-modal" hidden>
+      <form class="frame-choice-panel name-entry-panel" id="name-entry-form" role="dialog" aria-modal="true" aria-labelledby="name-entry-title">
+        <p class="eyebrow">Artist name</p>
+        <h2 id="name-entry-title">プレートに刻む名前</h2>
+        <p>完成した作品のプレートに表示されます。あとから設定で変更できます。</p>
+        <label class="name-entry-field">
+          <span>名前</span>
+          <input id="name-entry-input" type="text" maxlength="24" autocomplete="name" required placeholder="例：作者名">
+        </label>
+        <button class="primary-action frame-choice-confirm" type="submit">この名前で額装へ</button>
+      </form>
+    </div>
+
+    <script src="./app.js?v=20260708-57" type="module"></script>
+  </body>
+</html>

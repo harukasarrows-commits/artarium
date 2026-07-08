@@ -1,0 +1,409 @@
+[
+  {
+    "id": "scream-bloom",
+    "name": "The Scream Bloom",
+    "motif": "The Scream",
+    "artist": "Artarium Archive",
+    "year": "1893",
+    "palette": [
+      "#f26a3d",
+      "#f5c55b",
+      "#1e6076",
+      "#1d2b3a"
+    ],
+    "temperament": "不安げな渦と夕焼け色をまとった、感情の花。",
+    "copy": {
+      "seedLabel": "夕暮れの感情を宿す種",
+      "homeCaption": "渦巻く空と静かな叫びを、花の輪郭に育てます。",
+      "completionNote": "感情の波が、ひとつの花として額装されました。",
+      "collectionTitle": "夕焼けの記憶",
+      "collectionLabel": "夕焼けの色とゆれる感情をイメージした植物作品"
+    },
+    "modelPath": "./models/plants/scream-bloom/stage-01-seed/seed+pod+3d+model+1k.glb",
+    "stageModelPaths": {
+      "1": "./models/plants/scream-bloom/stage-01-seed/seed+pod+3d+model+1k.glb",
+      "2": "./models/plants/scream-bloom/stage-02-sprout/y-shaped+plant+3d+model+1k.glb",
+      "3": "./models/plants/scream-bloom/stage-03-leaves/ornamental+plant+3d+model+1k.glb",
+      "4": "./models/plants/scream-bloom/stage-04-bud/paint+splash+3d+model+1k.glb",
+      "5": "./models/plants/scream-bloom/stage-05-pre-bloom/alien+plant+3d+model+1k.glb",
+      "6": "./models/plants/scream-bloom/stage-06-bloom/demonic+splash+3d+model+1k.glb"
+    },
+    "soilType": "gallery-loam",
+    "defaultFrameType": "walnut",
+    "frameOptions": [
+      "walnut",
+      "museum-black",
+      "floating-maple"
+    ],
+    "stageNames": [
+      "Seed",
+      "Curl",
+      "Whisper",
+      "Cry",
+      "Echo",
+      "Bloom"
+    ]
+  },
+  {
+    "id": "sunflower-bloom",
+    "name": "Sunflower Bloom",
+    "motif": "Sunflowers",
+    "artist": "Artarium Archive",
+    "year": "1888",
+    "palette": [
+      "#f2b705",
+      "#d98b1f",
+      "#6f8a39",
+      "#64412a"
+    ],
+    "temperament": "厚い筆あとみたいに、明るさを何層にも重ねる花。",
+    "copy": {
+      "seedLabel": "陽だまりを重ねる種",
+      "homeCaption": "歩みの粒が、厚い筆あとを思わせる光の花になります。",
+      "completionNote": "黄色い記憶が、静かな開花として収蔵されました。",
+      "collectionTitle": "ひまわりの記憶",
+      "collectionLabel": "明るい黄色と筆あとをイメージした植物作品"
+    },
+    "modelPath": "./models/plants/sunflower-bloom/stage-01-seed/seed+pod+3d+model+1k.glb",
+    "stageModelPaths": {
+      "1": "./models/plants/sunflower-bloom/stage-01-seed/seed+pod+3d+model+1k.glb",
+      "2": "./models/plants/sunflower-bloom/stage-02-sprout/abstract+tree+sculpture+3d+1k.glb",
+      "3": "./models/plants/sunflower-bloom/stage-03-leaves/plant+3d+model+1k.glb",
+      "4": "./models/plants/sunflower-bloom/stage-04-bud/green+plant+3d+model+1k.glb",
+      "5": "./models/plants/sunflower-bloom/stage-05-pre-bloom/artichoke+plant+3d+model+1k.glb",
+      "6": "./models/plants/sunflower-bloom/stage-06-bloom/sunflower+3d+model+1k.glb"
+    },
+    "soilType": "gallery-loam",
+    "defaultFrameType": "floating-maple",
+    "frameOptions": [
+      "floating-maple",
+      "walnut",
+      "museum-black"
+    ],
+    "stageNames": [
+      "Seed",
+      "Leaf",
+      "Bud",
+      "Ray",
+      "Crown",
+      "Bloom"
+    ]
+  },
+  {
+    "id": "water-lily-bloom",
+    "name": "Water Lily Bloom",
+    "motif": "Water Lilies",
+    "artist": "Artarium Archive",
+    "year": "1899",
+    "palette": [
+      "#86b6c6",
+      "#b8d6a0",
+      "#d9a8c7",
+      "#486b62"
+    ],
+    "temperament": "水面の光を吸って、静かにひらく浮遊する花。",
+    "copy": {
+      "seedLabel": "水面に浮かぶ光の種",
+      "homeCaption": "柔らかな歩みが、水面の光を少しずつ開かせます。",
+      "completionNote": "揺れる水面の記憶が、ひとつの作品になりました。",
+      "collectionTitle": "睡蓮の記憶",
+      "collectionLabel": "水面の光とやわらかな花をイメージした植物作品"
+    },
+    "modelPath": "./models/plants/water-lily-bloom/stage-01-seed/wave+leaf+ornament+3d+model+1k.glb",
+    "stageModelPaths": {
+      "1": "./models/plants/water-lily-bloom/stage-01-seed/wave+leaf+ornament+3d+model+1k.glb",
+      "2": "./models/plants/water-lily-bloom/stage-02-sprout/stylized+plant+3d+model+1k.glb",
+      "3": "./models/plants/water-lily-bloom/stage-03-leaves/plant+3d+model+1k.glb",
+      "4": "./models/plants/water-lily-bloom/stage-04-bud/stylized+flower+3d+model+1k.glb",
+      "5": "./models/plants/water-lily-bloom/stage-05-pre-bloom/ornamental+flower+3d+model+1k.glb",
+      "6": "./models/plants/water-lily-bloom/stage-06-bloom/decorative+flower+3d+model+1k.glb"
+    },
+    "environmentType": "water",
+    "soilType": "water-surface",
+    "defaultFrameType": "museum-black",
+    "frameOptions": [
+      "museum-black",
+      "floating-maple",
+      "walnut"
+    ],
+    "stageNames": [
+      "Seed",
+      "Ripple",
+      "Pad",
+      "Bud",
+      "Float",
+      "Bloom"
+    ]
+  },
+  {
+    "id": "aquatic-bloom",
+    "name": "Aquatic Bloom",
+    "motif": "Water Garden",
+    "artist": "Artarium Archive",
+    "year": "1900",
+    "palette": [
+      "#79b7c2",
+      "#d7c68a",
+      "#b9a7dd",
+      "#315f68"
+    ],
+    "temperament": "水面の光と淡い色彩をまとい、静かに浮かぶ花。",
+    "copy": {
+      "seedLabel": "水面の光を宿す種",
+      "homeCaption": "歩みの粒が、水面に浮かぶ淡い花へと育ちます。",
+      "completionNote": "水面のきらめきが、ひとつの植物作品になりました。",
+      "collectionTitle": "水庭の記憶",
+      "collectionLabel": "水面の光と淡い花をイメージした植物作品"
+    },
+    "modelPath": "./models/plants/aquatic-bloom/stage-01-seed/iridescent+mosaic+egg+3d+model+1k.glb",
+    "stageModelPaths": {
+      "1": "./models/plants/aquatic-bloom/stage-01-seed/iridescent+mosaic+egg+3d+model+1k.glb",
+      "2": "./models/plants/aquatic-bloom/stage-02-sprout/watercolor+sprout+3d+model+1k.glb",
+      "3": "./models/plants/aquatic-bloom/stage-03-leaves/watercolor+plant+3d+model+1k.glb",
+      "4": "./models/plants/aquatic-bloom/stage-04-bud/lily+pads+3d+model+1k.glb",
+      "5": "./models/plants/aquatic-bloom/stage-05-pre-bloom/stylized+plant+3d+model+1k.glb",
+      "6": "./models/plants/aquatic-bloom/stage-06-bloom/lotus+flower+3d+model+1k.glb"
+    },
+    "environmentType": "water",
+    "soilType": "water-surface",
+    "defaultFrameType": "museum-black",
+    "frameOptions": [
+      "museum-black",
+      "floating-maple",
+      "walnut"
+    ],
+    "stageNames": [
+      "Seed",
+      "Sprout",
+      "Leaf",
+      "Pad",
+      "Bud",
+      "Bloom"
+    ]
+  },
+  {
+    "id": "renaissance-smile-bloom",
+    "name": "Renaissance Smile Bloom",
+    "motif": "Renaissance Portrait",
+    "artist": "Artarium Archive",
+    "year": "1503",
+    "palette": [
+      "#d4b16a",
+      "#6f7f55",
+      "#5a3326",
+      "#1d1a18"
+    ],
+    "temperament": "静かな微笑みと深い陰影をまとった、肖像画のような植物。",
+    "copy": {
+      "seedLabel": "静かな微笑みを宿す種",
+      "homeCaption": "穏やかな表情と深い色合いを、植物の輪郭に育てます。",
+      "completionNote": "静かな微笑みの記憶が、ひとつの植物作品になりました。",
+      "collectionTitle": "微笑みの記憶",
+      "collectionLabel": "やわらかな表情と深い陰影をイメージした植物作品"
+    },
+    "modelPath": "./models/plants/renaissance-smile-bloom/stage-01-seed/seed+pod+3d+model+1k.glb",
+    "stageModelPaths": {
+      "1": "./models/plants/renaissance-smile-bloom/stage-01-seed/seed+pod+3d+model+1k.glb",
+      "2": "./models/plants/renaissance-smile-bloom/stage-02-sprout/ornamental+plant+3d+model+1k.glb",
+      "3": "./models/plants/renaissance-smile-bloom/stage-03-leaves/ornamental+plant+3d+model+1k-2.glb",
+      "4": "./models/plants/renaissance-smile-bloom/stage-04-bud/ornamental+plant+3d+model+1k-3.glb",
+      "5": "./models/plants/renaissance-smile-bloom/stage-05-pre-bloom/ornamental+plant+3d+model.glb",
+      "6": "./models/plants/renaissance-smile-bloom/stage-06-bloom/fantasy+plant+creature+3d+model.glb"
+    },
+    "soilType": "gallery-loam",
+    "defaultFrameType": "walnut",
+    "frameOptions": [
+      "walnut",
+      "museum-black",
+      "floating-maple"
+    ],
+    "stageNames": [
+      "Seed",
+      "Gaze",
+      "Shade",
+      "Veil",
+      "Portrait",
+      "Bloom"
+    ]
+  },
+  {
+    "id": "nocturne-sky-bloom",
+    "name": "Nocturne Sky Bloom",
+    "motif": "Night Sky",
+    "artist": "Artarium Archive",
+    "year": "1889",
+    "palette": [
+      "#1d3f8f",
+      "#f0c74d",
+      "#78a7d8",
+      "#111827"
+    ],
+    "temperament": "夜空の渦と星の光をまとった、静かに輝く植物。",
+    "copy": {
+      "seedLabel": "夜空の光を宿す種",
+      "homeCaption": "歩みの粒が、夜空に渦巻く星の花へと育ちます。",
+      "completionNote": "星の光と深い青の記憶が、ひとつの植物作品になりました。",
+      "collectionTitle": "星夜の記憶",
+      "collectionLabel": "深い青と星のきらめきをイメージした植物作品"
+    },
+    "modelPath": "./models/plants/nocturne-sky-bloom/stage-01-seed/starry+night+egg+3d+model+1k.glb",
+    "stageModelPaths": {
+      "1": "./models/plants/nocturne-sky-bloom/stage-01-seed/starry+night+egg+3d+model+1k.glb",
+      "2": "./models/plants/nocturne-sky-bloom/stage-02-sprout/stylized+leaf+3d+model+1k.glb",
+      "3": "./models/plants/nocturne-sky-bloom/stage-03-leaves/stylized+starry+flower+3d+model+1k.glb",
+      "4": "./models/plants/nocturne-sky-bloom/stage-04-bud/stylized+flower+3d+model+1k.glb",
+      "5": "./models/plants/nocturne-sky-bloom/stage-05-pre-bloom/blue+starry+flower+3d+model+1k.glb",
+      "6": "./models/plants/nocturne-sky-bloom/stage-06-bloom/blue+flower+3d+model+1k.glb"
+    },
+    "soilType": "gallery-loam",
+    "defaultFrameType": "museum-black",
+    "frameOptions": [
+      "museum-black",
+      "walnut",
+      "floating-maple"
+    ],
+    "stageNames": [
+      "Seed",
+      "Glimmer",
+      "Spiral",
+      "Night",
+      "Star",
+      "Bloom"
+    ]
+  },
+  {
+    "id": "golden-embrace-bloom",
+    "name": "Golden Embrace Bloom",
+    "motif": "Golden Embrace",
+    "artist": "Artarium Archive",
+    "year": "1908",
+    "palette": [
+      "#d8a93d",
+      "#f1d682",
+      "#46331f",
+      "#1b1712"
+    ],
+    "temperament": "金色の装飾とやわらかな抱擁をまとった、モザイクのような植物。",
+    "copy": {
+      "seedLabel": "金色の抱擁を宿す種",
+      "homeCaption": "歩みの粒が、金の文様をまとった植物へと育ちます。",
+      "completionNote": "金色の余韻が、ひとつの植物作品になりました。",
+      "collectionTitle": "金色の抱擁",
+      "collectionLabel": "金の装飾とやわらかな抱擁をイメージした植物作品"
+    },
+    "modelPath": "./models/plants/golden-embrace-bloom/stage-01-seed/ornate+golden+egg+3d+model+1k.glb",
+    "stageModelPaths": {
+      "1": "./models/plants/golden-embrace-bloom/stage-01-seed/ornate+golden+egg+3d+model+1k.glb",
+      "2": "./models/plants/golden-embrace-bloom/stage-02-sprout/golden+leaf+jewelry+3d+model+1k.glb",
+      "3": "./models/plants/golden-embrace-bloom/stage-03-leaves/ornamental+plant+3d+model+1k.glb",
+      "4": "./models/plants/golden-embrace-bloom/stage-04-bud/golden+ornamental+tree+3d+model+1k.glb",
+      "5": "./models/plants/golden-embrace-bloom/stage-05-pre-bloom/ornate+golden+plant+3d+model+1k.glb",
+      "6": "./models/plants/golden-embrace-bloom/stage-06-bloom/ornamental+gold+flower+3d+model+1k.glb"
+    },
+    "soilType": "gallery-loam",
+    "defaultFrameType": "museum-black",
+    "frameOptions": [
+      "museum-black",
+      "walnut",
+      "floating-maple"
+    ],
+    "stageNames": [
+      "Seed",
+      "Gold",
+      "Pattern",
+      "Embrace",
+      "Mosaic",
+      "Bloom"
+    ]
+  },
+  {
+    "id": "monochrome-fracture-bloom",
+    "name": "Monochrome Fracture Bloom",
+    "motif": "Monochrome Fracture",
+    "artist": "Artarium Archive",
+    "year": "1937",
+    "palette": [
+      "#f2f0e8",
+      "#9b9b96",
+      "#44413d",
+      "#111111"
+    ],
+    "temperament": "モノクロームの断片と鋭い構成をまとった、静かな緊張感の植物。",
+    "copy": {
+      "seedLabel": "断片の光を宿す種",
+      "homeCaption": "歩みの粒が、白と黒の断片をまとった植物へと育ちます。",
+      "completionNote": "静かな緊張感が、ひとつの植物作品になりました。",
+      "collectionTitle": "白黒の断片",
+      "collectionLabel": "モノクロームと断片的な形をイメージした植物作品"
+    },
+    "modelPath": "./models/plants/monochrome-fracture-bloom/stage-01-seed/pomegranate+3d+model+1k.glb",
+    "stageModelPaths": {
+      "1": "./models/plants/monochrome-fracture-bloom/stage-01-seed/pomegranate+3d+model+1k.glb",
+      "2": "./models/plants/monochrome-fracture-bloom/stage-02-sprout/geometric+plant+3d+model+1k.glb",
+      "3": "./models/plants/monochrome-fracture-bloom/stage-03-leaves/crystal+tree+3d+model+1k.glb",
+      "4": "./models/plants/monochrome-fracture-bloom/stage-04-bud/stylized+tree+3d+model+1k.glb",
+      "5": "./models/plants/monochrome-fracture-bloom/stage-05-pre-bloom/abstract+plant+sculpture+1k.glb",
+      "6": "./models/plants/monochrome-fracture-bloom/stage-06-bloom/collage+flower+3d+model+1k.glb"
+    },
+    "soilType": "gallery-loam",
+    "defaultFrameType": "museum-black",
+    "frameOptions": [
+      "museum-black",
+      "walnut",
+      "floating-maple"
+    ],
+    "stageNames": [
+      "Seed",
+      "Line",
+      "Shard",
+      "Form",
+      "Tension",
+      "Bloom"
+    ]
+  },
+  {
+    "id": "pearl-light-bloom",
+    "name": "Pearl Light Bloom",
+    "motif": "Pearl Portrait",
+    "artist": "Artarium Archive",
+    "year": "1665",
+    "palette": [
+      "#f5efe2",
+      "#2f6e8f",
+      "#d9b45f",
+      "#121820"
+    ],
+    "temperament": "真珠の光と静かな横顔をまとった、柔らかく輝く植物。",
+    "copy": {
+      "seedLabel": "真珠の光を宿す種",
+      "homeCaption": "静かな光が、青と金の余韻を持つ植物へと育ちます。",
+      "completionNote": "真珠のような光が、ひとつの植物作品になりました。",
+      "collectionTitle": "真珠光の記憶",
+      "collectionLabel": "真珠の光と静かな色合いをイメージした植物作品"
+    },
+    "modelPath": "./models/plants/pearl-light-bloom/stage-01-seed/ornamental+sphere+3d+model+1k.glb",
+    "stageModelPaths": {
+      "1": "./models/plants/pearl-light-bloom/stage-01-seed/ornamental+sphere+3d+model+1k.glb",
+      "2": "./models/plants/pearl-light-bloom/stage-02-sprout/ornamental+leaves+3d+model+1k.glb",
+      "3": "./models/plants/pearl-light-bloom/stage-03-leaves/decorative+plant+3d+model+1k.glb",
+      "4": "./models/plants/pearl-light-bloom/stage-04-bud/ornamental+flower+3d+model+1k.glb",
+      "5": "./models/plants/pearl-light-bloom/stage-05-pre-bloom/ornamental+flower+3d+model+1k.glb",
+      "6": "./models/plants/pearl-light-bloom/stage-06-bloom/ornamental+flower+3d+model+1k.glb"
+    },
+    "soilType": "gallery-loam",
+    "defaultFrameType": "museum-black",
+    "frameOptions": [
+      "museum-black",
+      "walnut",
+      "floating-maple"
+    ],
+    "stageNames": [
+      "Seed",
+      "Luster",
+      "Veil",
+      "Pearl",
+      "Light",
+      "Bloom"
+    ]
+  }
+]

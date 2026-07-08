@@ -1,0 +1,19 @@
+{
+  "name": "Artarium - 名画の庭",
+  "short_name": "Artarium",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#111813",
+  "theme_color": "#111813",
+  "orientation": "portrait",
+  "lang": "ja",
+  "description": "名画の記憶を宿した植物作品を育て、展示する小さな美術館アプリです。",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

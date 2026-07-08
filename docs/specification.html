@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Artarium 仕様書 | Artarium Docs</title>
+    <link rel="stylesheet" href="./docs.css">
+  </head>
+  <body>
+    <div class="doc-shell">
+      <aside class="doc-nav">
+        <a class="brand" href="./index.html"><svg viewBox="0 0 96 104" aria-hidden="true"><rect x="10" y="7" width="76" height="90" rx="10" fill="none" stroke="#b99a55" stroke-width="8"/><path d="M48 82 V45" stroke="#eee6d5" stroke-width="7" stroke-linecap="round" fill="none"/><path d="M48 57 C33 56 23 45 21.5 27 C39 30 47.5 42 48 57 Z" fill="#eee6d5"/><path d="M48 49 C48.5 32.5 59 21 74.5 18.5 C73 35.5 62 47 48 49 Z" fill="#eee6d5"/></svg><span>Artarium Docs</span></a>
+        <nav><a class="" href="./presentation.html">プレゼン資料</a>
+<a class="" href="./brand-identity.html">ブランドガイドライン</a>
+<a class="" href="./development-instructions.html">開発指示書</a>
+<a class="is-active" href="./specification.html">仕様書</a>
+<a class="" href="./roadmap.html">今後の開発計画</a>
+<a class="" href="./development-schedule.html">開発スケジュール案</a>
+<a class="" href="./development-schedule-dates.html">開発スケジュール（実日付版）</a></nav>
+      </aside>
+      <main class="doc-main">
+        <h1 id="artarium-%E4%BB%95%E6%A7%98%E6%9B%B8">Artarium 仕様書</h1>
+<p>最終更新: 2026-06-29</p>
+<h2 id="%E6%9B%B4%E6%96%B0%E3%83%AB%E3%83%BC%E3%83%AB">更新ルール</h2>
+<p>この仕様書は Artarium の現在仕様を記録する。 仕様変更があった場合は、実装と同時に該当項目を書き換える。 外部説明用の要約は <code>docs/presentation.md</code>、作業手順は <code>docs/development-instructions.md</code> に反映する。</p>
+<h2 id="%E3%82%A2%E3%83%97%E3%83%AA%E5%90%8D">アプリ名</h2>
+<p>Artarium - 名画の庭</p>
+<h2 id="%E6%A6%82%E8%A6%81">概要</h2>
+<p>著作権フリーの名画や美術的モチーフをもとにした植物を、歩数で育てるスマホアプリ前提のWebプロトタイプ。 開花した植物は額縁を選んでコレクションに収蔵し、美術館の展示作品のように鑑賞する。</p>
+<h2 id="%E5%AF%BE%E8%B1%A1%E3%83%97%E3%83%A9%E3%83%83%E3%83%88%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0">対象プラットフォーム</h2>
+<p>現在:</p>
+<ul>
+<li>Webブラウザ</li>
+<li>PWA対応</li>
+<li>PCブラウザ上でもスマホ画面サイズで確認</li>
+</ul>
+<p>将来:</p>
+<ul>
+<li>iOSアプリ</li>
+<li>Androidアプリ</li>
+<li>Expo / React Native への移行を想定</li>
+</ul>
+<h2 id="%E5%AF%BE%E8%B1%A1%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC">対象ユーザー</h2>
+<p>主な対象:</p>
+<ul>
+<li>美術館やアート鑑賞が好きな人</li>
+<li>散歩や歩数習慣を楽しく続けたい人</li>
+<li>落ち着いた雰囲気の育成・収集アプリを求める人</li>
+<li>植物、花、インテリア、雑貨が好きな人</li>
+<li>派手なゲームUIや強い競争要素が苦手な人</li>
+</ul>
+<p>想定年齢:</p>
+<ul>
+<li>20代後半から50代</li>
+</ul>
+<p>利用動機:</p>
+<ul>
+<li>歩く理由を作りたい</li>
+<li>日々の歩数を美しい成果物に変換したい</li>
+<li>自分だけの作品コレクションを作りたい</li>
+<li>健康管理アプリより情緒的な体験で続けたい</li>
+</ul>
+<p>重視する体験:</p>
+<ul>
+<li>毎日少しずつ進む</li>
+<li>開花した時に達成感がある</li>
+<li>コレクションを眺める満足感がある</li>
+<li>課金しなくても基本体験が成立する</li>
+</ul>
+<h2 id="%E4%B8%BB%E8%A6%81%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB">主要ファイル</h2>
+<ul>
+<li><code>index.html</code>: 画面構造</li>
+<li><code>styles.css</code>: デザイン</li>
+<li><code>app.js</code>: ロジック、状態管理、3D表示</li>
+<li><code>data/plants.json</code>: 植物データ</li>
+<li><code>models/</code>: GLBモデル</li>
+<li><code>vendor/</code>: Three.js関連ファイル</li>
+<li><code>sw.js</code>: Service Worker</li>
+<li><code>manifest.webmanifest</code>: PWA設定</li>
+</ul>
+<h2 id="%E7%94%BB%E9%9D%A2">画面</h2>
+<h3 id="%E3%83%9B%E3%83%BC%E3%83%A0">ホーム</h3>
+<p>役割:</p>
+<ul>
+<li>現在育成中の植物を表示する</li>
+<li>植物を主役として見せる</li>
+<li>開花後は額縁選択へ進める</li>
+</ul>
+<p>仕様:</p>
+<ul>
+<li>1度植物を選んだら、開花するまで他の植物は選べない</li>
+<li>余計な数値表示はホームに出しすぎない</li>
+<li>デモモードでは3D調整パネルを併設する</li>
+</ul>
+<h3 id="%E3%82%B3%E3%83%AC%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3">コレクション</h3>
+<p>役割:</p>
+<ul>
+<li>額装済みの完成作品を鑑賞する</li>
+</ul>
+<p>仕様:</p>
+<ul>
+<li>Stage6 到達だけでは表示されない</li>
+<li>額縁を選び、確定した植物だけ表示する</li>
+<li>作品名と説明を表示する</li>
+<li>実在作家名は表示しない</li>
+</ul>
+<h3 id="%E8%A8%AD%E5%AE%9A">設定</h3>
+<p>役割:</p>
+<ul>
+<li>歩数連携や開発用操作を置く</li>
+</ul>
+<p>仕様:</p>
+<ul>
+<li>歩数同期</li>
+<li>DeviceMotionによる簡易歩数検知</li>
+<li>開発用歩数加算</li>
+<li>リセット</li>
+<li>ユーザー名関連</li>
+</ul>
+<h3 id="%E9%A1%8D%E7%B8%81%E9%81%B8%E6%8A%9E">額縁選択</h3>
+<p>役割:</p>
+<ul>
+<li>開花した植物をどの額縁に入れるか選ぶ</li>
+</ul>
+<p>仕様:</p>
+<ul>
+<li>60,000歩到達による開花完了後に表示</li>
+<li>額縁候補を表示</li>
+<li>プレビューには仮画像ではなく開花した植物モデルを表示</li>
+<li>背景選択は現在無効</li>
+<li>確定後、コレクションに収蔵</li>
+</ul>
+<h3 id="%E3%83%87%E3%83%A2%E7%89%88-3d%E8%AA%BF%E6%95%B4">デモ版 3D調整</h3>
+<p>アクセス:</p>
+<pre><code>?demo=1</code></pre>
+<p>役割:</p>
+<ul>
+<li>植物モデルと土台モデルの見え方を調整する</li>
+<li>デモ設定を本番へ反映する</li>
+</ul>
+<p>調整項目:</p>
+<ul>
+<li>植物の種類</li>
+<li>成長ステージ</li>
+<li>土台タイプ</li>
+<li>植物サイズ</li>
+<li>植物X/Y/Z</li>
+<li>植物角度X/Y/Z</li>
+<li>土サイズ</li>
+<li>土X/Y/Z</li>
+<li>土角度X/Y/Z</li>
+<li>反射濃さ</li>
+<li>反射高さ</li>
+<li>反射奥行き</li>
+<li>反射潰れ具合</li>
+<li>反射サイズ</li>
+</ul>
+<p>操作:</p>
+<ul>
+<li>保存</li>
+<li>本番へ反映</li>
+<li>本番で確認</li>
+<li>反射を自動調整</li>
+<li>初期値</li>
+</ul>
+<h2 id="%E6%88%90%E9%95%B7%E4%BB%95%E6%A7%98">成長仕様</h2>
+<p>歩数から成長ポイントを付与する。</p>
+<ul>
+<li>10歩 = 1成長ポイント</li>
+<li>Stage1 から Stage6 まで成長</li>
+<li>1段階あたり約10,000歩を目安に進む</li>
+<li>Stage6の表示には50,000歩で到達する</li>
+<li>60,000歩到達時に開花完了状態になる</li>
+<li>額縁選択とコレクション収蔵は、ユーザーが「額装を選ぶ」を押した後に行う</li>
+</ul>
+<p>しきい値:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Stage</th><th>成長ポイント</th><th>歩数換算</th></tr></thead>
+<tbody>
+<tr><td>Stage1</td><td>0pt</td><td>0歩</td></tr>
+<tr><td>Stage2</td><td>1,000pt</td><td>10,000歩</td></tr>
+<tr><td>Stage3</td><td>2,000pt</td><td>20,000歩</td></tr>
+<tr><td>Stage4</td><td>3,000pt</td><td>30,000歩</td></tr>
+<tr><td>Stage5</td><td>4,000pt</td><td>40,000歩</td></tr>
+<tr><td>Stage6</td><td>5,000pt</td><td>50,000歩</td></tr>
+<tr><td>開花完了</td><td>6,000pt</td><td>60,000歩</td></tr>
+</tbody></table></div>
+<p>完成期間の目安:</p>
+<ul>
+<li>必要歩数: 60,000歩</li>
+<li>1日6,000歩の場合: 約10日</li>
+<li>1日8,000歩の場合: 約8日</li>
+<li>1日10,000歩の場合: 約6日</li>
+<li>10種類すべて完成する場合: 600,000歩</li>
+<li>10種類すべてを1日6,000歩で進める場合: 約100日</li>
+</ul>
+<h2 id="%E6%AD%A9%E6%95%B0%E9%80%A3%E6%90%BA">歩数連携</h2>
+<p>Web版で対応する入力:</p>
+<ul>
+<li><code>window.Artarium.receiveStepData({ todaySteps, totalSteps })</code></li>
+<li><code>window.ArtariumStepBridge.getTodaySteps()</code></li>
+<li><code>DeviceMotionEvent</code> による簡易歩数検知</li>
+<li>開発用テスト加算</li>
+</ul>
+<p>スマホアプリ化後の想定:</p>
+<ul>
+<li>iOS: HealthKit</li>
+<li>Android: Health Connect</li>
+</ul>
+<h2 id="%E7%8A%B6%E6%85%8B%E7%AE%A1%E7%90%86">状態管理</h2>
+<p>保存先:</p>
+<ul>
+<li><code>localStorage</code></li>
+</ul>
+<p>主なキー:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>キー</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><code>artarium---mvp---state</code></td><td>進行状況、選択中植物、歩数</td></tr>
+<tr><td><code>artarium---user---name</code></td><td>ユーザー名</td></tr>
+<tr><td><code>artarium---demo---model---settings---v2</code></td><td>デモ用3D調整値</td></tr>
+<tr><td><code>artarium---production---model---settings</code></td><td>本番用3D調整値</td></tr>
+<tr><td><code>artarium---demo---soil---assignments</code></td><td>デモ用土台割り当て</td></tr>
+<tr><td><code>artarium---production---soil---assignments</code></td><td>本番用土台割り当て</td></tr>
+<tr><td><code>artarium---production---sync</code></td><td>デモから本番への反映通知</td></tr>
+</tbody></table></div>
+<h2 id="%E6%A4%8D%E7%89%A9%E3%83%87%E3%83%BC%E3%82%BF">植物データ</h2>
+<p>管理ファイル:</p>
+<pre><code>data/plants.json</code></pre>
+<p>同じ内容を <code>app.js</code> の <code>fallbackPlants</code> にも保持する。 これは JSON 読み込みに失敗した場合のフォールバック。</p>
+<p>主な項目:</p>
+<ul>
+<li><code>id</code></li>
+<li><code>name</code></li>
+<li><code>motif</code></li>
+<li><code>artist</code></li>
+<li><code>year</code></li>
+<li><code>palette</code></li>
+<li><code>temperament</code></li>
+<li><code>copy</code></li>
+<li><code>modelPath</code></li>
+<li><code>stageModelPaths</code></li>
+<li><code>environmentType</code></li>
+<li><code>soilType</code></li>
+<li><code>defaultFrameType</code></li>
+<li><code>frameOptions</code></li>
+<li><code>stageNames</code></li>
+</ul>
+<h2 id="%E7%8F%BE%E5%9C%A8%E3%81%AE%E6%A4%8D%E7%89%A9">現在の植物</h2>
+<p>初期リリースでは10種類程度の植物を用意する方針。 現在実装済みの植物は以下。</p>
+<h3 id="the-scream-bloom">The Scream Bloom</h3>
+<ul>
+<li><code>id</code>: <code>scream-bloom</code></li>
+<li>作品名: <code>夕焼けの記憶</code></li>
+<li>説明: <code>夕焼けの色とゆれる感情をイメージした植物作品</code></li>
+<li>土台: <code>gallery-loam</code></li>
+<li>額縁初期値: <code>walnut</code></li>
+</ul>
+<h3 id="sunflower-bloom">Sunflower Bloom</h3>
+<ul>
+<li><code>id</code>: <code>sunflower-bloom</code></li>
+<li>作品名: <code>ひまわりの記憶</code></li>
+<li>説明: <code>明るい黄色と筆あとをイメージした植物作品</code></li>
+<li>土台: <code>gallery-loam</code></li>
+<li>額縁初期値: <code>floating-maple</code></li>
+</ul>
+<h3 id="water-lily-bloom">Water Lily Bloom</h3>
+<ul>
+<li><code>id</code>: <code>water-lily-bloom</code></li>
+<li>作品名: <code>睡蓮の記憶</code></li>
+<li>説明: <code>水面の光とやわらかな花をイメージした植物作品</code></li>
+<li>土台: <code>water-surface</code></li>
+<li>環境: <code>water</code></li>
+<li>額縁初期値: <code>museum-black</code></li>
+<li>水面タイプのデフォルト設定基準</li>
+</ul>
+<h3 id="aquatic-bloom">Aquatic Bloom</h3>
+<ul>
+<li><code>id</code>: <code>aquatic-bloom</code></li>
+<li>作品名: <code>水庭の記憶</code></li>
+<li>説明: <code>水面の光と淡い花をイメージした植物作品</code></li>
+<li>土台: <code>water-surface</code></li>
+<li>環境: <code>water</code></li>
+<li>額縁初期値: <code>museum-black</code></li>
+</ul>
+<h3 id="renaissance-smile-bloom">Renaissance Smile Bloom</h3>
+<ul>
+<li><code>id</code>: <code>renaissance-smile-bloom</code></li>
+<li>作品名: <code>微笑みの記憶</code></li>
+<li>説明: <code>やわらかな表情と深い陰影をイメージした植物作品</code></li>
+<li>土台: <code>gallery-loam</code></li>
+<li>額縁初期値: <code>walnut</code></li>
+</ul>
+<h2 id="%E5%9C%9F%E5%8F%B0%E4%BB%95%E6%A7%98">土台仕様</h2>
+<p>土台は植物ごとに紐づく。 ユーザーが本番画面で土台を選ぶ仕様ではない。</p>
+<p>現在の土台:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>soilType</th><th>表示名</th><th>モデル</th></tr></thead>
+<tbody>
+<tr><td><code>gallery---loam</code></td><td>土の丘</td><td><code>models/shared/soil/soil+pile+3d+model+512.glb</code></td></tr>
+<tr><td><code>water---surface</code></td><td>水面</td><td><code>models/shared/bases/water---surface/water+dish+3d+model+1k.glb</code></td></tr>
+</tbody></table></div>
+<h2 id="%E6%B0%B4%E9%9D%A2%E4%BB%95%E6%A7%98">水面仕様</h2>
+<p><code>soilType</code> が <code>water-surface</code>、または <code>environmentType</code> が <code>water</code> の植物は水面環境として扱う。</p>
+<p>水面モデルには透明感、色味、粗さ、光沢の調整を加える。</p>
+<p>反射:</p>
+<ul>
+<li>植物モデルをクローンする</li>
+<li>Y方向に反転する</li>
+<li>水面の上に薄く重ねる</li>
+<li>ステージが進むほど反射をやや強くする</li>
+<li>デモ版では自動調整ボタンを使える</li>
+</ul>
+<h2 id="3d%E8%A1%A8%E7%A4%BA%E4%BB%95%E6%A7%98">3D表示仕様</h2>
+<p>Three.js を使用する。</p>
+<p>読み込み順:</p>
+<ol>
+<li><code>vendor/three.module.js</code></li>
+<li><code>vendor/GLTFLoader.js</code></li>
+<li>失敗時はCDNを試す</li>
+</ol>
+<p>モデルがない場合:</p>
+<ul>
+<li>プレースホルダー表示</li>
+<li>CSSベースのフォールバック</li>
+</ul>
+<p>植物は自動回転しない。 ユーザー操作による回転も現在は無効。</p>
+<h2 id="%E9%A1%8D%E7%B8%81%E4%BB%95%E6%A7%98">額縁仕様</h2>
+<p>現在の額縁タイプ:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>frameType</th><th>表示名</th></tr></thead>
+<tbody>
+<tr><td><code>walnut</code></td><td>Walnut Shadow Box</td></tr>
+<tr><td><code>museum---black</code></td><td>Museum Black</td></tr>
+<tr><td><code>floating---maple</code></td><td>Floating Maple</td></tr>
+</tbody></table></div>
+<p>GLB配置予定:</p>
+<pre><code>models/frames/walnut-shadow-box/frame.glb
+models/frames/museum-black/frame.glb
+models/frames/floating-maple/frame.glb</code></pre>
+<p>GLBがない場合はCSSの額縁フォールバックを使う。</p>
+<h2 id="%E3%83%87%E3%82%B6%E3%82%A4%E3%83%B3%E4%BB%95%E6%A7%98">デザイン仕様</h2>
+<p>方向性:</p>
+<ul>
+<li>高級感のある小さな美術館</li>
+<li>暗めの展示室</li>
+<li>黒とガラス感</li>
+<li>木目、石材、真鍮、金縁</li>
+<li>鑑賞アプリのように上品</li>
+</ul>
+<p>色:</p>
+<ul>
+<li>黒</li>
+<li>深い茶色</li>
+<li>金</li>
+<li>生成り</li>
+<li>暗い青</li>
+</ul>
+<p>UI:</p>
+<ul>
+<li>ボタンはシンプルで控えめ</li>
+<li>情報量を抑える</li>
+<li>植物を中央の展示作品として見せる</li>
+<li>ゲームっぽい派手な表現は避ける</li>
+</ul>
+<h2 id="%E6%96%87%E8%A8%80%E4%BB%95%E6%A7%98">文言仕様</h2>
+<p>実在作家名はコレクション画面などに表示しない。</p>
+<p>作者欄は将来的に、アプリ開始時に入力したユーザー名を反映する方針。</p>
+<p>作品名と説明は分かりやすくする。</p>
+<p>例:</p>
+<pre><code>作品名: ひまわりの記憶
+説明: 明るい黄色と筆あとをイメージした植物作品</code></pre>
+<h2 id="%E3%83%9E%E3%83%8D%E3%82%BF%E3%82%A4%E3%82%BA%E4%BB%95%E6%A7%98">マネタイズ仕様</h2>
+<p>基本方針:</p>
+<ul>
+<li>無料で開始できる</li>
+<li>歩いて育てる基本体験は無料で成立させる</li>
+<li>課金対象は主に植物、額縁、展示室、保存・同期などの拡張要素にする</li>
+<li>高級感のある鑑賞体験を壊す広告や強い課金誘導は避ける</li>
+</ul>
+<p>初期リリース案:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>区分</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>無料</td><td>初期植物数種類、基本額縁、基本コレクション</td></tr>
+<tr><td>有料植物パック</td><td>追加植物、テーマ別植物セット、季節植物</td></tr>
+<tr><td>有料額縁パック</td><td>高級額縁、素材違い、展示室に合う額装</td></tr>
+<tr><td>有料展示室テーマ</td><td>壁、照明、床、台座などの鑑賞空間</td></tr>
+<tr><td>広告なし買い切り</td><td>広告を入れる場合の削除オプション</td></tr>
+<tr><td>サブスクリプション</td><td>毎月の新作植物、限定額縁、クラウド保存など</td></tr>
+</tbody></table></div>
+<p>優先度:</p>
+<ol>
+<li>追加植物パック</li>
+<li>額縁・展示室カスタム課金</li>
+<li>広告なし買い切り</li>
+<li>サブスクリプション</li>
+</ol>
+<p>避ける課金:</p>
+<ul>
+<li>成長速度を直接買わせる課金</li>
+<li>毎日の歩数達成を阻害する課金</li>
+<li>作品鑑賞中に強く割り込む広告</li>
+<li>ユーザーが育てた作品を人質にする保存制限</li>
+</ul>
+<p>検討中:</p>
+<ul>
+<li>初期無料植物数</li>
+<li>追加植物パックの価格</li>
+<li>額縁パックの価格</li>
+<li>月額プランを導入するか</li>
+<li>広告を入れるかどうか</li>
+</ul>
+<h2 id="%E3%83%A2%E3%83%87%E3%83%AB%E6%8E%A8%E5%A5%A8%E8%A8%AD%E5%AE%9A">モデル推奨設定</h2>
+<p>Tripoなどで作成するGLBは軽量化を優先する。</p>
+<p>目安:</p>
+<ul>
+<li>512から1Kテクスチャを基本にする</li>
+<li>植物は必要に応じて1K</li>
+<li>ポリゴン数は20,000以下を目安にする</li>
+<li>スマホ表示前提なので過剰な4Kや高ポリゴンは避ける</li>
+</ul>
+<h2 id="%E6%9C%AA%E5%AE%9F%E8%A3%85%E3%83%BB%E4%BB%8A%E5%BE%8C%E3%81%AE%E6%A4%9C%E8%A8%8E">未実装・今後の検討</h2>
+<ul>
+<li>実機のHealthKit / Health Connect連携</li>
+<li>額縁GLBの本番投入</li>
+<li>背景選択機能</li>
+<li>ユーザー名を作者欄に反映</li>
+<li>コレクション画面の展示演出強化</li>
+<li>スマホアプリ版への移行</li>
+<li>クラウド保存、端末間同期</li>
+<li>マネタイズ設計の具体化</li>
+</ul>
+      </main>
+    </div>
+  </body>
+</html>

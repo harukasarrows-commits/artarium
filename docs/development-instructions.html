@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Artarium 開発指示書 | Artarium Docs</title>
+    <link rel="stylesheet" href="./docs.css">
+  </head>
+  <body>
+    <div class="doc-shell">
+      <aside class="doc-nav">
+        <a class="brand" href="./index.html"><svg viewBox="0 0 96 104" aria-hidden="true"><rect x="10" y="7" width="76" height="90" rx="10" fill="none" stroke="#b99a55" stroke-width="8"/><path d="M48 82 V45" stroke="#eee6d5" stroke-width="7" stroke-linecap="round" fill="none"/><path d="M48 57 C33 56 23 45 21.5 27 C39 30 47.5 42 48 57 Z" fill="#eee6d5"/><path d="M48 49 C48.5 32.5 59 21 74.5 18.5 C73 35.5 62 47 48 49 Z" fill="#eee6d5"/></svg><span>Artarium Docs</span></a>
+        <nav><a class="" href="./presentation.html">プレゼン資料</a>
+<a class="" href="./brand-identity.html">ブランドガイドライン</a>
+<a class="is-active" href="./development-instructions.html">開発指示書</a>
+<a class="" href="./specification.html">仕様書</a>
+<a class="" href="./roadmap.html">今後の開発計画</a>
+<a class="" href="./development-schedule.html">開発スケジュール案</a>
+<a class="" href="./development-schedule-dates.html">開発スケジュール（実日付版）</a></nav>
+      </aside>
+      <main class="doc-main">
+        <h1 id="artarium-%E9%96%8B%E7%99%BA%E6%8C%87%E7%A4%BA%E6%9B%B8">Artarium 開発指示書</h1>
+<p>最終更新: 2026-06-29</p>
+<h2 id="%E6%9B%B4%E6%96%B0%E3%83%AB%E3%83%BC%E3%83%AB">更新ルール</h2>
+<p>今後、仕様変更・UI変更・モデル追加・フォルダ構成変更・成長条件変更があった場合は、この指示書の該当箇所を更新する。 実装の正確な仕様は <code>docs/specification.md</code>、外部説明用の要約は <code>docs/presentation.md</code> に反映する。</p>
+<h2 id="%E9%96%8B%E7%99%BA%E3%81%AE%E5%9F%BA%E6%9C%AC%E6%96%B9%E9%87%9D">開発の基本方針</h2>
+<p>Artarium はスマホアプリ化を前提にしたWebプロトタイプ。</p>
+<p>現在は静的ファイルで構成する。</p>
+<ul>
+<li><code>index.html</code></li>
+<li><code>styles.css</code></li>
+<li><code>app.js</code></li>
+<li><code>data/plants.json</code></li>
+<li><code>models/</code></li>
+<li><code>vendor/</code></li>
+<li><code>sw.js</code></li>
+</ul>
+<p>画面はPCブラウザでもスマホ画面の比率を維持する。 本番確認用とデモ調整用を分ける。</p>
+<ul>
+<li>本番: <code>http://127.0.0.1:3025/?v=YYYYMMDD-NN</code></li>
+<li>デモ: <code>http://127.0.0.1:3025/?demo=1&amp;v=YYYYMMDD-NN</code></li>
+</ul>
+<h2 id="%E3%82%B5%E3%83%BC%E3%83%90%E3%83%BC%E8%B5%B7%E5%8B%95">サーバー起動</h2>
+<pre><code>cd /Users/harukasugasawa/Claude(親フォルダ)/ARROWS-アプリ開発/artarium
+python3 -m http.server 3025 --bind 127.0.0.1</code></pre>
+<h2 id="%E3%82%AD%E3%83%A3%E3%83%83%E3%82%B7%E3%83%A5%E6%9B%B4%E6%96%B0">キャッシュ更新</h2>
+<p><code>app.js</code>、<code>styles.css</code>、<code>data/plants.json</code>、<code>sw.js</code>、<code>index.html</code> を更新した場合は、必要に応じてバージョンを上げる。</p>
+<p>更新箇所:</p>
+<ul>
+<li><code>app.js</code> の <code>ASSET_VERSION</code></li>
+<li><code>index.html</code> の <code>?v=...</code></li>
+<li><code>sw.js</code> の <code>CACHE_NAME</code></li>
+<li><code>sw.js</code> 内のキャッシュ対象URL</li>
+</ul>
+<p>例:</p>
+<ul>
+<li><code>20260626-02</code> から <code>20260629-01</code></li>
+<li><code>artarium-shell-v97</code> から <code>artarium-shell-v98</code></li>
+</ul>
+<h2 id="%E5%AE%9F%E8%A3%85%E6%99%82%E3%81%AE%E6%B3%A8%E6%84%8F">実装時の注意</h2>
+<p>既存の保存済み設定を壊さない。 植物ごとの3D調整値は個別に管理する。 新しい植物に設定を追加する場合、既存植物の設定を上書きしない。</p>
+<p><code>localStorage</code> の主なキー:</p>
+<ul>
+<li><code>artarium-mvp-state</code></li>
+<li><code>artarium-user-name</code></li>
+<li><code>artarium-demo-model-settings-v2</code></li>
+<li><code>artarium-production-model-settings</code></li>
+<li><code>artarium-demo-soil-assignments</code></li>
+<li><code>artarium-production-soil-assignments</code></li>
+<li><code>artarium-production-sync</code></li>
+</ul>
+<h2 id="%E7%94%BB%E9%9D%A2%E5%AE%9F%E8%A3%85%E3%83%AB%E3%83%BC%E3%83%AB">画面実装ルール</h2>
+<p>ホーム:</p>
+<ul>
+<li>植物を最も目立たせる</li>
+<li>今日の歩数、成長ポイント、ステージなどの数値はホーム上では主張させない</li>
+<li>余計な説明を出しすぎない</li>
+<li>デモモード時のみ右側に3D調整パネルを出す</li>
+</ul>
+<p>コレクション:</p>
+<ul>
+<li>開花済み、かつ額装済みの作品だけ表示する</li>
+<li>作家名に実在アーティスト名を出さない</li>
+<li>タイトルはアプリ内作品名として扱う</li>
+<li>説明文は短く分かりやすくする</li>
+</ul>
+<p>設定:</p>
+<ul>
+<li>歩数連携、開発用歩数加算、リセットなどを置く</li>
+<li>本番では3D調整項目を出さない</li>
+</ul>
+<p>額縁選択:</p>
+<ul>
+<li>60,000歩到達時は開花完了状態にする</li>
+<li>額縁選択は自動表示しない</li>
+<li>ユーザーが「額装を選ぶ」を押した後に表示する</li>
+<li>背景選択は現在行わない</li>
+<li>額縁候補は実際の開花植物が入ったプレビューで見せる</li>
+<li>額縁確定後にコレクションへ収蔵する</li>
+</ul>
+<h2 id="3d%E3%83%A2%E3%83%87%E3%83%AB%E9%81%8B%E7%94%A8">3Dモデル運用</h2>
+<p>モデル形式は GLB。</p>
+<p>植物は6段階に分ける。</p>
+<pre><code>models/plants/{plant-id}/stage-01-seed/
+models/plants/{plant-id}/stage-02-sprout/
+models/plants/{plant-id}/stage-03-leaves/
+models/plants/{plant-id}/stage-04-bud/
+models/plants/{plant-id}/stage-05-pre-bloom/
+models/plants/{plant-id}/stage-06-bloom/</code></pre>
+<p>フォルダ名は具体的な実在作家名や作品名に寄せすぎず、アプリ内で扱いやすい汎用名にする。</p>
+<p>例:</p>
+<ul>
+<li><code>sunflower-bloom</code></li>
+<li><code>water-lily-bloom</code></li>
+<li><code>aquatic-bloom</code></li>
+<li><code>renaissance-smile-bloom</code></li>
+</ul>
+<h2 id="%E5%9C%9F%E5%8F%B0%E3%83%A2%E3%83%87%E3%83%AB">土台モデル</h2>
+<p>土台はユーザーが選ぶのではなく、植物ごとに紐づける。</p>
+<p>現在の土台タイプ:</p>
+<ul>
+<li><code>gallery-loam</code>: 土の丘</li>
+<li><code>water-surface</code>: 水面</li>
+</ul>
+<p>指定箇所:</p>
+<ul>
+<li><code>data/plants.json</code> の <code>soilType</code></li>
+<li><code>app.js</code> の <code>fallbackPlants</code></li>
+</ul>
+<p>水面植物の場合:</p>
+<pre><code>&quot;environmentType&quot;: &quot;water&quot;,
+&quot;soilType&quot;: &quot;water-surface&quot;</code></pre>
+<p>土の植物の場合:</p>
+<pre><code>&quot;soilType&quot;: &quot;gallery-loam&quot;</code></pre>
+<h2 id="%E6%B0%B4%E9%9D%A2%E3%81%A8%E5%8F%8D%E5%B0%84">水面と反射</h2>
+<p>水面モデル:</p>
+<pre><code>models/shared/bases/water-surface/water+dish+3d+model+1k.glb</code></pre>
+<p>反射は植物モデルの反転コピーを水面上に薄く表示する方式。 デモ版では「反射を自動調整」ボタンを使える。</p>
+<p>水面タイプのデフォルト設定は <code>water-lily-bloom</code> の設定を基準にする。</p>
+<h2 id="%E9%A1%8D%E7%B8%81%E3%83%A2%E3%83%87%E3%83%AB">額縁モデル</h2>
+<p>現在は額縁GLBが未配置の場合、CSSのフォールバック額縁を表示する。</p>
+<p>将来GLBを配置する場所:</p>
+<pre><code>models/frames/walnut-shadow-box/frame.glb
+models/frames/museum-black/frame.glb
+models/frames/floating-maple/frame.glb</code></pre>
+<p>額縁タイプ定義は <code>app.js</code> の <code>FRAME_TYPES</code>。</p>
+<h2 id="%E6%A4%8D%E7%89%A9%E8%BF%BD%E5%8A%A0%E6%89%8B%E9%A0%86">植物追加手順</h2>
+<ol>
+<li><code>models/plants/{plant-id}/</code> を作成する</li>
+<li><code>stage-01-seed</code> から <code>stage-06-bloom</code> までのフォルダを作る</li>
+<li>各ステージに GLB を置く</li>
+<li><code>data/plants.json</code> に植物データを追加する</li>
+<li><code>soilType</code> を指定する</li>
+<li><code>node scripts/sync-models.mjs</code> を実行する</li>
+<li>デモ版で位置、サイズ、角度、土台、水面、反射を調整する</li>
+<li>「保存」し、「本番へ反映」を押す</li>
+<li>本番URLで確認する</li>
+</ol>
+<p>既存植物のモデルだけを入れ替える場合は、各ステージフォルダにGLBを入れて <code>node scripts/sync-models.mjs</code> を実行する。 このコマンドは次をまとめて行う。</p>
+<ul>
+<li><code>data/plants.json</code> の <code>stageModelPaths</code> を更新する</li>
+<li><code>app.js</code> の <code>fallbackPlants</code> を <code>data/plants.json</code> と同期する</li>
+<li><code>index.html</code>、<code>app.js</code>、<code>sw.js</code> のキャッシュバージョンを上げる</li>
+</ul>
+<p>同期後は、コマンドに表示される <code>Asset version</code> をURLの <code>v=</code> に入れて確認する。</p>
+<h2 id="%E6%A4%8D%E7%89%A9%E3%83%87%E3%83%BC%E3%82%BF%E4%BD%9C%E6%88%90%E3%83%AB%E3%83%BC%E3%83%AB">植物データ作成ルール</h2>
+<p>作家名には実在人物名を出さない。 現在は <code>Artarium Archive</code> を使う。</p>
+<p><code>copy.collectionTitle</code> は作品名として分かりやすくする。</p>
+<p>例:</p>
+<pre><code>&quot;collectionTitle&quot;: &quot;ひまわりの記憶&quot;,
+&quot;collectionLabel&quot;: &quot;明るい黄色と筆あとをイメージした植物作品&quot;</code></pre>
+<h2 id="%E5%A4%89%E6%9B%B4%E6%99%82%E3%81%AB%E6%9B%B4%E6%96%B0%E3%81%99%E3%82%8B%E8%B3%87%E6%96%99">変更時に更新する資料</h2>
+<p>画面や体験の説明が変わる:</p>
+<ul>
+<li><code>docs/presentation.md</code></li>
+<li><code>docs/specification.md</code></li>
+</ul>
+<p>実装手順やフォルダ構成が変わる:</p>
+<ul>
+<li><code>docs/development-instructions.md</code></li>
+<li><code>models/README.md</code></li>
+</ul>
+<p>植物データや成長条件が変わる:</p>
+<ul>
+<li><code>docs/specification.md</code></li>
+<li><code>data/plants.json</code></li>
+<li><code>app.js</code></li>
+</ul>
+<p>デザイン方針が変わる:</p>
+<ul>
+<li><code>docs/presentation.md</code></li>
+<li><code>docs/specification.md</code></li>
+<li><code>styles.css</code></li>
+</ul>
+<h2 id="%E5%8B%95%E4%BD%9C%E7%A2%BA%E8%AA%8D">動作確認</h2>
+<p>最低限の確認:</p>
+<pre><code>node --check app.js
+node --check sw.js
+node -e &quot;JSON.parse(require('fs').readFileSync('data/plants.json','utf8')); console.log('plants json ok')&quot;</code></pre>
+<p>ブラウザ確認:</p>
+<ul>
+<li>本番URLを開く</li>
+<li>デモURLを開く</li>
+<li>植物モデルが表示される</li>
+<li>土台が正しく紐づく</li>
+<li>水面植物は水面と反射が表示される</li>
+<li>60,000歩到達後に開花完了状態が出る</li>
+<li>「額装を選ぶ」操作後に額縁選択が出る</li>
+<li>額縁確定後にコレクションに表示される</li>
+</ul>
+      </main>
+    </div>
+  </body>
+</html>
