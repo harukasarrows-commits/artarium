@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-73";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-73";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-73";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-73";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-73";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260708-74";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260708-74";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260708-74";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260708-74";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260708-74";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260708-73";
+const ASSET_VERSION = "20260708-74";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -2848,22 +2848,19 @@ async function createGalleryScene(container, runtime, token) {
     renderer.render(scene, camera);
   };
   resize();
-  // 額縁: シーンの世界（水面など）は画面より広いので、作品を少し縮めて
-  // 持ち上げ、カメラ可視範囲から計算した開口の中に収めて額装する
+  // 額縁: 開口をキャンバスいっぱいに取り、作品側（縮小率・持ち上げ量・
+  // 水面の寸法）を開口に合わせて調整して額装する
   if (container.dataset.frameType) {
-    const ART_SCALE = 0.85; // 額装時に作品全体を縮める率
-    const ART_LIFT = 0.25;  // 額装時に作品全体を持ち上げる量
+    const ART_SCALE = 0.95; // 額装時に作品全体を縮める率
     artworkGroup.scale.setScalar(ART_SCALE);
-    artworkGroup.position.y += ART_LIFT;
     displayGroup.updateMatrixWorld(true);
     const plantBox = new THREE.Box3().setFromObject(plantGroup);
-    const toWorldY = (y) => y * ART_SCALE + ART_LIFT;
     const toWorldZ = (z) => z * ART_SCALE;
     // 仮の開口幅（植物基準）を出してから、水面を箱に収まる寸法へ縮める
     // （幅・奥行きとも。着水UVは surfaceSize 経由で追随する）
     const provisionalDist = Math.max(0.5, camera.position.z - (plantBox.max.z + 0.4));
     const provisionalViewH = 2 * Math.tan((camera.fov * Math.PI) / 360) * provisionalDist;
-    const provisionalInnerW = provisionalViewH * Math.max(0.4, camera.aspect || 1) * 0.78;
+    const provisionalInnerW = provisionalViewH * Math.max(0.4, camera.aspect || 1) * 0.85;
     if (waterSurface) {
       const worldWaterW = waterSurface.surfaceSize.width * ART_SCALE;
       if (worldWaterW > provisionalInnerW + 0.3) {
@@ -2878,7 +2875,6 @@ async function createGalleryScene(container, runtime, token) {
         waterSurface.surfaceSize.depth *= shrinkZ;
       }
     }
-    const waterY = waterSurface ? toWorldY(waterSurface.mesh.position.y) : plantBox.min.y;
     const waterHalfDepth = waterSurface ? (waterSurface.surfaceSize.depth * ART_SCALE) / 2 : 0.75;
     const waterFrontZ = waterSurface ? toWorldZ(waterSurface.mesh.position.z) + waterHalfDepth : plantBox.max.z;
     const waterBackZ = waterSurface ? toWorldZ(waterSurface.mesh.position.z) - waterHalfDepth : plantBox.min.z;
@@ -2886,11 +2882,18 @@ async function createGalleryScene(container, runtime, token) {
     const dist = Math.max(0.5, camera.position.z - frontZ);
     const viewH = 2 * Math.tan((camera.fov * Math.PI) / 360) * dist;
     const viewW = viewH * Math.max(0.4, camera.aspect || 1);
-    const innerW = viewW * 0.78;
-    // 開口の下端は水面の少し下、上端は植物の少し上（画面内に収まる範囲で）
+    // 額の外周がちょうど画面端に収まるように開口と見付け幅を決める
+    // （見付け = 開口の7.5% なので innerW * 1.15 ≒ viewW）
+    const innerW = (viewW - 0.06) / 1.15;
+    const bar = Math.max(0.1, innerW * 0.075);
     const viewBottom = camera.position.y - viewH / 2;
-    const bottomY = Math.max(waterY - 0.22, viewBottom + 0.14);
-    const innerH = Math.min(viewH * 0.82, Math.max(viewH * 0.5, plantBox.max.y + 0.3 - bottomY));
+    const viewTop = camera.position.y + viewH / 2;
+    const bottomY = viewBottom + bar + 0.03;
+    const innerH = viewTop - bar - 0.03 - bottomY;
+    // 水面（土の植物は根元）が開口の下端の少し上に来るように持ち上げる
+    const anchorY = waterSurface ? waterSurface.mesh.position.y * ART_SCALE : plantBox.min.y;
+    const ART_LIFT = bottomY + 0.16 - anchorY;
+    artworkGroup.position.y += ART_LIFT;
     const frameGroup = buildShadowBoxFrame(THREE, container.dataset.frameType, {
       innerW,
       innerH,
