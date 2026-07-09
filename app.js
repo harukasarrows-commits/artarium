@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-79";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260709-79";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-79";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260709-79";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-79";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-80";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260709-80";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-80";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260709-80";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-80";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -56,9 +56,8 @@ const PRODUCTION_MODEL_STORAGE_KEY = "artarium-production-model-settings";
 const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
-const BAKED_MODEL_SNAPSHOT_KEY = "artarium-baked-model-settings";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260709-79";
+const ASSET_VERSION = "20260709-80";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -674,8 +673,9 @@ async function loadPlants() {
 }
 
 // リポジトリに焼き込んだ植物ごとの配置調整（data/model-settings.json）。
-// localStorage の設定より「工場出荷値のまま／前回の焼き込み値のまま」の植物だけ
-// 上書きし、ユーザーがデモパネルで手動調整した植物はそのまま尊重する。
+// 配置調整の正はこのJSONで、起動時に localStorage の設定へ常に上書きする。
+// 過去バージョンが自動保存した古い値が残っていても必ず最新の調整になる。
+// デモパネルでの調整はセッション内の実験用（リロードで焼き込みに戻る）。
 async function loadBakedModelSettings() {
   try {
     const response = await fetch(`./data/model-settings.json?v=${ASSET_VERSION}`);
@@ -689,34 +689,11 @@ async function loadBakedModelSettings() {
 
 function applyBakedModelSettings(baked) {
   if (!baked?.plants) return;
-  let lastBaked = null;
-  try {
-    lastBaked = JSON.parse(localStorage.getItem(BAKED_MODEL_SNAPSHOT_KEY) || "null");
-  } catch {
-    lastBaked = null;
-  }
   for (const settings of [state.demoModelSettings, state.productionModelSettings]) {
     if (!settings.plants) settings.plants = {};
     for (const [plantId, stages] of Object.entries(baked.plants)) {
-      const current = settings.plants[plantId];
-      if (current) {
-        const factory = createStageModelSettings(
-          isWaterSurfacePlant(plantId) ? DEFAULT_WATER_SURFACE_MODEL_SETTINGS : DEFAULT_MODEL_SETTINGS
-        );
-        const lastBakedStages = lastBaked?.plants?.[plantId]
-          ? normalizeStageModelSettings(lastBaked.plants[plantId])
-          : null;
-        const isUserCustomized = !areStageSettingsEqual(current, factory)
-          && !(lastBakedStages && areStageSettingsEqual(current, lastBakedStages));
-        if (isUserCustomized) continue;
-      }
       settings.plants[plantId] = normalizeStageModelSettings(stages);
     }
-  }
-  try {
-    localStorage.setItem(BAKED_MODEL_SNAPSHOT_KEY, JSON.stringify(baked));
-  } catch {
-    // ストレージ不可でも動作継続
   }
 }
 
