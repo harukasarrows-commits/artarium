@@ -3425,13 +3425,15 @@ body.is-demo-mode .demo-control {
 
 /* ── 開花の祝福「点灯式」── */
 
-/* 場内が静まる（is-hush: シーン全体が沈む）→ 一拍おいて、作品に照明が点く（is-lit: 植物だけ一段明るく） */
+/* 場内が静まる（is-hush: シーン全体が深く沈む）→ 一拍おいて、作品に照明が点く（is-lit: 植物だけ一段明るく）。
+   暗転は速く（0.6s）、点灯はふわっと（1s） */
 .daily-artwork canvas {
   transition: filter 1s ease;
 }
 
 .daily-artwork.is-hush canvas {
-  filter: brightness(0.58) saturate(0.92);
+  filter: brightness(0.38) saturate(0.85);
+  transition: filter 0.6s ease;
 }
 
 .daily-artwork.is-lit canvas:not(.sky-canvas):not(.sky-fx-canvas):not(.water-surface-canvas) {
@@ -3464,7 +3466,7 @@ body.is-demo-mode .demo-control {
     rgba(19, 11, 5, 0.58) 100%
   );
   opacity: 0;
-  transition: opacity 1.8s ease;
+  transition: opacity 1.2s ease;
 }
 
 .spotlight-veil.is-on {
