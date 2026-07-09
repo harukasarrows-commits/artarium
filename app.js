@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-81";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260709-81";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-81";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260709-81";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-81";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-82";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260709-82";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-82";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260709-82";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-82";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260709-81";
+const ASSET_VERSION = "20260709-82";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -67,10 +67,10 @@ const DEFAULT_MODEL_SETTINGS = {
   plantX: -0.04,
   plantY: -0.56,
   plantZ: 0.18,
-  plantRotX: 0.08,
-  plantRotY: -0.72,
-  plantRotZ: 1.18,
-  soilScale: 3.12,
+  plantRotX: 0,
+  plantRotY: -1.57,
+  plantRotZ: 0,
+  soilScale: 2.5,
   soilX: 0,
   soilY: -0.62,
   soilZ: -0.08,
@@ -94,9 +94,9 @@ const DEFAULT_WATER_SURFACE_MODEL_SETTINGS = {
   plantX: -0.04,
   plantY: -0.46,
   plantZ: 0.2,
-  plantRotX: 0.06,
-  plantRotY: -0.72,
-  plantRotZ: 1.18,
+  plantRotX: 0,
+  plantRotY: -1.57,
+  plantRotZ: 0,
   soilScale: 2.95,
   soilX: 0,
   soilY: -0.62,
@@ -3167,15 +3167,17 @@ async function createPlantScene(container, runtime, token) {
   const soil = environmentType !== "water" && soilModel ? normalizeModel(THREE, soilModel.scene, modelSettings.soilScale) : null;
   if (soil) prepareSoilModel(THREE, soil, plantDefinition);
   const artworkGroup = new THREE.Group();
+  let homeSoilGroup = null;
   if (soil) {
-    artworkGroup.add(createTunedModelGroup(THREE, soil, {
+    homeSoilGroup = createTunedModelGroup(THREE, soil, {
       x: modelSettings.soilX,
       y: modelSettings.soilY,
       z: modelSettings.soilZ,
       pitch: modelSettings.soilRotX,
       yaw: modelSettings.soilRotY,
       roll: modelSettings.soilRotZ
-    }));
+    });
+    artworkGroup.add(homeSoilGroup);
   }
   if (waterSurface) {
     artworkGroup.add(waterSurface.mesh);
@@ -3262,9 +3264,16 @@ async function createPlantScene(container, runtime, token) {
       }
     }
     const centerZ = (box.min.z + box.max.z) / 2;
+    let soilTopNdcY = null;
+    if (homeSoilGroup) {
+      const soilBox = new THREE.Box3().setFromObject(homeSoilGroup);
+      const soilCenter = new THREE.Vector3((soilBox.min.x + soilBox.max.x) / 2, soilBox.max.y, (soilBox.min.z + soilBox.max.z) / 2);
+      soilTopNdcY = soilCenter.project(camera).y;
+    }
     container.dataset.plantNdc = JSON.stringify({
       minX: Math.min(...xs), maxX: Math.max(...xs),
       minY: Math.min(...ys), maxY: Math.max(...ys),
+      soilTopNdcY,
       waterNdcY: waterSurface
         ? new THREE.Vector3(0, waterSurface.mesh.position.y, waterSurface.mesh.position.z).project(camera).y
         : null,

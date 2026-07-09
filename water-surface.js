@@ -2,7 +2,7 @@
 // `.water-environment` に WebGL の水面シミュレーションを重ねる。
 // WebGL2 / float テクスチャ非対応の環境では何もせず、既存のCSS水面が残る。
 
-import { getSkySunState, getSkyStepProgress } from "./sky-background.js?v=20260709-81";
+import { getSkySunState, getSkyStepProgress } from "./sky-background.js?v=20260709-82";
 
 const VERT = `#version 300 es
 in vec2 aPos;

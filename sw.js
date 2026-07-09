@@ -1,21 +1,21 @@
-const CACHE_NAME = "artarium-shell-v216";
+const CACHE_NAME = "artarium-shell-v218";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=20260709-81",
-  "./app.js?v=20260709-81",
-  "./water-surface.js?v=20260709-81",
-  "./sky-background.js?v=20260709-81",
-  "./weather.js?v=20260709-81",
-  "./ambient-sound.js?v=20260709-81",
-  "./plant-effects.js?v=20260709-81",
-  "./data/plants.json?v=20260709-81",
-  "./data/model-settings.json?v=20260709-81",
+  "./styles.css?v=20260709-82",
+  "./app.js?v=20260709-82",
+  "./water-surface.js?v=20260709-82",
+  "./sky-background.js?v=20260709-82",
+  "./weather.js?v=20260709-82",
+  "./ambient-sound.js?v=20260709-82",
+  "./plant-effects.js?v=20260709-82",
+  "./data/plants.json?v=20260709-82",
+  "./data/model-settings.json?v=20260709-82",
   "./vendor/three.module.js",
   "./vendor/GLTFLoader.js",
   "./vendor/BufferGeometryUtils.js",
-  "./manifest.webmanifest?v=20260709-81",
-  "./icon.svg?v=20260709-81"
+  "./manifest.webmanifest?v=20260709-82",
+  "./icon.svg?v=20260709-82"
 ];
 
 self.addEventListener("install", (event) => {
@@ -38,8 +38,13 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
+  // 設定・データJSONもネットワーク優先にする。キャッシュ優先だと、
+  // SWインストール時点の内容が同じ ?v= キーで固定され、その後の
+  // 内容更新（例: model-settings.json の再生成）が届かない事故が起きる
+  const isDataJson = new URL(event.request.url).pathname.endsWith(".json");
   const shouldUseNetworkFirst =
     event.request.mode === "navigate" ||
+    isDataJson ||
     ["document", "style", "script", "worker"].includes(event.request.destination);
 
   if (shouldUseNetworkFirst) {
