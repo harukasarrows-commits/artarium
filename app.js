@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-97";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260709-97";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-97";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-97";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-97";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-98";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260709-98";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-98";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-98";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-98";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -2028,8 +2028,8 @@ function playSpotlightDust(container, spot, durationMs = 5500) {
 // 開花の祝福「点灯式」:
 // 山場は「暗くなる」ではなく「作品に照明が点く」瞬間。
 // 0秒: 場内が静まる — 散り・粒子が止み、姿がほとんど見えないところまで0.45秒で暗転する
-// 〜1秒: 一拍の静寂（溜め）
-// 1秒: 光が点く — 植物が普段より一段明るく艶やかに浮かび、光の中を金色の塵が舞い上がる
+// 0.8秒: スポットライトが点く — 暗がりが花のまわりへ絞られ、真上からの光条と光だまりがパッと現れて
+//         植物が浮かび上がり、光の中を金色の塵が舞い上がる
 // 2.6秒: 完成プレート（CSS側の遅延）
 // 6.5秒: 照明がゆっくり平常へ、散り演出が静かに再開
 function playBloomCelebration(container) {
@@ -2048,17 +2048,30 @@ function playBloomCelebration(container) {
   }
   container.appendChild(veil);
   requestAnimationFrame(() => veil.classList.add("is-on"));
+  const glow = document.createElement("i");
+  glow.className = "spotlight-glow";
+  if (spot) {
+    glow.style.setProperty("--spot-x", spot.x);
+    glow.style.setProperty("--spot-y", spot.y);
+  }
 
   window.setTimeout(() => {
     container.classList.remove("is-hush");
     container.classList.add("is-lit");
+    veil.classList.add("is-focused");
+    container.appendChild(glow);
+    requestAnimationFrame(() => glow.classList.add("is-on"));
     if (!reduceMotion) playSpotlightDust(container, spot);
-  }, 1000);
+  }, 800);
 
   window.setTimeout(() => {
     container.classList.remove("is-lit");
     veil.classList.remove("is-on");
-    window.setTimeout(() => veil.remove(), 1200);
+    glow.classList.remove("is-on");
+    window.setTimeout(() => {
+      veil.remove();
+      glow.remove();
+    }, 1200);
   }, 6500);
 }
 

@@ -3438,6 +3438,7 @@ body.is-demo-mode .demo-control {
 
 .daily-artwork.is-lit canvas:not(.sky-canvas):not(.sky-fx-canvas):not(.water-surface-canvas) {
   filter: brightness(1.15) saturate(1.12);
+  transition: filter 0.5s ease;
 }
 
 /* 点灯した光の中を舞う金色の塵（短命キャンバス） */
@@ -3473,8 +3474,39 @@ body.is-demo-mode .demo-control {
   opacity: 1;
 }
 
+/* 点灯の瞬間: 暗がりが花のまわりへぐっと絞られ、光だまりの輪郭が見える */
+.spotlight-veil.is-focused {
+  background: radial-gradient(
+    ellipse 46% 40% at var(--spot-x, 50%) var(--spot-y, 52%),
+    transparent 30%,
+    rgba(24, 14, 6, 0.45) 58%,
+    rgba(16, 9, 4, 0.82) 100%
+  );
+}
+
+/* スポットライトの光そのもの: 真上から降りる光条と、作品に当たる光だまり（screen合成） */
+.spotlight-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: inherit;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(ellipse 16% 60% at var(--spot-x, 50%) 0%, rgba(255, 241, 205, 0.3), transparent 75%),
+    radial-gradient(ellipse 38% 30% at var(--spot-x, 50%) var(--spot-y, 52%), rgba(255, 243, 212, 0.38), transparent 68%);
+  opacity: 0;
+  transition: opacity 0.9s ease; /* 消灯はゆっくり */
+}
+
+.spotlight-glow.is-on {
+  opacity: 1;
+  transition: opacity 0.35s ease-out; /* 点灯はパッと */
+}
+
 @media (prefers-reduced-motion: reduce) {
   .spotlight-veil,
+  .spotlight-glow,
   .daily-artwork canvas {
     transition: none;
   }
