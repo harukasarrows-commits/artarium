@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-98";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260709-98";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-98";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-98";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-98";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-99";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260709-99";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-99";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-99";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-99";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -1972,7 +1972,7 @@ function spotlightCenterFor(container) {
 }
 
 // 点灯した光の中を、金色の塵がゆっくり舞い上がる（短命キャンバス、終わったら自分で消える）
-function playSpotlightDust(container, spot, durationMs = 5500) {
+function playSpotlightDust(container, spot, durationMs = 3200) {
   const rect = container.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
   const canvas = document.createElement("canvas");
@@ -2031,10 +2031,10 @@ function playSpotlightDust(container, spot, durationMs = 5500) {
 // 0.8秒: スポットライトが点く — 暗がりが花のまわりへ絞られ、真上からの光条と光だまりがパッと現れて
 //         植物が浮かび上がり、光の中を金色の塵が舞い上がる
 // 2.6秒: 完成プレート（CSS側の遅延）
-// 6.5秒: 照明がゆっくり平常へ、散り演出が静かに再開
+// 4秒: 照明がゆっくり平常へ（約4.9秒で完全に平常）、散り演出が静かに再開
 function playBloomCelebration(container) {
   if (!container || !container.isConnected) return;
-  calmPlantEffects(9000);
+  calmPlantEffects(6500);
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   container.classList.remove("is-lit");
@@ -2072,7 +2072,7 @@ function playBloomCelebration(container) {
       veil.remove();
       glow.remove();
     }, 1200);
-  }, 6500);
+  }, 4000);
 }
 
 function maybePlayBloomCelebration(container) {
