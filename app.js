@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-90";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, launchSkyFireworks, triggerShootingStar } from "./sky-background.js?v=20260709-90";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-90";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-90";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-90";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-91";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, launchSkyFireworks, triggerShootingStar } from "./sky-background.js?v=20260709-91";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-91";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-91";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-91";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260709-90";
+const ASSET_VERSION = "20260709-91";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -1960,39 +1960,118 @@ function addGrowthFromSteps(steps) {
   }
 }
 
-// 成長の節目の演出: 画面がふわっと明るくなり、金色の粒が舞う
-// 開花花火の色相: その植物の絵に合わせる（統一感を出す）
-const PLANT_FIREWORK_HUES = {
-  "scream-bloom": 30,
-  "sunflower-bloom": 48,
-  "water-lily-bloom": 205,
-  "aquatic-bloom": 300,
-  "renaissance-smile-bloom": 42,
-  "nocturne-sky-bloom": 222,
-  "golden-embrace-bloom": 45,
-  "monochrome-fracture-bloom": 210,
-  "pearl-light-bloom": 40
-};
+// 筆致: 見えない筆が植物を「描き上げる」ように、光のブラシストロークが走る。
+// 短命の前面キャンバスに描き、終わったら自分で消える
+function playBrushStrokes(container, durationMs = 1700) {
+  const rect = container.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const canvas = document.createElement("canvas");
+  canvas.className = "brush-overlay-canvas";
+  const scale = Math.min(window.devicePixelRatio || 1, 1.5);
+  canvas.width = Math.round(rect.width * scale);
+  canvas.height = Math.round(rect.height * scale);
+  const ctx = canvas.getContext("2d");
+  container.appendChild(canvas);
+  const W = canvas.width;
+  const H = canvas.height;
 
-// 開花の祝福（時系列で見せる）:
-// 0秒: 散り・粒子を静めて、光のフラッシュ + 開花ポップ（植物が主役）
-// 1.2秒: 空に花火（視線が植物→空へ移る）
-// 2.6秒: 完成プレート（CSS側の遅延で表示）
-// 4秒〜: 散り演出が静かに再開
+  // 植物のあたり（画面中央〜下）を大きな弧でなぞる4筆。左右交互に、下から上へ
+  const strokes = Array.from({ length: 4 }, (_, i) => {
+    const dir = i % 2 === 0 ? 1 : -1;
+    const yBase = H * (0.72 - i * 0.13);
+    return {
+      delay: i * 260,
+      duration: 620,
+      width: Math.max(6, W * 0.02) * (1 - i * 0.12),
+      from: { x: W * (0.5 - dir * 0.34), y: yBase },
+      ctrl: { x: W * 0.5 + dir * W * 0.05, y: yBase - H * 0.12 },
+      to: { x: W * (0.5 + dir * 0.32), y: yBase - H * 0.07 }
+    };
+  });
+  const pointAt = (s, k) => {
+    const a = 1 - k;
+    return {
+      x: a * a * s.from.x + 2 * a * k * s.ctrl.x + k * k * s.to.x,
+      y: a * a * s.from.y + 2 * a * k * s.ctrl.y + k * k * s.to.y
+    };
+  };
+
+  const start = performance.now();
+  const frame = (now) => {
+    const elapsed = now - start;
+    ctx.clearRect(0, 0, W, H);
+    if (elapsed > durationMs || !canvas.isConnected) {
+      canvas.remove();
+      return;
+    }
+    ctx.globalCompositeOperation = "lighter";
+    ctx.lineCap = "round";
+    strokes.forEach((s) => {
+      const k = Math.min(1, Math.max(0, (elapsed - s.delay) / s.duration));
+      if (k <= 0) return;
+      // 終盤はふわっと消えていく
+      const fade = Math.min(1, Math.max(0, (durationMs - elapsed) / 500));
+      ctx.strokeStyle = `rgba(238, 219, 166, ${(0.4 * fade).toFixed(3)})`;
+      ctx.lineWidth = s.width;
+      ctx.beginPath();
+      ctx.moveTo(s.from.x, s.from.y);
+      const steps = Math.ceil(24 * k);
+      for (let j = 1; j <= steps; j++) {
+        const p = pointAt(s, j / 24);
+        ctx.lineTo(p.x, p.y);
+      }
+      ctx.stroke();
+      // 筆先の光
+      if (k < 1) {
+        const tip = pointAt(s, k);
+        const r = s.width * 1.6;
+        const glow = ctx.createRadialGradient(tip.x, tip.y, 0, tip.x, tip.y, r);
+        glow.addColorStop(0, `rgba(255, 244, 214, ${(0.85 * fade).toFixed(3)})`);
+        glow.addColorStop(1, "rgba(255, 244, 214, 0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(tip.x - r, tip.y - r, r * 2, r * 2);
+      }
+    });
+    ctx.globalCompositeOperation = "source-over";
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
+// 開花の祝福（絵画と美術館の語彙で、時系列に見せる）:
+// 0秒: 散り・粒子を静めて、光のフラッシュ + 開花ポップ + 筆致が絵を「描き上げる」
+// 1.8秒: ニスの艶が斜めにすっと走る（絵画の仕上げ）
+// 2.2秒: 照明が絞られ、スポットライトの中で完成プレート（2.6秒・CSS側の遅延）
+// 5.5秒: 照明が戻り、散り演出が静かに再開
 function playBloomCelebration(container) {
   if (!container || !container.isConnected) return;
   container.classList.remove("is-bloom-pop");
   void container.offsetWidth; // アニメーションを再実行できるようリフロー
   container.classList.add("is-bloom-pop");
-  calmPlantEffects(4000);
+  calmPlantEffects(6000);
 
   const burst = document.createElement("div");
   burst.className = "bloom-burst";
   burst.setAttribute("aria-hidden", "true");
   container.appendChild(burst);
+  playBrushStrokes(container);
 
-  const hue = PLANT_FIREWORK_HUES[container.dataset.plantId] ?? null;
-  window.setTimeout(() => launchSkyFireworks(hue), 1200);
+  window.setTimeout(() => {
+    const varnish = document.createElement("i");
+    varnish.className = "varnish-sweep";
+    container.appendChild(varnish);
+    window.setTimeout(() => varnish.remove(), 1300);
+  }, 1800);
+  const veil = document.createElement("i");
+  veil.className = "spotlight-veil";
+  window.setTimeout(() => {
+    container.appendChild(veil);
+    requestAnimationFrame(() => veil.classList.add("is-on"));
+  }, 2200);
+  window.setTimeout(() => {
+    veil.classList.remove("is-on");
+    window.setTimeout(() => veil.remove(), 1000);
+  }, 5500);
   setTimeout(() => {
     burst.remove();
     container.classList.remove("is-bloom-pop");

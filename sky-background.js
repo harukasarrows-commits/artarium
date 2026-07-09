@@ -406,7 +406,15 @@ export function mountSkyBackground(container, options = {}) {
       x: Math.random(), y: 0.64 + i * 0.04, speed: 0.006 + i * 0.004, w: 0.5 + Math.random() * 0.4
     })),
     star: null,
-    lastStarId: shootingStarRequestId
+    lastStarId: shootingStarRequestId,
+    // 美術館の塵: 光芒の中をゆっくり降りながらきらめく
+    dust: Array.from({ length: 16 }, () => ({
+      s: Math.random(),            // 光芒の幅方向の位置（0-1）
+      y: Math.random(),            // 上端→地平線の進み（0-1）
+      shaft: Math.random() < 0.5 ? 0 : 1,
+      speed: 0.012 + Math.random() * 0.02,
+      ph: Math.random() * Math.PI * 2
+    }))
   };
 
   const spawnShootingStar = () => {
@@ -425,13 +433,64 @@ export function mountSkyBackground(container, options = {}) {
     };
   };
 
-  const drawSkyFx = (nowMs, hour, starLevel) => {
+  const drawSkyFx = (nowMs, hour, starLevel, sunX) => {
     const W = fxCanvas.width;
     const H = fxCanvas.height;
     const dt = Math.min(0.1, fxState.lastTs ? (nowMs - fxState.lastTs) / 1000 : 0.033);
+    const t = nowMs / 1000;
     fxState.lastTs = nowMs;
     fx.clearRect(0, 0, W, H);
     const raining = weatherState.rain > 0.05 || weatherState.snow > 0.05;
+
+    // 美術館の光芒と塵: 晴れた昼、太陽側の上端から斜めの光が差し、塵がきらきら漂う
+    const dayLevel = Math.max(0, 1 - Math.abs(hour - 12) / 6.5);
+    const shaftLevel = dayLevel
+      * (1 - Math.min(1, weatherState.cloud * 1.3))
+      * (1 - Math.min(1, weatherState.dark * 2))
+      * (raining ? 0 : 1);
+    if (shaftLevel > 0.04) {
+      const horizonY = H * 0.7;
+      const sx = (Number.isFinite(sunX) ? sunX : 0.5) * W;
+      fx.globalCompositeOperation = "lighter";
+      const shafts = [
+        { topX: sx - W * 0.06, topW: W * 0.05, botX: sx - W * 0.3, botW: W * 0.2 },
+        { topX: sx + W * 0.05, topW: W * 0.04, botX: sx + W * 0.14, botW: W * 0.16 }
+      ];
+      shafts.forEach((s, i) => {
+        // ごくゆっくり呼吸するように強弱がつく
+        const breathe = 0.75 + 0.25 * Math.sin(t * 0.23 + i * 2.1);
+        const alpha = 0.055 * shaftLevel * breathe;
+        const grad = fx.createLinearGradient(0, 0, 0, horizonY);
+        grad.addColorStop(0, `rgba(255,248,228,${(alpha * 1.4).toFixed(4)})`);
+        grad.addColorStop(0.75, `rgba(255,248,228,${alpha.toFixed(4)})`);
+        grad.addColorStop(1, "rgba(255,248,228,0)");
+        fx.fillStyle = grad;
+        fx.beginPath();
+        fx.moveTo(s.topX - s.topW, 0);
+        fx.lineTo(s.topX + s.topW, 0);
+        fx.lineTo(s.botX + s.botW, horizonY);
+        fx.lineTo(s.botX - s.botW, horizonY);
+        fx.closePath();
+        fx.fill();
+      });
+      // 塵: 光芒の中をゆっくり降りて、またたく
+      fxState.dust.forEach((d) => {
+        d.y += d.speed * dt;
+        if (d.y > 1) { d.y = 0; d.s = Math.random(); }
+        const shaft = shafts[d.shaft];
+        const topX = shaft.topX + (d.s * 2 - 1) * shaft.topW;
+        const botX = shaft.botX + (d.s * 2 - 1) * shaft.botW;
+        const x = topX + (botX - topX) * d.y + Math.sin(t * 0.6 + d.ph) * W * 0.004;
+        const y = d.y * horizonY;
+        const twinkle = 0.35 + 0.65 * Math.pow(Math.max(Math.sin(t * 1.1 + d.ph * 3), 0), 2);
+        const alpha = 0.5 * shaftLevel * twinkle;
+        if (alpha < 0.02) return;
+        const r = Math.max(0.8, W / 700);
+        fx.fillStyle = `rgba(255,250,236,${alpha.toFixed(3)})`;
+        fx.fillRect(x - r / 2, y - r / 2, r, r);
+      });
+      fx.globalCompositeOperation = "source-over";
+    }
 
     // 花火: 開花の祝福で3発、時間差で打ち上がる
     if (fxState.lastFireworksId !== fireworksRequestId) {
@@ -630,8 +689,8 @@ export function mountSkyBackground(container, options = {}) {
     gl.uniform1f(u.boltX, boltX);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-    // 空の上に重ねるFX（花火・蛍・朝靄・流れ星）
-    drawSkyFx(performance.now(), hour, starLevel);
+    // 空の上に重ねるFX（光芒と塵・花火・朝靄・流れ星）
+    drawSkyFx(performance.now(), hour, starLevel, sky.sunPos[0]);
   };
 
   container.prepend(canvas);

@@ -3461,3 +3461,66 @@ body.is-demo-mode .demo-control {
   border-radius: inherit;
 }
 
+
+/* ── 開花の祝福（絵画と美術館の語彙）── */
+
+/* 筆致: 光のストロークが植物を描き上げる（前面の短命キャンバス） */
+.daily-artwork .brush-overlay-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 6;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ニスの艶: 仕上げの光沢が斜めにすっと走る */
+.varnish-sweep {
+  position: absolute;
+  inset: -20%;
+  z-index: 6;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgba(255, 250, 235, 0.3) 50%,
+    rgba(255, 244, 214, 0.12) 54%,
+    transparent 62%
+  );
+  mix-blend-mode: screen;
+  transform: translateX(-70%);
+  animation: varnish-sweep 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes varnish-sweep {
+  to { transform: translateX(70%); }
+}
+
+/* スポットライト: 照明が絞られ、作品にだけ光が当たる */
+.spotlight-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse 64% 56% at 50% 52%,
+    transparent 42%,
+    rgba(7, 9, 7, 0.18) 68%,
+    rgba(7, 9, 7, 0.55) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.9s ease;
+}
+
+.spotlight-veil.is-on {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brush-overlay-canvas,
+  .varnish-sweep {
+    display: none;
+  }
+}
