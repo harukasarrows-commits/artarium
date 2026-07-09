@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-77";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260709-77";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-77";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260709-77";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-77";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-79";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260709-79";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-79";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260709-79";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-79";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -56,8 +56,9 @@ const PRODUCTION_MODEL_STORAGE_KEY = "artarium-production-model-settings";
 const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
+const BAKED_MODEL_SNAPSHOT_KEY = "artarium-baked-model-settings";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260709-77";
+const ASSET_VERSION = "20260709-79";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -636,12 +637,14 @@ async function init() {
   state.selectedPlantId = saved.__activePlantId ?? "";
   migrateWaterSurfaceAssignments();
   normalizeCompletedPlants();
+  applyBakedModelSettings(await loadBakedModelSettings());
   saveDemoModelSettings();
   saveProductionModelSettings();
   bindEvents();
   bindAppLifecycleEvents();
   bindDeviceTiltParallax();
   exposeStepBridge();
+  exposeTuneBridge();
   render();
   observeWaterSurfaces();
   initWeatherSync((weather) => {
@@ -667,6 +670,53 @@ async function loadPlants() {
   } catch (error) {
     console.warn(error);
     return fallbackPlants;
+  }
+}
+
+// リポジトリに焼き込んだ植物ごとの配置調整（data/model-settings.json）。
+// localStorage の設定より「工場出荷値のまま／前回の焼き込み値のまま」の植物だけ
+// 上書きし、ユーザーがデモパネルで手動調整した植物はそのまま尊重する。
+async function loadBakedModelSettings() {
+  try {
+    const response = await fetch(`./data/model-settings.json?v=${ASSET_VERSION}`);
+    if (!response.ok) throw new Error("model-settings.json could not be loaded");
+    return await response.json();
+  } catch (error) {
+    console.warn("焼き込み済みモデル設定を読み込めませんでした:", error);
+    return null;
+  }
+}
+
+function applyBakedModelSettings(baked) {
+  if (!baked?.plants) return;
+  let lastBaked = null;
+  try {
+    lastBaked = JSON.parse(localStorage.getItem(BAKED_MODEL_SNAPSHOT_KEY) || "null");
+  } catch {
+    lastBaked = null;
+  }
+  for (const settings of [state.demoModelSettings, state.productionModelSettings]) {
+    if (!settings.plants) settings.plants = {};
+    for (const [plantId, stages] of Object.entries(baked.plants)) {
+      const current = settings.plants[plantId];
+      if (current) {
+        const factory = createStageModelSettings(
+          isWaterSurfacePlant(plantId) ? DEFAULT_WATER_SURFACE_MODEL_SETTINGS : DEFAULT_MODEL_SETTINGS
+        );
+        const lastBakedStages = lastBaked?.plants?.[plantId]
+          ? normalizeStageModelSettings(lastBaked.plants[plantId])
+          : null;
+        const isUserCustomized = !areStageSettingsEqual(current, factory)
+          && !(lastBakedStages && areStageSettingsEqual(current, lastBakedStages));
+        if (isUserCustomized) continue;
+      }
+      settings.plants[plantId] = normalizeStageModelSettings(stages);
+    }
+  }
+  try {
+    localStorage.setItem(BAKED_MODEL_SNAPSHOT_KEY, JSON.stringify(baked));
+  } catch {
+    // ストレージ不可でも動作継続
   }
 }
 
@@ -1842,6 +1892,21 @@ function exposeStepBridge() {
   window.Artarium = {
     ...(window.Artarium ?? {}),
     receiveStepData: (data) => applyStepSnapshot(data, "スマホ歩数計から同期しました")
+  };
+}
+
+// デモ専用: 配置調整の自動化用ブリッジ（?demo=1 のときだけ生える）
+function exposeTuneBridge() {
+  if (!DEMO_MODE) return;
+  window.__artariumTune = {
+    get: (plantId, stage) => getModelSettings(state.demoModelSettings, plantId, stage),
+    set: (plantId, stage, partial) => {
+      const current = getModelSettings(state.demoModelSettings, plantId, stage);
+      setModelSettingsForStage(state.demoModelSettings, plantId, stage, { ...current, ...partial });
+      saveDemoModelSettings();
+      render();
+    },
+    dump: () => JSON.parse(JSON.stringify(state.demoModelSettings))
   };
 }
 
@@ -3197,6 +3262,30 @@ async function createPlantScene(container, runtime, token) {
   }
   if (waterSurface || plantEffects) {
     startSceneAnimationLoop(container, token, renderer, scene, camera, { waterSurface, plantEffects });
+  }
+  if (DEMO_MODE) {
+    // デモ専用: 配置調整の自動化用に、植物の画面内位置（NDC）を公開する
+    const box = new THREE.Box3().setFromObject(plantGroup);
+    const xs = [];
+    const ys = [];
+    for (const cx of [box.min.x, box.max.x]) {
+      for (const cy of [box.min.y, box.max.y]) {
+        for (const cz of [box.min.z, box.max.z]) {
+          const v = new THREE.Vector3(cx, cy, cz).project(camera);
+          xs.push(v.x);
+          ys.push(v.y);
+        }
+      }
+    }
+    const centerZ = (box.min.z + box.max.z) / 2;
+    container.dataset.plantNdc = JSON.stringify({
+      minX: Math.min(...xs), maxX: Math.max(...xs),
+      minY: Math.min(...ys), maxY: Math.max(...ys),
+      waterNdcY: waterSurface
+        ? new THREE.Vector3(0, waterSurface.mesh.position.y, waterSurface.mesh.position.z).project(camera).y
+        : null,
+      worldPerNdcY: Math.tan((camera.fov * Math.PI) / 360) * Math.max(0.1, camera.position.z - centerZ)
+    });
   }
   if (container.classList.contains("daily-artwork")) {
     maybePlayBloomCelebration(container);
