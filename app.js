@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-96";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260709-96";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-96";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-96";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-96";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-97";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260709-97";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-97";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-97";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-97";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -1972,7 +1972,7 @@ function spotlightCenterFor(container) {
 }
 
 // 点灯した光の中を、金色の塵がゆっくり舞い上がる（短命キャンバス、終わったら自分で消える）
-function playSpotlightDust(container, spot, durationMs = 6500) {
+function playSpotlightDust(container, spot, durationMs = 5500) {
   const rect = container.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
   const canvas = document.createElement("canvas");
@@ -2027,14 +2027,14 @@ function playSpotlightDust(container, spot, durationMs = 6500) {
 
 // 開花の祝福「点灯式」:
 // 山場は「暗くなる」ではなく「作品に照明が点く」瞬間。
-// 0秒: 場内が静まる — 散り・粒子が止み、シーン全体が0.6秒で深く暗転し、暖色の暗がりが縁に入る
-// 〜1.4秒: 一拍の静寂（溜め）
-// 1.4秒: 光が点く — 植物が普段より一段明るく艶やかに浮かび、光の中を金色の塵が舞い上がる
+// 0秒: 場内が静まる — 散り・粒子が止み、姿がほとんど見えないところまで0.45秒で暗転する
+// 〜1秒: 一拍の静寂（溜め）
+// 1秒: 光が点く — 植物が普段より一段明るく艶やかに浮かび、光の中を金色の塵が舞い上がる
 // 2.6秒: 完成プレート（CSS側の遅延）
-// 8秒: 照明がゆっくり平常へ、散り演出が静かに再開
+// 6.5秒: 照明がゆっくり平常へ、散り演出が静かに再開
 function playBloomCelebration(container) {
   if (!container || !container.isConnected) return;
-  calmPlantEffects(10500);
+  calmPlantEffects(9000);
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   container.classList.remove("is-lit");
@@ -2053,13 +2053,13 @@ function playBloomCelebration(container) {
     container.classList.remove("is-hush");
     container.classList.add("is-lit");
     if (!reduceMotion) playSpotlightDust(container, spot);
-  }, 1400);
+  }, 1000);
 
   window.setTimeout(() => {
     container.classList.remove("is-lit");
     veil.classList.remove("is-on");
-    window.setTimeout(() => veil.remove(), 2600);
-  }, 8000);
+    window.setTimeout(() => veil.remove(), 1200);
+  }, 6500);
 }
 
 function maybePlayBloomCelebration(container) {
