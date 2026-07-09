@@ -407,45 +407,6 @@ body.is-viewing-mode {
   overflow: hidden;
 }
 
-/* 開花の瞬間の演出 */
-.daily-artwork.is-bloom-pop canvas:not(.sky-canvas) {
-  animation: bloom-pop 1.5s cubic-bezier(0.2, 1.4, 0.35, 1);
-}
-
-@keyframes bloom-pop {
-  0% { transform: scale(0.9); filter: brightness(1.8) saturate(1.3); }
-  55% { transform: scale(1.035); filter: brightness(1.15) saturate(1.05); }
-  100% { transform: scale(1); filter: brightness(1) saturate(1); }
-}
-
-.bloom-burst {
-  position: absolute;
-  inset: 0;
-  z-index: 7;
-  pointer-events: none;
-  overflow: hidden;
-  border-radius: inherit;
-}
-
-.bloom-burst::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 55%;
-  width: 240px;
-  height: 240px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 244, 214, 0.85), rgba(255, 244, 214, 0.25) 45%, transparent 70%);
-  animation: bloom-flash 1.6s ease-out forwards;
-}
-
-@keyframes bloom-flash {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
-  25% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.7); }
-}
-
 
 .water-environment .water-surface-canvas {
   position: absolute;
@@ -3462,51 +3423,18 @@ body.is-demo-mode .demo-control {
 }
 
 
-/* ── 開花の祝福（絵画と美術館の語彙）── */
+/* ── 開花の祝福「静かな除幕」── */
 
-/* 筆致: 光のストロークが植物を描き上げる（前面の短命キャンバス） */
-.daily-artwork .brush-overlay-canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 6;
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-/* ニスの艶: 仕上げの光沢が斜めにすっと走る */
-.varnish-sweep {
-  position: absolute;
-  inset: -20%;
-  z-index: 6;
-  pointer-events: none;
-  background: linear-gradient(
-    115deg,
-    transparent 42%,
-    rgba(255, 250, 235, 0.3) 50%,
-    rgba(255, 244, 214, 0.12) 54%,
-    transparent 62%
-  );
-  mix-blend-mode: screen;
-  transform: translateX(-70%);
-  animation: varnish-sweep 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes varnish-sweep {
-  to { transform: translateX(70%); }
-}
-
-/* ニスの帯が植物の上を通る瞬間、絵のハイライトが一拍だけ上がる */
+/* ニスの艶: 植物のハイライトがひと呼吸だけ上がって戻る */
 .daily-artwork canvas {
-  transition: filter 0.4s ease;
+  transition: filter 0.6s ease;
 }
 
 .daily-artwork canvas.is-varnish-gloss {
   filter: saturate(1.22) brightness(1.1);
 }
 
-/* スポットライト: 照明が絞られ、作品にだけ光が当たる。
+/* スポットライト: 照明がゆっくり絞られ、作品にだけ光が当たる。
    光の中心（--spot-x/--spot-y）はJSが花頭の実位置に合わせる。暗がりはタングステン照明の暖色 */
 .spotlight-veil {
   position: absolute;
@@ -3521,7 +3449,7 @@ body.is-demo-mode .demo-control {
     rgba(19, 11, 5, 0.58) 100%
   );
   opacity: 0;
-  transition: opacity 0.9s ease;
+  transition: opacity 2.4s ease;
 }
 
 .spotlight-veil.is-on {
@@ -3529,8 +3457,7 @@ body.is-demo-mode .demo-control {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brush-overlay-canvas,
-  .varnish-sweep {
-    display: none;
+  .spotlight-veil {
+    transition: none;
   }
 }

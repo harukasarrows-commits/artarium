@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-93";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, launchSkyFireworks, triggerShootingStar } from "./sky-background.js?v=20260709-93";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-93";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-93";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-93";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-94";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, launchSkyFireworks, triggerShootingStar } from "./sky-background.js?v=20260709-94";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-94";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-94";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-94";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -1960,196 +1960,6 @@ function addGrowthFromSteps(steps) {
   }
 }
 
-// 筆致: 見えない筆が植物を「描き上げる」ように、光のブラシストロークが走る。
-// dataset.plantNdc（植物の画面内位置）があれば、絵の描き順（茎→左の葉→右の葉→花）で
-// シルエットをなぞる。なければ画面中央の想定位置。短命の前面キャンバスに描き、終わったら自分で消える
-function playBrushStrokes(container, durationMs = 2400) {
-  const rect = container.getBoundingClientRect();
-  if (!rect.width || !rect.height) return;
-  const canvas = document.createElement("canvas");
-  canvas.className = "brush-overlay-canvas";
-  const scale = Math.min(window.devicePixelRatio || 1, 1.5);
-  canvas.width = Math.round(rect.width * scale);
-  canvas.height = Math.round(rect.height * scale);
-  const ctx = canvas.getContext("2d");
-  container.appendChild(canvas);
-  const W = canvas.width;
-  const H = canvas.height;
-
-  // 植物の画面内シルエット（px）。計測がなければ中央の想定値
-  let cx = W * 0.5;
-  let baseY = H * 0.78;
-  let topY = H * 0.2;
-  let halfW = W * 0.3;
-  try {
-    const ndc = JSON.parse(container.dataset.plantNdc || "null");
-    if (ndc) {
-      const toX = (x) => ((x + 1) / 2) * W;
-      const toY = (y) => ((1 - y) / 2) * H;
-      cx = (toX(ndc.minX) + toX(ndc.maxX)) / 2;
-      halfW = Math.max(W * 0.12, (toX(ndc.maxX) - toX(ndc.minX)) / 2);
-      topY = Math.max(H * 0.07, toY(ndc.maxY));
-      // 底はバウンディングボックスでなく土の天面（or 水面）基準。不可視ジオメトリ対策
-      const base = ndc.soilTopNdcY ?? ndc.waterNdcY;
-      baseY = Math.min(H * 0.92, base != null ? toY(base) : toY(ndc.minY));
-    }
-  } catch {
-    /* 想定値のまま */
-  }
-  const plantH = Math.max(H * 0.2, baseY - topY);
-  const headR = Math.max(14, Math.min(halfW * 0.5, plantH * 0.22));
-  const headCY = topY + headR * 1.15;
-
-  const bezier = (from, ctrl, to) => (k) => {
-    const a = 1 - k;
-    return {
-      x: a * a * from.x + 2 * a * k * ctrl.x + k * k * to.x,
-      y: a * a * from.y + 2 * a * k * ctrl.y + k * k * to.y
-    };
-  };
-  // 絵の描き順: ①茎（土から上へ）②左の葉 ③右の葉 ④花頭を囲む円弧で締める
-  const strokes = [
-    {
-      delay: 0,
-      duration: 650,
-      width: Math.max(6, W * 0.019),
-      pointAt: bezier(
-        { x: cx + halfW * 0.05, y: baseY },
-        { x: cx - plantH * 0.05, y: baseY - plantH * 0.5 },
-        { x: cx, y: headCY + headR * 0.9 }
-      )
-    },
-    {
-      delay: 480,
-      duration: 620,
-      width: Math.max(5, W * 0.017),
-      pointAt: bezier(
-        { x: cx - halfW * 0.06, y: baseY - plantH * 0.3 },
-        { x: cx - halfW * 0.6, y: baseY - plantH * 0.46 },
-        { x: cx - halfW * 0.85, y: baseY - plantH * 0.16 }
-      )
-    },
-    {
-      delay: 660,
-      duration: 620,
-      width: Math.max(5, W * 0.017),
-      pointAt: bezier(
-        { x: cx + halfW * 0.06, y: baseY - plantH * 0.38 },
-        { x: cx + halfW * 0.6, y: baseY - plantH * 0.54 },
-        { x: cx + halfW * 0.85, y: baseY - plantH * 0.24 }
-      )
-    },
-    {
-      delay: 1150,
-      duration: 700,
-      width: Math.max(7, W * 0.02),
-      pointAt: (k) => {
-        const angle = -Math.PI / 2 + k * Math.PI * 1.9;
-        return { x: cx + Math.cos(angle) * headR, y: headCY + Math.sin(angle) * headR * 0.92 };
-      }
-    }
-  ];
-  // 筆のかすれ: 本線1本＋左右に細い添え線。添え線はところどころ途切れる
-  const SEGMENTS = 26;
-  strokes.forEach((s) => {
-    s.subs = [
-      { offset: 0, alpha: 1, widthK: 1, gaps: new Set() },
-      { offset: -s.width * 0.55, alpha: 0.45, widthK: 0.42, gaps: new Set() },
-      { offset: s.width * 0.6, alpha: 0.38, widthK: 0.36, gaps: new Set() }
-    ];
-    s.subs.slice(1).forEach((sub) => {
-      for (let j = 1; j <= SEGMENTS; j++) {
-        if (Math.random() < 0.16) sub.gaps.add(j);
-      }
-    });
-  });
-  const speckles = [];
-
-  const start = performance.now();
-  const frame = (now) => {
-    const elapsed = now - start;
-    ctx.clearRect(0, 0, W, H);
-    if (elapsed > durationMs || !canvas.isConnected) {
-      canvas.remove();
-      return;
-    }
-    // 描き終えた線はしばらく残り（絵具の定着）、終盤にふわっと消える
-    const fade = Math.min(1, Math.max(0, (durationMs - elapsed) / 550));
-    ctx.globalCompositeOperation = "lighter";
-    ctx.lineCap = "round";
-    strokes.forEach((s) => {
-      const k = Math.min(1, Math.max(0, (elapsed - s.delay) / s.duration));
-      if (k <= 0) return;
-      const steps = Math.max(1, Math.round(SEGMENTS * k));
-      s.subs.forEach((sub) => {
-        ctx.save();
-        // 本線は明るい花の上でも見えるよう、白寄りの色にグローを添える
-        if (sub.offset === 0) {
-          ctx.shadowColor = `rgba(255, 240, 190, ${(0.85 * fade).toFixed(3)})`;
-          ctx.shadowBlur = s.width * 1.5;
-          ctx.strokeStyle = `rgba(252, 240, 200, ${(0.72 * fade).toFixed(3)})`;
-        } else {
-          ctx.strokeStyle = `rgba(238, 219, 166, ${(0.5 * sub.alpha * fade).toFixed(3)})`;
-        }
-        ctx.lineWidth = Math.max(1.5, s.width * sub.widthK);
-        ctx.beginPath();
-        let penDown = false;
-        for (let j = 0; j <= steps; j++) {
-          const p = s.pointAt(j / SEGMENTS);
-          if (sub.gaps.has(j)) {
-            penDown = false;
-            continue;
-          }
-          // 添え線は進行方向に対して垂直にずらす（筆の毛の束）
-          const p2 = s.pointAt(Math.min(1, (j + 1) / SEGMENTS));
-          const dx = p2.x - p.x;
-          const dy = p2.y - p.y;
-          const len = Math.hypot(dx, dy) || 1;
-          const x = p.x + (-dy / len) * sub.offset;
-          const y = p.y + (dx / len) * sub.offset;
-          if (penDown) {
-            ctx.lineTo(x, y);
-          } else {
-            ctx.moveTo(x, y);
-            penDown = true;
-          }
-        }
-        ctx.stroke();
-        ctx.restore();
-      });
-      // 筆先の光と、飛び散る絵具の粒
-      if (k < 1) {
-        const tip = s.pointAt(k);
-        const r = s.width * 1.7;
-        const glow = ctx.createRadialGradient(tip.x, tip.y, 0, tip.x, tip.y, r);
-        glow.addColorStop(0, `rgba(255, 244, 214, ${(0.85 * fade).toFixed(3)})`);
-        glow.addColorStop(1, "rgba(255, 244, 214, 0)");
-        ctx.fillStyle = glow;
-        ctx.fillRect(tip.x - r, tip.y - r, r * 2, r * 2);
-        if (Math.random() < 0.3 && speckles.length < 60) {
-          speckles.push({
-            x: tip.x + (Math.random() - 0.5) * s.width * 3,
-            y: tip.y + (Math.random() - 0.5) * s.width * 3,
-            r: 1 + Math.random() * 2.2,
-            born: elapsed
-          });
-        }
-      }
-    });
-    speckles.forEach((p) => {
-      const life = Math.max(0, 1 - (elapsed - p.born) / 700);
-      if (life <= 0) return;
-      ctx.fillStyle = `rgba(244, 228, 180, ${(0.5 * life * fade).toFixed(3)})`;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
-    });
-    ctx.globalCompositeOperation = "source-over";
-    requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
-}
-
 // スポットライトの中心を花頭の画面位置（%）に合わせる。計測がなければ null（CSSの既定値に任せる）
 function spotlightCenterFor(container) {
   try {
@@ -2166,41 +1976,16 @@ function spotlightCenterFor(container) {
   }
 }
 
-// 開花の祝福（絵画と美術館の語彙で、時系列に見せる）:
-// 0秒: 散り・粒子を静めて、光のフラッシュ + 開花ポップ + 筆致が茎→葉→花の描き順で絵を「描き上げる」
-// 2.0秒: ニスの艶が斜めにすっと走り、帯が植物の上を通る瞬間に絵のハイライトが一拍上がる
-// 2.4秒: 照明が絞られ（光の中心は花頭の実位置）、スポットライトの中で完成プレート（2.6秒・CSS側の遅延）
-// 5.8秒: 照明が戻り、散り演出が静かに再開
+// 開花の祝福「静かな除幕」:
+// フラッシュも筆致も足さず、美術館の照明の変化だけで祝う。
+// 0秒: 散り・粒子が静まり、照明が2.4秒かけてゆっくり絞られる（光の中心は花頭の実位置、暖色の暗がり）
+// 2.6秒: 絞りきったスポットライトの中に完成プレート（CSS側の遅延）
+// 3.4秒: ニスの艶 — 植物のハイライトがひと呼吸だけ上がって戻る
+// 7秒: 照明がゆっくり戻り、散り演出が静かに再開
 function playBloomCelebration(container) {
   if (!container || !container.isConnected) return;
-  container.classList.remove("is-bloom-pop");
-  void container.offsetWidth; // アニメーションを再実行できるようリフロー
-  container.classList.add("is-bloom-pop");
-  calmPlantEffects(6500);
+  calmPlantEffects(9500);
 
-  const burst = document.createElement("div");
-  burst.className = "bloom-burst";
-  burst.setAttribute("aria-hidden", "true");
-  container.appendChild(burst);
-  playBrushStrokes(container);
-
-  window.setTimeout(() => {
-    const varnish = document.createElement("i");
-    varnish.className = "varnish-sweep";
-    container.appendChild(varnish);
-    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      const sceneCanvas = container.querySelector(
-        "canvas:not(.sky-canvas):not(.sky-fx-canvas):not(.water-surface-canvas):not(.brush-overlay-canvas)"
-      );
-      if (sceneCanvas) {
-        window.setTimeout(() => {
-          sceneCanvas.classList.add("is-varnish-gloss");
-          window.setTimeout(() => sceneCanvas.classList.remove("is-varnish-gloss"), 500);
-        }, 430);
-      }
-    }
-    window.setTimeout(() => varnish.remove(), 1300);
-  }, 2000);
   const veil = document.createElement("i");
   veil.className = "spotlight-veil";
   const spot = spotlightCenterFor(container);
@@ -2208,18 +1993,24 @@ function playBloomCelebration(container) {
     veil.style.setProperty("--spot-x", spot.x);
     veil.style.setProperty("--spot-y", spot.y);
   }
+  container.appendChild(veil);
+  requestAnimationFrame(() => veil.classList.add("is-on"));
+
   window.setTimeout(() => {
-    container.appendChild(veil);
-    requestAnimationFrame(() => veil.classList.add("is-on"));
-  }, 2400);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const sceneCanvas = container.querySelector(
+      "canvas:not(.sky-canvas):not(.sky-fx-canvas):not(.water-surface-canvas)"
+    );
+    if (sceneCanvas) {
+      sceneCanvas.classList.add("is-varnish-gloss");
+      window.setTimeout(() => sceneCanvas.classList.remove("is-varnish-gloss"), 700);
+    }
+  }, 3400);
+
   window.setTimeout(() => {
     veil.classList.remove("is-on");
-    window.setTimeout(() => veil.remove(), 1000);
-  }, 5800);
-  setTimeout(() => {
-    burst.remove();
-    container.classList.remove("is-bloom-pop");
-  }, 2600);
+    window.setTimeout(() => veil.remove(), 2600);
+  }, 7000);
 }
 
 function maybePlayBloomCelebration(container) {
