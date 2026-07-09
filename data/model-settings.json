@@ -2,7 +2,8 @@
   "plants": {
     "sunflower-bloom": {
       "1": {
-        "plantScale": 0.24,
+        "plantScale": 0.2057,
+        "plantX": 0.0005,
         "plantY": -0.379,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -10,7 +11,8 @@
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.3682,
+        "plantScale": 0.3116,
+        "plantX": 0.0005,
         "plantY": -0.3209,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -18,7 +20,8 @@
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.6302,
+        "plantScale": 0.5659,
+        "plantX": 0.0002,
         "plantY": -0.2635,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -27,39 +30,44 @@
       },
       "4": {
         "plantScale": 0.8232,
+        "plantX": 0.0007,
         "plantY": -0.1647,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.7
       },
       "5": {
-        "plantScale": 0.9714,
-        "plantY": -0.0398,
+        "plantScale": 1.1667,
+        "plantX": 0.002,
+        "plantY": 0.121,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.95
       },
       "6": {
-        "plantScale": 1.1283,
-        "plantY": 0.063,
+        "plantScale": 1.6243,
+        "plantX": 0.0013,
+        "plantY": 0.3331,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 3.2
       }
     },
     "water-lily-bloom": {
       "1": {
         "plantScale": 0.1251,
+        "plantX": 0.0005,
         "plantY": -0.4487,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0
       },
       "2": {
-        "plantScale": 0.2746,
+        "plantScale": 0.2471,
+        "plantX": 0.0002,
         "plantY": -0.4375,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -67,6 +75,7 @@
       },
       "3": {
         "plantScale": 0.4481,
+        "plantX": 0.0002,
         "plantY": -0.367,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -74,21 +83,24 @@
       },
       "4": {
         "plantScale": 0.6121,
+        "plantX": 0.0004,
         "plantY": -0.2938,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0
       },
       "5": {
-        "plantScale": 0.7269,
-        "plantY": -0.2049,
+        "plantScale": 0.9765,
+        "plantX": 0.0007,
+        "plantY": -0.0496,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0
       },
       "6": {
-        "plantScale": 0.9213,
-        "plantY": -0.0183,
+        "plantScale": 1.46,
+        "plantX": 0.0016,
+        "plantY": 0.2224,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0
@@ -96,7 +108,8 @@
     },
     "scream-bloom": {
       "1": {
-        "plantScale": 0.1726,
+        "plantScale": 0.1535,
+        "plantX": 0.0004,
         "plantY": -0.3833,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -104,7 +117,8 @@
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.4501,
+        "plantScale": 0.38,
+        "plantX": 0.0002,
         "plantY": -0.356,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -112,7 +126,8 @@
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.5625,
+        "plantScale": 0.5062,
+        "plantX": 0.0003,
         "plantY": -0.2287,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -121,39 +136,44 @@
       },
       "4": {
         "plantScale": 0.8226,
+        "plantX": 0.001,
         "plantY": -0.161,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.7
       },
       "5": {
-        "plantScale": 0.9775,
-        "plantY": -0.0437,
+        "plantScale": 1.1769,
+        "plantX": 0.0016,
+        "plantY": 0.1146,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.95
       },
       "6": {
-        "plantScale": 1.328,
-        "plantY": 0.0074,
+        "plantScale": 1.5384,
+        "plantX": 0.0025,
+        "plantY": 0.1079,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 3.2
       }
     },
     "aquatic-bloom": {
       "1": {
         "plantScale": 0.1178,
+        "plantX": 0.0004,
         "plantY": -0.4557,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0
       },
       "2": {
-        "plantScale": 0.2726,
+        "plantScale": 0.2454,
+        "plantX": 0.0007,
         "plantY": -0.4338,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -161,6 +181,7 @@
       },
       "3": {
         "plantScale": 0.4817,
+        "plantX": 0.0005,
         "plantY": -0.3482,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -168,20 +189,23 @@
       },
       "4": {
         "plantScale": 0.6256,
+        "plantX": 0.0021,
         "plantY": -0.2143,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0
       },
       "5": {
-        "plantScale": 0.6843,
-        "plantY": -0.1124,
+        "plantScale": 0.9166,
+        "plantX": 0.0028,
+        "plantY": -0.0251,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0
       },
       "6": {
-        "plantScale": 1.2578,
+        "plantScale": 1.4715,
+        "plantX": 0.0046,
         "plantY": -0.1646,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -190,7 +214,8 @@
     },
     "renaissance-smile-bloom": {
       "1": {
-        "plantScale": 0.1754,
+        "plantScale": 0.1503,
+        "plantX": 0.0005,
         "plantY": -0.3728,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -198,7 +223,8 @@
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.3597,
+        "plantScale": 0.3031,
+        "plantX": 0.0003,
         "plantY": -0.3479,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -206,7 +232,8 @@
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.584,
+        "plantScale": 0.5235,
+        "plantX": 0.0004,
         "plantY": -0.2593,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -215,32 +242,36 @@
       },
       "4": {
         "plantScale": 0.7295,
+        "plantX": 0.0017,
         "plantY": -0.1501,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.7
       },
       "5": {
-        "plantScale": 0.956,
-        "plantY": -0.0331,
+        "plantScale": 1.1445,
+        "plantX": 0.0028,
+        "plantY": 0.1313,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.95
       },
       "6": {
-        "plantScale": 1.2074,
-        "plantY": 0.1732,
+        "plantScale": 1.4542,
+        "plantX": 0.0056,
+        "plantY": 0.3122,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 3.2
       }
     },
     "nocturne-sky-bloom": {
       "1": {
-        "plantScale": 0.1779,
+        "plantScale": 0.1525,
+        "plantX": 0.0004,
         "plantY": -0.3782,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -248,7 +279,8 @@
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.4598,
+        "plantScale": 0.3877,
+        "plantX": 0.0002,
         "plantY": -0.3557,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -256,7 +288,8 @@
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.5743,
+        "plantScale": 0.5147,
+        "plantX": 0.0004,
         "plantY": -0.2588,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -264,33 +297,37 @@
         "soilScale": 2.5
       },
       "4": {
-        "plantScale": 0.7014,
+        "plantScale": 0.7802,
+        "plantX": 0.0007,
         "plantY": -0.1543,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.7
       },
       "5": {
-        "plantScale": 0.9698,
-        "plantY": -0.0443,
+        "plantScale": 1.1637,
+        "plantX": 0.0021,
+        "plantY": 0.1224,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.95
       },
       "6": {
-        "plantScale": 1.2555,
-        "plantY": 0.1393,
+        "plantScale": 1.5035,
+        "plantX": 0.0037,
+        "plantY": 0.2751,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 3.2
       }
     },
     "golden-embrace-bloom": {
       "1": {
-        "plantScale": 0.1655,
+        "plantScale": 0.1475,
+        "plantX": 0.0006,
         "plantY": -0.3654,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -298,7 +335,8 @@
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.4417,
+        "plantScale": 0.3737,
+        "plantX": 0.0004,
         "plantY": -0.3287,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -306,7 +344,8 @@
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.5632,
+        "plantScale": 0.5069,
+        "plantX": 0.0003,
         "plantY": -0.2289,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -315,32 +354,36 @@
       },
       "4": {
         "plantScale": 0.7626,
+        "plantX": 0.0004,
         "plantY": -0.1353,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.7
       },
       "5": {
-        "plantScale": 0.9078,
-        "plantY": -0.0363,
+        "plantScale": 1.1742,
+        "plantX": 0.0017,
+        "plantY": 0.1164,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.95
       },
       "6": {
-        "plantScale": 1.1012,
-        "plantY": 0.0815,
+        "plantScale": 1.6982,
+        "plantX": 0.0038,
+        "plantY": 0.4533,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 3.2
       }
     },
     "monochrome-fracture-bloom": {
       "1": {
-        "plantScale": 0.1847,
+        "plantScale": 0.1637,
+        "plantX": 0.0001,
         "plantY": -0.4027,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -348,15 +391,17 @@
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.3669,
-        "plantY": -0.2837,
+        "plantScale": 0.3104,
+        "plantX": 0.0001,
+        "plantY": -0.3619,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.564,
+        "plantScale": 0.5076,
+        "plantX": 0.0003,
         "plantY": -0.2271,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -365,32 +410,36 @@
       },
       "4": {
         "plantScale": 0.7663,
+        "plantX": 0.0004,
         "plantY": -0.1606,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.7
       },
       "5": {
-        "plantScale": 0.9223,
-        "plantY": 0.013,
+        "plantScale": 1.1872,
+        "plantX": 0.0014,
+        "plantY": 0.1114,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.95
       },
       "6": {
-        "plantScale": 1.2199,
-        "plantY": 0.0579,
+        "plantScale": 1.7103,
+        "plantX": 0.0009,
+        "plantY": 0.3647,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 3.2
       }
     },
     "pearl-light-bloom": {
       "1": {
-        "plantScale": 0.171,
+        "plantScale": 0.1466,
+        "plantX": 0.0006,
         "plantY": -0.3819,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -398,7 +447,8 @@
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.5955,
+        "plantScale": 0.4999,
+        "plantX": 0.0005,
         "plantY": -0.3596,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -406,7 +456,8 @@
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.5594,
+        "plantScale": 0.5035,
+        "plantX": 0.0004,
         "plantY": -0.2286,
         "plantRotX": 0,
         "plantRotY": -1.57,
@@ -414,28 +465,31 @@
         "soilScale": 2.5
       },
       "4": {
-        "plantScale": 0.7141,
+        "plantScale": 0.7759,
+        "plantX": 0.001,
         "plantY": -0.0699,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.7
       },
       "5": {
-        "plantScale": 0.926,
-        "plantY": -0.0171,
+        "plantScale": 1.162,
+        "plantX": 0.0023,
+        "plantY": 0.1236,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 2.95
       },
       "6": {
-        "plantScale": 1.1086,
-        "plantY": 0.0872,
+        "plantScale": 1.6281,
+        "plantX": 0.0036,
+        "plantY": 0.4105,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
-        "soilScale": 2.5
+        "soilScale": 3.2
       }
     }
   }

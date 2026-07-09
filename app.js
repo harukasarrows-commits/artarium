@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-82";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260709-82";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-82";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260709-82";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-82";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-84";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260709-84";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-84";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260709-84";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-84";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260709-82";
+const ASSET_VERSION = "20260709-84";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -3277,7 +3277,8 @@ async function createPlantScene(container, runtime, token) {
       waterNdcY: waterSurface
         ? new THREE.Vector3(0, waterSurface.mesh.position.y, waterSurface.mesh.position.z).project(camera).y
         : null,
-      worldPerNdcY: Math.tan((camera.fov * Math.PI) / 360) * Math.max(0.1, camera.position.z - centerZ)
+      worldPerNdcY: Math.tan((camera.fov * Math.PI) / 360) * Math.max(0.1, camera.position.z - centerZ),
+      worldPerNdcX: Math.tan((camera.fov * Math.PI) / 360) * Math.max(0.1, camera.position.z - centerZ) * camera.aspect
     });
   }
   if (container.classList.contains("daily-artwork")) {
