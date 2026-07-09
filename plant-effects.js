@@ -9,6 +9,13 @@ export function setPlantWind(level) {
   windLevel = Math.max(0, Math.min(1, Number(level) || 0));
 }
 
+// 天気と連動する雨の強さ（0-1、app.js から更新）。露の演出に使う
+let rainLevel = 0;
+
+export function setPlantRain(level) {
+  rainLevel = Math.max(0, Math.min(1, Number(level) || 0));
+}
+
 // petal: 舞い散る花びらの色。その植物の「花」の色に合わせる（未指定ならパレット3色目）
 // shed: 開花後の「散り」演出のテーマ（2026-07-09 ユーザー選択の案1: 植物ごとに名画に合わせる）
 //   kind: rise(立ちのぼる) / vortex(渦を巻く) / droplet(滴る) / flutter(ひらひら落ちる) / floatfall(ふわふわ降りて溶ける)
@@ -755,6 +762,95 @@ function createShedSystem(THREE, theme, onLand, floorLocalY = -0.52, getSpawnAre
   return { group, update, dispose };
 }
 
+// 露: 雨の日、葉のあたりで雫がゆっくり膨らみ、こぼれて落ちる。
+// rainLevel（setPlantRain）が上がっている間だけ湧く
+function createDewSystem(THREE, onLand, floorLocalY = -0.52, getSpawnArea = null, onWater = true) {
+  const group = new THREE.Group();
+  const items = [];
+  const texture = getGlowTexture(THREE);
+  for (let i = 0; i < 6; i++) {
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      color: new THREE.Color(0xdfeef8),
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      depthTest: false,
+      blending: THREE.AdditiveBlending
+    });
+    const sprite = new THREE.Sprite(material);
+    sprite.visible = false;
+    sprite.renderOrder = 4;
+    group.add(sprite);
+    items.push({ mesh: sprite, active: false });
+  }
+
+  let nextSpawnAt = 2000;
+
+  const spawnOne = (nowMs) => {
+    const idle = items.find((item) => !item.active);
+    if (!idle) return;
+    const area = getSpawnArea ? getSpawnArea() : null;
+    const crown = area ? area.top : 0.33;
+    const half = area ? area.half : 0.35;
+    const front = area ? area.front : 0.25;
+    idle.active = true;
+    idle.bornAt = nowMs;
+    idle.swellMs = 1300 + Math.random() * 1200; // 膨らむ時間
+    idle.size = 0.05 + Math.random() * 0.025;
+    idle.fallSpeed = 0;
+    idle.landedAt = 0;
+    idle.mesh.visible = true;
+    idle.mesh.scale.set(0.001, 0.001, 1);
+    idle.mesh.position.set(
+      (Math.random() * 2 - 1) * half * 0.75,
+      floorLocalY + (crown - floorLocalY) * (0.35 + Math.random() * 0.5),
+      front * 0.9
+    );
+  };
+
+  const update = (t, nowMs) => {
+    if (rainLevel > 0.15 && nowMs >= nextSpawnAt) {
+      spawnOne(nowMs);
+      nextSpawnAt = nowMs + 1400 + Math.random() * 2200;
+    }
+    items.forEach((item) => {
+      if (!item.active) return;
+      const mesh = item.mesh;
+      const age = nowMs - item.bornAt;
+      if (age < item.swellMs) {
+        // 膨らむ: ゆっくり大きく・明るく
+        const k = age / item.swellMs;
+        const size = item.size * (0.25 + 0.75 * k);
+        mesh.scale.set(size * 0.75, size, 1);
+        mesh.material.opacity = 0.75 * k;
+        return;
+      }
+      // こぼれ落ちる（重力で加速）
+      item.fallSpeed += 0.00022;
+      mesh.position.y -= item.fallSpeed;
+      if (mesh.position.y <= floorLocalY) {
+        mesh.position.y = floorLocalY;
+        if (!item.landedAt) {
+          item.landedAt = nowMs;
+          if (onWater && onLand) onLand(mesh.position.x, mesh.position.z);
+        }
+        mesh.material.opacity = Math.max(0, 0.75 * (1 - (nowMs - item.landedAt) / 240));
+        if (nowMs - item.landedAt > 240) {
+          item.active = false;
+          mesh.visible = false;
+        }
+      }
+    });
+  };
+
+  const dispose = () => {
+    items.forEach((item) => item.mesh.material.dispose());
+  };
+
+  return { group, update, dispose };
+}
+
 function collectGlowMaterials(root) {
   const materials = [];
   root.traverse((child) => {
@@ -790,51 +886,60 @@ export function createPlantEffects(THREE, plantDefinition, plantRoot, anchor = {
     group.add(particleSystem.points);
   }
 
+  // 散り・露に共通の空間情報:
+  // 水面のワールド高さ（anchor.waterY）をグループ座標に直す。
+  // 陸（水面なし）の場合はカメラ側＝土の山の下り斜面側に落ちるので、
+  // 植物の根元よりだいぶ下（斜面の裾のあたり）まで落としてから消す
+  const onWater = Number.isFinite(anchor.waterY);
+  const floorLocalY = onWater ? anchor.waterY - group.position.y + 0.01 : -1.0;
+  // 花冠の上端と植物の横幅（グループ座標）。初回の使用時に実測して覚える
+  // （根元からの相対値で測るので、シーン側の配置ずれに影響されない）
+  let spawnArea = null;
+  const getSpawnArea = () => {
+    if (!spawnArea) {
+      const box = new THREE.Box3().setFromObject(plantRoot);
+      const rootWorld = plantRoot.getWorldPosition(new THREE.Vector3());
+      const height = box.max.y - rootWorld.y;
+      const halfWidth = (box.max.x - box.min.x) / 2;
+      const frontEdge = box.max.z - rootWorld.z;
+      spawnArea = {
+        top: Number.isFinite(height) ? height - 0.55 : 0.33,
+        // 花の幅より少し外側まで（風に流された分）広げる
+        half: Number.isFinite(halfWidth) ? Math.min(1.8, Math.max(0.55, halfWidth * 1.15)) : 0.55,
+        // 葉がどれだけ手前に伸びていても、必ずその外側（カメラ側）から落とす
+        front: Number.isFinite(frontEdge) ? Math.min(1.2, Math.max(0.25, frontEdge + 0.06)) : 0.25
+      };
+    }
+    return spawnArea;
+  };
+  const onLandCallback = (localX, localZ) => {
+    if (anchor.onPetalLand) {
+      anchor.onPetalLand(group.position.x + localX, group.position.z + localZ);
+    }
+  };
+
   // 花びらの舞い散り（開花済みのみ・色はその植物の花に合わせた指定色）
   let petalSystem = null;
   const petalColor = config.petal ?? plantDefinition?.palette?.[2];
   if (stage >= 6 && petalColor) {
-    // 水面のワールド高さ（anchor.waterY）をグループ座標に直す
-    // 陸（水面なし）の場合、花びらはカメラ側＝土の山の下り斜面側に落ちるので、
-    // 植物の根元よりだいぶ下（斜面の裾のあたり）まで落としてから消す
-    const onWater = Number.isFinite(anchor.waterY);
-    const floorLocalY = onWater ? anchor.waterY - group.position.y + 0.01 : -1.0;
-    // 花冠の上端と植物の横幅（グループ座標）。初回の散布時に実測して覚える
-    // （根元からの相対値で測るので、シーン側の配置ずれに影響されない）
-    let spawnArea = null;
-    const getSpawnArea = () => {
-      if (!spawnArea) {
-        const box = new THREE.Box3().setFromObject(plantRoot);
-        const rootWorld = plantRoot.getWorldPosition(new THREE.Vector3());
-        const height = box.max.y - rootWorld.y;
-        const halfWidth = (box.max.x - box.min.x) / 2;
-        const frontEdge = box.max.z - rootWorld.z;
-        spawnArea = {
-          top: Number.isFinite(height) ? height - 0.55 : 0.33,
-          // 花の幅より少し外側まで（風に流された分）広げる
-          half: Number.isFinite(halfWidth) ? Math.min(1.8, Math.max(0.55, halfWidth * 1.15)) : 0.55,
-          // 葉がどれだけ手前に伸びていても、必ずその外側（カメラ側）から落とす
-          front: Number.isFinite(frontEdge) ? Math.min(1.2, Math.max(0.25, frontEdge + 0.06)) : 0.25
-        };
-      }
-      return spawnArea;
-    };
     // 花のテクスチャからの色採取は重いので、初回の散布時に一度だけ行って使い回す
     let petalPalette = null;
     const getPetalColors = () => {
       if (!petalPalette) petalPalette = sampleFlowerColors(THREE, plantRoot, petalColor);
       return petalPalette;
     };
-    const onLandCallback = (localX, localZ) => {
-      if (anchor.onPetalLand) {
-        anchor.onPetalLand(group.position.x + localX, group.position.z + localZ);
-      }
-    };
     // 名画テーマの散り（案1）。テーマ未定義の植物は従来の花びら散りに戻る
     petalSystem = config.shed
       ? createShedSystem(THREE, config.shed, onLandCallback, floorLocalY, getSpawnArea, onWater)
       : createPetalSystem(THREE, petalColor, onLandCallback, floorLocalY, getSpawnArea, onWater, getPetalColors);
     group.add(petalSystem.group);
+  }
+
+  // 露: 雨の日（setPlantRain 連動）、葉先で雫が膨らんでこぼれ落ちる（芽以降）
+  let dewSystem = null;
+  if (stage >= 3) {
+    dewSystem = createDewSystem(THREE, onLandCallback, floorLocalY, getSpawnArea, onWater);
+    group.add(dewSystem.group);
   }
 
   // 発光（素材の emissive を脈動させる）
@@ -915,11 +1020,13 @@ export function createPlantEffects(THREE, plantDefinition, plantRoot, anchor = {
     }
     if (particleSystem) particleSystem.update(t + seed);
     if (petalSystem) petalSystem.update(t + seed, nowMs);
+    if (dewSystem) dewSystem.update(t + seed, nowMs);
   };
 
   const dispose = () => {
     if (particleSystem) particleSystem.dispose();
     if (petalSystem) petalSystem.dispose();
+    if (dewSystem) dewSystem.dispose();
   };
 
   return { group, update, dispose };

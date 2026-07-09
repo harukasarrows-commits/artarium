@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-88";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260709-88";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-88";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260709-88";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-88";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-89";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, launchSkyFireworks, triggerShootingStar } from "./sky-background.js?v=20260709-89";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-89";
+import { createPlantEffects, setPlantWind, setPlantRain, shedPetalsNow } from "./plant-effects.js?v=20260709-89";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-89";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260709-88";
+const ASSET_VERSION = "20260709-89";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -129,6 +129,7 @@ let lastRealWeather = null;
 // デモ版の確認用: 季節・光の道の強制値と、PC用マウス視差
 let debugSeasonKey = "";
 let debugGlintOverride = null;
+let debugHourOverride = null;
 let demoMouseParallax = false;
 
 function applyWeatherToScene(weather) {
@@ -137,6 +138,8 @@ function applyWeatherToScene(weather) {
   setRainSoundLevel(weather.rain);
   // 風の強さ: 雨・嵐で強く、雲が多い日も少し揺れる
   setPlantWind(Math.min(1, 0.2 + Math.max(weather.rain || 0, (weather.dark || 0) * 1.5) + (weather.cloud || 0) * 0.2));
+  // 雨の日は葉先に露が宿る
+  setPlantRain(weather.rain || 0);
 }
 
 function setDebugWeather(key) {
@@ -1192,6 +1195,12 @@ function bindEvents() {
       setSkySeasonOverride(debugSeasonKey || null);
       return;
     }
+    const hourSelect = event.target.closest("[data-demo-hour-select]");
+    if (hourSelect) {
+      debugHourOverride = hourSelect.value === "" ? null : Number(hourSelect.value);
+      setSkyHourOverride(debugHourOverride);
+      return;
+    }
     const glintSelect = event.target.closest("[data-demo-glint-select]");
     if (glintSelect) {
       debugGlintOverride = glintSelect.value === "" ? null : Number(glintSelect.value);
@@ -1215,6 +1224,16 @@ function bindEvents() {
     const bloomPreviewButton = event.target.closest("[data-demo-bloom-preview]");
     if (bloomPreviewButton) {
       playBloomCelebration(document.getElementById("home-active-artwork"));
+      return;
+    }
+    const fireworksButton = event.target.closest("[data-demo-fireworks]");
+    if (fireworksButton) {
+      launchSkyFireworks();
+      return;
+    }
+    const shootingStarButton = event.target.closest("[data-demo-shooting-star]");
+    if (shootingStarButton) {
+      triggerShootingStar();
       return;
     }
     const shedPetalsButton = event.target.closest("[data-demo-shed-petals]");
@@ -1947,6 +1966,8 @@ function playBloomCelebration(container) {
   container.classList.remove("is-bloom-pop");
   void container.offsetWidth; // アニメーションを再実行できるようリフロー
   container.classList.add("is-bloom-pop");
+  // 開花の見せ場: 空に祝いの花火が上がる
+  launchSkyFireworks();
 
   const burst = document.createElement("div");
   burst.className = "bloom-burst";
@@ -2315,6 +2336,15 @@ function renderDemoModelSettings() {
         </select>
       </label>
       <label class="demo-control demo-select-control">
+        <span>時間帯（デバッグ）</span>
+        <select data-demo-hour-select>
+          <option value="" ${debugHourOverride === null ? "selected" : ""}>実時間</option>
+          <option value="6" ${debugHourOverride === 6 ? "selected" : ""}>朝6時（朝靄）</option>
+          <option value="13" ${debugHourOverride === 13 ? "selected" : ""}>昼13時</option>
+          <option value="21" ${debugHourOverride === 21 ? "selected" : ""}>夜21時（蛍・流れ星）</option>
+        </select>
+      </label>
+      <label class="demo-control demo-select-control">
         <span>光の道（歩数達成度）</span>
         <select data-demo-glint-select>
           <option value="" ${debugGlintOverride === null ? "selected" : ""}>実際の歩数</option>
@@ -2328,6 +2358,8 @@ function renderDemoModelSettings() {
       <div class="demo-inline-actions">
         <button class="secondary-action" data-demo-reflection-auto type="button" ${selectedSoilType === "water-surface" ? "" : "disabled"}>反射を自動調整</button>
         <button class="secondary-action" data-demo-bloom-preview type="button">開花演出を再生</button>
+        <button class="secondary-action" data-demo-fireworks type="button">花火を打ち上げる</button>
+        <button class="secondary-action" data-demo-shooting-star type="button">流れ星を流す</button>
         <button class="secondary-action" data-demo-shed-petals type="button">花びらを散らす</button>
         <button class="secondary-action" data-demo-complete-plant type="button">この植物を完成させる</button>
         <button class="secondary-action" data-demo-parallax type="button">視差プレビュー: ${demoMouseParallax ? "オン" : "オフ"}</button>
@@ -2740,7 +2772,7 @@ async function rerenderModelViewer(viewer) {
   if (!viewer) return;
   delete viewer.dataset.ready;
   viewer.dataset.modelRenderToken = String(++modelRenderSerial);
-  viewer.querySelectorAll("canvas:not(.sky-canvas):not(.water-surface-canvas)").forEach((canvas) => canvas.remove());
+  viewer.querySelectorAll("canvas:not(.sky-canvas):not(.sky-fx-canvas):not(.water-surface-canvas)").forEach((canvas) => canvas.remove());
   const runtime = await loadThreeRuntime();
   viewer.dataset.ready = "true";
   if (!runtime || !viewer.dataset.plantModel) {
@@ -2817,7 +2849,7 @@ async function createGalleryScene(container, runtime, token) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  const oldCanvases = Array.from(container.querySelectorAll("canvas:not(.sky-canvas):not(.water-surface-canvas)"));
+  const oldCanvases = Array.from(container.querySelectorAll("canvas:not(.sky-canvas):not(.sky-fx-canvas):not(.water-surface-canvas)"));
   if (!isCurrentModelRender(container, token)) return;
   container.appendChild(renderer.domElement);
   container.classList.add("is-3d");
@@ -3144,7 +3176,7 @@ async function createPlantScene(container, runtime, token) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  const oldCanvases = Array.from(container.querySelectorAll("canvas:not(.sky-canvas):not(.water-surface-canvas)"));
+  const oldCanvases = Array.from(container.querySelectorAll("canvas:not(.sky-canvas):not(.sky-fx-canvas):not(.water-surface-canvas)"));
   if (!isCurrentModelRender(container, token)) return;
   container.appendChild(renderer.domElement);
   container.classList.add("is-3d");
@@ -3292,7 +3324,7 @@ function renderModelFallback(container, token) {
   const plant = state.plants.find((item) => item.id === container.dataset.plantId);
   container.classList.remove("is-3d");
   container.removeAttribute("data-ready");
-  container.querySelectorAll("canvas:not(.sky-canvas):not(.water-surface-canvas)").forEach((canvas) => canvas.remove());
+  container.querySelectorAll("canvas:not(.sky-canvas):not(.sky-fx-canvas):not(.water-surface-canvas)").forEach((canvas) => canvas.remove());
   container.innerHTML = `${plant ? environmentLayerMarkup(plant, { environmentType: container.dataset.environment }) : ""}${plantMarkup(stage)}`;
   if (container.classList.contains("daily-artwork")) {
     mountSkyBackground(container, { waterTint: skyWaterTint(plant) });
@@ -3586,10 +3618,25 @@ function createPetalLandHandler(waterSurface) {
   };
 }
 
+// タップした場所から光の輪がふわりと広がる（SHIZENの「音」の波紋を参考）
+function spawnTapGlowRing(sceneCanvas, clientX, clientY) {
+  const container = sceneCanvas.closest(".daily-artwork") || sceneCanvas.parentElement;
+  if (!container) return;
+  const rect = container.getBoundingClientRect();
+  const ring = document.createElement("i");
+  ring.className = "tap-glow-ring";
+  ring.style.left = `${clientX - rect.left}px`;
+  ring.style.top = `${clientY - rect.top}px`;
+  container.appendChild(ring);
+  ring.addEventListener("animationend", () => ring.remove());
+  window.setTimeout(() => ring.remove(), 1400); // 保険
+}
+
 // 水面のない（陸の）植物でも、タップで花びらがまとまって散る
 function attachPetalTapBurst(renderer) {
   let lastPetalBurstAt = 0;
-  renderer.domElement.addEventListener("pointerdown", () => {
+  renderer.domElement.addEventListener("pointerdown", (event) => {
+    spawnTapGlowRing(renderer.domElement, event.clientX, event.clientY);
     const now = performance.now();
     if (now - lastPetalBurstAt > 1500) {
       lastPetalBurstAt = now;
@@ -3603,6 +3650,7 @@ function attachWaterPointerRipples(THREE, renderer, camera, waterSurface) {
   const pointer = new THREE.Vector2();
   let lastPetalBurstAt = 0;
   renderer.domElement.addEventListener("pointerdown", (event) => {
+    spawnTapGlowRing(renderer.domElement, event.clientX, event.clientY);
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.set(
       ((event.clientX - rect.left) / rect.width) * 2 - 1,

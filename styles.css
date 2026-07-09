@@ -3473,3 +3473,33 @@ body.is-demo-mode .demo-control {
 .model-stage.is-3d.has-procedural-frame .fallback-frame {
   opacity: 0;
 }
+
+/* 空のFXレイヤー（花火・蛍・朝靄・流れ星）: 空の上・植物の下 */
+.daily-artwork .sky-fx-canvas {
+  z-index: 0;
+  border-radius: inherit;
+}
+
+/* タップした場所から広がる光の輪 */
+.tap-glow-ring {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(216, 188, 120, 0.85);
+  box-shadow: 0 0 14px rgba(216, 188, 120, 0.45), inset 0 0 8px rgba(216, 188, 120, 0.3);
+  pointer-events: none;
+  z-index: 5;
+  animation: tap-glow-ring 0.9s cubic-bezier(0.16, 0.6, 0.4, 1) forwards;
+}
+
+@keyframes tap-glow-ring {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  70% { opacity: 0.35; }
+  100% { transform: scale(9); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tap-glow-ring { animation-duration: 0.01s; opacity: 0; }
+}

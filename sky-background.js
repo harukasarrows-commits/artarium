@@ -255,8 +255,7 @@ let weatherState = { cloud: 0.28, rain: 0, snow: 0, fog: 0, dark: 0, thunder: 0 
 // 現在時刻の太陽（または月）の位置と色。3Dシーンの光源を空と一致させるために使う
 // sunPos: [x(0-1 左→右), y(0-1 地平線→天頂)]
 export function getSkySunState() {
-  const now = new Date();
-  const sky = skyAtHour(now.getHours() + now.getMinutes() / 60);
+  const sky = skyAtHour(currentHour());
   return { sunPos: sky.sunPos, sunColor: sky.sun };
 }
 
@@ -283,6 +282,33 @@ export function setSkyWeather(weather) {
   };
 }
 
+// デバッグ用: 時間帯を強制する（null で実時刻に戻る）。蛍・朝靄・流れ星の確認に使う
+let hourOverride = null;
+
+export function setSkyHourOverride(hour) {
+  hourOverride = Number.isFinite(Number(hour)) ? Math.max(0, Math.min(24, Number(hour))) : null;
+}
+
+function currentHour() {
+  if (hourOverride !== null) return hourOverride;
+  const now = new Date();
+  return now.getHours() + now.getMinutes() / 60;
+}
+
+// 開花の祝福などから花火を打ち上げる（マウント済みの空FXレイヤーが消費する）
+let fireworksRequestId = 0;
+
+export function launchSkyFireworks() {
+  fireworksRequestId++;
+}
+
+// デバッグ用: 流れ星を1本すぐに流す
+let shootingStarRequestId = 0;
+
+export function triggerShootingStar() {
+  shootingStarRequestId++;
+}
+
 export function mountSkyBackground(container, options = {}) {
   if (!container) return null;
   // フラグではなく実際のキャンバスの有無で判定する
@@ -290,6 +316,10 @@ export function mountSkyBackground(container, options = {}) {
   if (container.querySelector(":scope > .sky-canvas")) {
     const existing = mountedInstances.get(container);
     if (existing && options.waterTint) existing.setWaterTint(options.waterTint);
+    // FXキャンバスだけが掃除で消えていたら差し戻す
+    if (existing?.fxCanvas && !container.querySelector(":scope > .sky-fx-canvas")) {
+      existing.canvas.after(existing.fxCanvas);
+    }
     return existing || null;
   }
 
@@ -357,12 +387,206 @@ export function mountSkyBackground(container, options = {}) {
 
   let waterTint = options.waterTint || [0.63, 0.77, 0.8];
 
+  // ── 空のFXレイヤー（花火・蛍・朝靄・流れ星）──
+  // 空シェーダーの上・3D植物の下に重ねる2Dキャンバス。SHIZENの物理を踏襲:
+  // 花火=速度+重力+減衰の放物線、蛍=乱れ+減衰の漂いとsin^3の明滅
+  const fxCanvas = document.createElement("canvas");
+  fxCanvas.className = "sky-fx-canvas";
+  fxCanvas.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;";
+  const fx = fxCanvas.getContext("2d");
+  const fxState = {
+    lastTs: 0,
+    fireworks: [],
+    burstsQueued: [],
+    lastFireworksId: fireworksRequestId,
+    flies: Array.from({ length: 9 }, () => ({
+      x: Math.random(), y: 0.55 + Math.random() * 0.35, vx: 0, vy: 0, ph: Math.random() * 10
+    })),
+    fireflyLevel: 0,
+    mist: Array.from({ length: 3 }, (_, i) => ({
+      x: Math.random(), y: 0.64 + i * 0.04, speed: 0.006 + i * 0.004, w: 0.5 + Math.random() * 0.4
+    })),
+    star: null,
+    lastStarId: shootingStarRequestId
+  };
+
+  const spawnShootingStar = () => {
+    const W = fxCanvas.width;
+    const H = fxCanvas.height;
+    const angle = (25 + Math.random() * 18) * (Math.PI / 180);
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    const speed = W * (0.8 + Math.random() * 0.4);
+    return {
+      x: W * (dir > 0 ? 0.1 + Math.random() * 0.4 : 0.5 + Math.random() * 0.4),
+      y: H * (0.06 + Math.random() * 0.16),
+      vx: Math.cos(angle) * speed * dir,
+      vy: Math.sin(angle) * speed,
+      ttl: 0.8,
+      life: 0.8
+    };
+  };
+
+  const drawSkyFx = (nowMs, hour, starLevel) => {
+    const W = fxCanvas.width;
+    const H = fxCanvas.height;
+    const dt = Math.min(0.1, fxState.lastTs ? (nowMs - fxState.lastTs) / 1000 : 0.033);
+    fxState.lastTs = nowMs;
+    fx.clearRect(0, 0, W, H);
+    const raining = weatherState.rain > 0.05 || weatherState.snow > 0.05;
+
+    // 花火: 開花の祝福で3発、時間差で打ち上がる
+    if (fxState.lastFireworksId !== fireworksRequestId) {
+      fxState.lastFireworksId = fireworksRequestId;
+      for (let i = 0; i < 3; i++) fxState.burstsQueued.push(nowMs + i * 650 + Math.random() * 200);
+    }
+    for (let i = fxState.burstsQueued.length - 1; i >= 0; i--) {
+      if (nowMs >= fxState.burstsQueued[i]) {
+        fxState.burstsQueued.splice(i, 1);
+        const cx = W * (0.22 + Math.random() * 0.56);
+        const cy = H * (0.16 + Math.random() * 0.22);
+        const hue = [46, 42, 36, 350, 205][Math.random() * 5 | 0];
+        for (let k = 0; k < 64; k++) {
+          const a = Math.random() * Math.PI * 2;
+          const sp = (0.3 + Math.random() * 0.7) * H * 0.5;
+          fxState.fireworks.push({
+            x: cx, y: cy,
+            vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+            life: 1.1 + Math.random() * 0.5,
+            hue: hue + Math.random() * 14
+          });
+        }
+      }
+    }
+    if (fxState.fireworks.length) {
+      fx.globalCompositeOperation = "lighter";
+      fx.lineCap = "round";
+      for (let i = fxState.fireworks.length - 1; i >= 0; i--) {
+        const p = fxState.fireworks[i];
+        p.life -= dt;
+        if (p.life <= 0) {
+          fxState.fireworks.splice(i, 1);
+          continue;
+        }
+        const drag = Math.pow(0.985, dt * 60);
+        p.vx *= drag;
+        p.vy = p.vy * drag + H * 0.16 * dt; // 重力で放物線に
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        const alpha = Math.min(1, p.life);
+        // 尾を引く火花（速度方向の短い線 + 明るい芯）
+        fx.strokeStyle = `hsla(${p.hue},85%,62%,${(alpha * 0.6).toFixed(3)})`;
+        fx.lineWidth = Math.max(1.5, W / 230);
+        fx.beginPath();
+        fx.moveTo(p.x - p.vx * 0.05, p.y - p.vy * 0.05);
+        fx.lineTo(p.x, p.y);
+        fx.stroke();
+        fx.fillStyle = `hsla(${p.hue},90%,${62 + p.life * 22}%,${alpha.toFixed(3)})`;
+        fx.fillRect(p.x - 1.4, p.y - 1.4, 2.8, 2.8);
+      }
+      fx.globalCompositeOperation = "source-over";
+    }
+
+    // 蛍: 夜（星が見える・降っていない）に湖の上を明滅しながら飛ぶ
+    const fireflyTarget = starLevel > 0.25 && !raining ? 1 : 0;
+    fxState.fireflyLevel += (fireflyTarget - fxState.fireflyLevel) * Math.min(1, dt * 0.8);
+    if (fxState.fireflyLevel > 0.02) {
+      fx.globalCompositeOperation = "lighter";
+      fxState.flies.forEach((fly, i) => {
+        fly.vx += (Math.random() - 0.5) * 0.02;
+        fly.vy += (Math.random() - 0.5) * 0.015;
+        fly.vx *= 0.97;
+        fly.vy *= 0.97;
+        fly.x = (fly.x + fly.vx * dt + 1) % 1;
+        fly.y = Math.max(0.5, Math.min(0.93, fly.y + fly.vy * dt));
+        fly.ph += dt * (0.7 + (i % 5) * 0.14);
+        const glow = Math.pow(Math.max(Math.sin(fly.ph), 0), 3) * fxState.fireflyLevel;
+        if (glow < 0.02) return;
+        const x = fly.x * W;
+        const y = fly.y * H;
+        const r = (2 + glow * 6) * (W / 300);
+        const gr = fx.createRadialGradient(x, y, 0, x, y, r);
+        gr.addColorStop(0, `rgba(222,238,150,${(0.85 * glow).toFixed(3)})`);
+        gr.addColorStop(0.4, `rgba(184,222,116,${(0.25 * glow).toFixed(3)})`);
+        gr.addColorStop(1, "rgba(184,222,116,0)");
+        fx.fillStyle = gr;
+        fx.fillRect(x - r, y - r, r * 2, r * 2);
+      });
+      fx.globalCompositeOperation = "source-over";
+    }
+
+    // 朝靄: 明け方〜朝、地平線のあたりを横にゆっくり流れる（6時半ごろが濃さのピーク）
+    const mistLevel = Math.max(0, 1 - Math.abs(hour - 6.5) / 2.5);
+    if (mistLevel > 0.03 && weatherState.rain < 0.4) {
+      fxState.mist.forEach((band, i) => {
+        band.x = (band.x + band.speed * dt) % 1;
+        const cx = band.x * W * 1.4 - W * 0.2;
+        const cy = band.y * H;
+        const rx = W * band.w;
+        const gr = fx.createRadialGradient(cx, cy, 0, cx, cy, rx);
+        const alpha = 0.1 * mistLevel * (1 - i * 0.2);
+        gr.addColorStop(0, `rgba(232,238,240,${alpha.toFixed(3)})`);
+        gr.addColorStop(1, "rgba(232,238,240,0)");
+        fx.save();
+        fx.translate(cx, cy);
+        fx.scale(1, 0.07);
+        fx.translate(-cx, -cy);
+        fx.fillStyle = gr;
+        fx.fillRect(cx - rx, cy - rx, rx * 2, rx * 2);
+        fx.restore();
+      });
+    }
+
+    // 流れ星: 夜にまれに1本、尾を引いて流れる（デモボタンからも呼べる）
+    if (fxState.lastStarId !== shootingStarRequestId) {
+      fxState.lastStarId = shootingStarRequestId;
+      if (!fxState.star) fxState.star = spawnShootingStar();
+    }
+    const starGate = starLevel > 0.35 && !raining;
+    if (!fxState.star && starGate && Math.random() < dt / 28) {
+      fxState.star = spawnShootingStar();
+    }
+    if (fxState.star) {
+      const s = fxState.star;
+      s.life -= dt;
+      if (s.life <= 0) {
+        fxState.star = null;
+      } else {
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        const alpha = Math.min(1, s.life * 2.2) * Math.min(1, (s.ttl - s.life) * 6);
+        const tailX = s.x - s.vx * 0.22;
+        const tailY = s.y - s.vy * 0.22;
+        const gr = fx.createLinearGradient(tailX, tailY, s.x, s.y);
+        gr.addColorStop(0, "rgba(200,220,255,0)");
+        gr.addColorStop(1, `rgba(240,246,255,${(alpha * 0.9).toFixed(3)})`);
+        fx.strokeStyle = gr;
+        fx.lineWidth = Math.max(1.6, W / 320);
+        fx.lineCap = "round";
+        fx.beginPath();
+        fx.moveTo(tailX, tailY);
+        fx.lineTo(s.x, s.y);
+        fx.stroke();
+        // 先端の光
+        const headR = Math.max(2.5, W / 220);
+        const head = fx.createRadialGradient(s.x, s.y, 0, s.x, s.y, headR);
+        head.addColorStop(0, `rgba(255,255,255,${alpha.toFixed(3)})`);
+        head.addColorStop(1, "rgba(255,255,255,0)");
+        fx.fillStyle = head;
+        fx.fillRect(s.x - headR, s.y - headR, headR * 2, headR * 2);
+      }
+    }
+  };
+
   const resize = () => {
     const rect = container.getBoundingClientRect();
     // 雲は柔らかいので低解像度で描いて引き伸ばす（省電力）
     const scale = Math.min(window.devicePixelRatio || 1, 1.5) * 0.6;
     canvas.width = Math.max(2, Math.round(rect.width * scale));
     canvas.height = Math.max(2, Math.round(rect.height * scale));
+    // FXレイヤーは線の細さが命なので少し高めの解像度で
+    const fxScale = Math.min(window.devicePixelRatio || 1, 1.5) * 0.9;
+    fxCanvas.width = Math.max(2, Math.round(rect.width * fxScale));
+    fxCanvas.height = Math.max(2, Math.round(rect.height * fxScale));
   };
   resize();
   new ResizeObserver(resize).observe(container);
@@ -385,7 +609,8 @@ export function mountSkyBackground(container, options = {}) {
     if (container.getClientRects().length === 0 || frameCount % 2 === 0) return;
 
     const now = new Date();
-    const sky = skyAtHour(now.getHours() + now.getMinutes() / 60);
+    const hour = currentHour();
+    const sky = skyAtHour(hour);
     const season = getSeasonModifier(now.getMonth() + 1);
 
     gl.viewport(0, 0, canvas.width, canvas.height);
@@ -397,7 +622,8 @@ export function mountSkyBackground(container, options = {}) {
     gl.uniform3fv(u.cloud, sky.cloud);
     gl.uniform3fv(u.sunCol, sky.sun);
     gl.uniform2fv(u.sunPos, sky.sunPos);
-    gl.uniform1f(u.stars, sky.stars * season.starBoost * (1.0 - Math.min(1, weatherState.cloud)));
+    const starLevel = sky.stars * season.starBoost * (1.0 - Math.min(1, weatherState.cloud));
+    gl.uniform1f(u.stars, starLevel);
     gl.uniform3fv(u.water, waterTint);
     gl.uniform1f(u.cloudAmount, Math.max(0, Math.min(1, weatherState.cloud + season.cloudExtra)));
     gl.uniform1f(u.rain, weatherState.rain);
@@ -432,12 +658,17 @@ export function mountSkyBackground(container, options = {}) {
     gl.uniform1f(u.boltSeed, boltSeed);
     gl.uniform1f(u.boltX, boltX);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // 空の上に重ねるFX（花火・蛍・朝靄・流れ星）
+    drawSkyFx(performance.now(), hour, starLevel);
   };
 
   container.prepend(canvas);
+  canvas.after(fxCanvas);
   rafId = requestAnimationFrame(frame);
   const instance = {
     canvas,
+    fxCanvas,
     setWaterTint(tint) {
       if (Array.isArray(tint) && tint.length === 3) waterTint = tint;
     }
