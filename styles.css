@@ -3423,19 +3423,34 @@ body.is-demo-mode .demo-control {
 }
 
 
-/* ── 開花の祝福「静かな除幕」── */
+/* ── 開花の祝福「点灯式」── */
 
-/* ニスの艶: 植物のハイライトがひと呼吸だけ上がって戻る */
+/* 場内が静まる（is-hush: シーン全体が沈む）→ 一拍おいて、作品に照明が点く（is-lit: 植物だけ一段明るく） */
 .daily-artwork canvas {
-  transition: filter 0.6s ease;
+  transition: filter 1s ease;
 }
 
-.daily-artwork canvas.is-varnish-gloss {
-  filter: saturate(1.22) brightness(1.1);
+.daily-artwork.is-hush canvas {
+  filter: brightness(0.58) saturate(0.92);
 }
 
-/* スポットライト: 照明がゆっくり絞られ、作品にだけ光が当たる。
-   光の中心（--spot-x/--spot-y）はJSが花頭の実位置に合わせる。暗がりはタングステン照明の暖色 */
+.daily-artwork.is-lit canvas:not(.sky-canvas):not(.sky-fx-canvas):not(.water-surface-canvas) {
+  filter: brightness(1.15) saturate(1.12);
+}
+
+/* 点灯した光の中を舞う金色の塵（短命キャンバス） */
+.daily-artwork .bloom-dust-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* スポットライト: 作品にだけ光が当たる暖色の暗がり。
+   光の中心（--spot-x/--spot-y）はJSが花頭の実位置に合わせる */
 .spotlight-veil {
   position: absolute;
   inset: 0;
@@ -3449,7 +3464,7 @@ body.is-demo-mode .demo-control {
     rgba(19, 11, 5, 0.58) 100%
   );
   opacity: 0;
-  transition: opacity 2.4s ease;
+  transition: opacity 1.8s ease;
 }
 
 .spotlight-veil.is-on {
@@ -3457,7 +3472,8 @@ body.is-demo-mode .demo-control {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spotlight-veil {
+  .spotlight-veil,
+  .daily-artwork canvas {
     transition: none;
   }
 }

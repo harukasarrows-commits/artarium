@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-94";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, launchSkyFireworks, triggerShootingStar } from "./sky-background.js?v=20260709-94";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-94";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-94";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-94";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-95";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260709-95";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-95";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-95";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-95";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -1226,11 +1226,6 @@ function bindEvents() {
       playBloomCelebration(document.getElementById("home-active-artwork"));
       return;
     }
-    const fireworksButton = event.target.closest("[data-demo-fireworks]");
-    if (fireworksButton) {
-      launchSkyFireworks();
-      return;
-    }
     const shootingStarButton = event.target.closest("[data-demo-shooting-star]");
     if (shootingStarButton) {
       triggerShootingStar();
@@ -1976,16 +1971,74 @@ function spotlightCenterFor(container) {
   }
 }
 
-// 開花の祝福「静かな除幕」:
-// フラッシュも筆致も足さず、美術館の照明の変化だけで祝う。
-// 0秒: 散り・粒子が静まり、照明が2.4秒かけてゆっくり絞られる（光の中心は花頭の実位置、暖色の暗がり）
-// 2.6秒: 絞りきったスポットライトの中に完成プレート（CSS側の遅延）
-// 3.4秒: ニスの艶 — 植物のハイライトがひと呼吸だけ上がって戻る
-// 7秒: 照明がゆっくり戻り、散り演出が静かに再開
+// 点灯した光の中を、金色の塵がゆっくり舞い上がる（短命キャンバス、終わったら自分で消える）
+function playSpotlightDust(container, spot, durationMs = 6500) {
+  const rect = container.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const canvas = document.createElement("canvas");
+  canvas.className = "bloom-dust-canvas";
+  const scale = Math.min(window.devicePixelRatio || 1, 1.5);
+  canvas.width = Math.round(rect.width * scale);
+  canvas.height = Math.round(rect.height * scale);
+  const ctx = canvas.getContext("2d");
+  container.appendChild(canvas);
+  const W = canvas.width;
+  const H = canvas.height;
+  const cx = W * (spot ? parseFloat(spot.x) / 100 : 0.5);
+  const cy = H * (spot ? parseFloat(spot.y) / 100 : 0.52);
+  const motes = Array.from({ length: 14 }, () => ({
+    x: cx + (Math.random() - 0.5) * W * 0.36,
+    y: cy + H * (0.08 + Math.random() * 0.3),
+    r: 1.2 + Math.random() * 2.4,
+    vy: -(H * (0.008 + Math.random() * 0.014)) / 60,
+    sway: 6 + Math.random() * 14,
+    phase: Math.random() * Math.PI * 2,
+    tw: 0.6 + Math.random() * 0.8
+  }));
+
+  const start = performance.now();
+  const frame = (now) => {
+    const elapsed = now - start;
+    ctx.clearRect(0, 0, W, H);
+    if (elapsed > durationMs || !canvas.isConnected) {
+      canvas.remove();
+      return;
+    }
+    // ふわっと現れて、照明が戻るのに合わせてゆっくり消える
+    const env = Math.min(1, elapsed / 900) * Math.min(1, Math.max(0, (durationMs - elapsed) / 1400));
+    const t = elapsed / 1000;
+    ctx.globalCompositeOperation = "lighter";
+    motes.forEach((m) => {
+      m.y += m.vy;
+      const x = m.x + Math.sin(t * m.tw + m.phase) * m.sway;
+      const tw = Math.pow((Math.sin(t * 1.7 + m.phase) + 1) / 2, 3);
+      const a = (0.22 + 0.5 * tw) * env;
+      const glow = ctx.createRadialGradient(x, m.y, 0, x, m.y, m.r * 3);
+      glow.addColorStop(0, `rgba(240, 214, 150, ${a.toFixed(3)})`);
+      glow.addColorStop(1, "rgba(240, 214, 150, 0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(x - m.r * 3, m.y - m.r * 3, m.r * 6, m.r * 6);
+    });
+    ctx.globalCompositeOperation = "source-over";
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
+// 開花の祝福「点灯式」:
+// 山場は「暗くなる」ではなく「作品に照明が点く」瞬間。
+// 0秒: 場内が静まる — 散り・粒子が止み、シーン全体が薄暗く沈み、暖色の暗がりが縁に入る
+// 〜2秒: 一拍の静寂（溜め）
+// 2秒: 光が点く — 植物が普段より一段明るく艶やかに浮かび、光の中を金色の塵が舞い上がる
+// 2.6秒: 完成プレート（CSS側の遅延）
+// 8秒: 照明がゆっくり平常へ、散り演出が静かに再開
 function playBloomCelebration(container) {
   if (!container || !container.isConnected) return;
-  calmPlantEffects(9500);
+  calmPlantEffects(10500);
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  container.classList.remove("is-lit");
+  container.classList.add("is-hush");
   const veil = document.createElement("i");
   veil.className = "spotlight-veil";
   const spot = spotlightCenterFor(container);
@@ -1997,20 +2050,16 @@ function playBloomCelebration(container) {
   requestAnimationFrame(() => veil.classList.add("is-on"));
 
   window.setTimeout(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const sceneCanvas = container.querySelector(
-      "canvas:not(.sky-canvas):not(.sky-fx-canvas):not(.water-surface-canvas)"
-    );
-    if (sceneCanvas) {
-      sceneCanvas.classList.add("is-varnish-gloss");
-      window.setTimeout(() => sceneCanvas.classList.remove("is-varnish-gloss"), 700);
-    }
-  }, 3400);
+    container.classList.remove("is-hush");
+    container.classList.add("is-lit");
+    if (!reduceMotion) playSpotlightDust(container, spot);
+  }, 2000);
 
   window.setTimeout(() => {
+    container.classList.remove("is-lit");
     veil.classList.remove("is-on");
     window.setTimeout(() => veil.remove(), 2600);
-  }, 7000);
+  }, 8000);
 }
 
 function maybePlayBloomCelebration(container) {
@@ -2383,7 +2432,6 @@ function renderDemoModelSettings() {
       <div class="demo-inline-actions">
         <button class="secondary-action" data-demo-reflection-auto type="button" ${selectedSoilType === "water-surface" ? "" : "disabled"}>反射を自動調整</button>
         <button class="secondary-action" data-demo-bloom-preview type="button">開花演出を再生</button>
-        <button class="secondary-action" data-demo-fireworks type="button">花火を打ち上げる</button>
         <button class="secondary-action" data-demo-shooting-star type="button">流れ星を流す</button>
         <button class="secondary-action" data-demo-shed-petals type="button">花びらを散らす</button>
         <button class="secondary-action" data-demo-complete-plant type="button">この植物を完成させる</button>
