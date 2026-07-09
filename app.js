@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-85";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260709-85";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-85";
-import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260709-85";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-85";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-86";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride } from "./sky-background.js?v=20260709-86";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-86";
+import { createPlantEffects, setPlantWind, shedPetalsNow } from "./plant-effects.js?v=20260709-86";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-86";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260709-85";
+const ASSET_VERSION = "20260709-86";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";

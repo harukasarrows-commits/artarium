@@ -19,14 +19,14 @@ const PLANT_EFFECTS = {
   "scream-bloom": {
     warp: 1,
     petal: 0xe0b04e, // 金色の「叫び」の花
-    particles: { type: "orbit", color: 0xff8855, count: 22, size: 0.034 },
+    particles: { type: "orbit", color: 0xff8855, count: 30, size: 0.05 },
     shed: { kind: "vortex", shape: "shard", colors: [0xe8b558, 0xff8855, 0xc9622f] }
   },
   // ひまわり: 風にそよぐ + 光る花粉がふわっと舞い上がる
   "sunflower-bloom": {
     sway: 1,
     petal: 0xf0c435, // ひまわりの黄金色
-    particles: { type: "pollen", color: 0xffd77a, count: 26, size: 0.035 },
+    particles: { type: "pollen", color: 0xffd77a, count: 34, size: 0.05 },
     shed: { kind: "rise", shape: "mote", colors: [0xffd77a, 0xffe9ad, 0xf0c435], additive: true }
   },
   // 睡蓮(神奈川沖浪裏): 波のしぶきの雫が滴り、水面に波紋が立つ
@@ -34,7 +34,7 @@ const PLANT_EFFECTS = {
     bob: 1,
     sway: 0.35,
     petal: 0xa8bfe0, // 青い睡蓮（白い縁どり）の淡い青
-    particles: { type: "glimmer", color: 0xbfe6ec, count: 18, size: 0.03 },
+    particles: { type: "glimmer", color: 0xbfe6ec, count: 24, size: 0.044 },
     shed: { kind: "droplet", shape: "droplet", colors: [0xd8edf6, 0xaacfe0, 0xeef8fb] }
   },
   // 水の庭: 浮き沈み + 虹色の光の粒がゆっくり立ちのぼる
@@ -42,7 +42,7 @@ const PLANT_EFFECTS = {
     bob: 1,
     sway: 0.45,
     petal: 0xb9a7dd, // 藤色の花
-    particles: { type: "glimmer", color: 0xe8c8dc, count: 18, size: 0.03 },
+    particles: { type: "glimmer", color: 0xe8c8dc, count: 24, size: 0.044 },
     shed: { kind: "rise", shape: "mote", colors: [0xe8c8dc, 0xbfe6ec, 0xd9c7f0], additive: true, slow: true }
   },
   // ルネサンス肖像: 木漏れ日のような光斑がふわりと降りて溶ける
@@ -57,14 +57,14 @@ const PLANT_EFFECTS = {
     sway: 0.4,
     petal: 0x6d8cc9, // 星月夜の渦の青
     glow: { color: 0x3355aa, amp: 0.12, speed: 1.1 },
-    particles: { type: "orbit", color: 0xaac8ff, count: 30, size: 0.032 },
+    particles: { type: "orbit", color: 0xaac8ff, count: 40, size: 0.048 },
     shed: { kind: "floatfall", shape: "star", colors: [0xaac8ff, 0xe0ecff, 0x7d9fe8], additive: true, twinkle: true }
   },
   // 接吻(クリムト): 金箔の小片がきらめきながら舞い落ちる
   "golden-embrace-bloom": {
     sway: 0.3,
     petal: 0xd9b445, // マスタードがかった金
-    particles: { type: "sparkle", color: 0xffd75e, count: 24, size: 0.04 },
+    particles: { type: "sparkle", color: 0xffd75e, count: 32, size: 0.058 },
     shed: { kind: "flutter", shape: "foil", colors: [0xffd75e, 0xd9b445, 0xf6e6a8], glint: true }
   },
   // モノクロ: グリッチ + 墨のかけらが舞う
@@ -78,7 +78,7 @@ const PLANT_EFFECTS = {
     sway: 0.25,
     petal: 0xf0e6cf, // 真珠色
     glow: { color: 0xf6ecd8, amp: 0.1, speed: 0.8 },
-    particles: { type: "drift", color: 0xfff2cc, count: 10, size: 0.04 },
+    particles: { type: "drift", color: 0xfff2cc, count: 14, size: 0.055 },
     shed: { kind: "rise", shape: "bubble", colors: [0xfff4d8, 0xf6ecd8, 0xffefe2], additive: true, slow: true }
   }
 };
@@ -148,7 +148,7 @@ function createParticles(THREE, config, stage) {
     // またたき（種類によって速さを変える）
     const flickerSpeed = config.type === "sparkle" ? 2.6 : 0.9;
     const stageRatio = Math.min(1, stage / 6);
-    material.opacity = (0.45 + 0.4 * Math.abs(Math.sin(t * flickerSpeed))) * stageRatio;
+    material.opacity = (0.55 + 0.4 * Math.abs(Math.sin(t * flickerSpeed))) * stageRatio;
   };
 
   const dispose = () => {
@@ -411,18 +411,76 @@ function createPetalSystem(THREE, color, onLand, floorLocalY = -0.52, getSpawnAr
   return { group, update, dispose };
 }
 
-// テーマ散り用の形状。花びら以外の「粒・星・箔・かけら・雫・泡」
-function createShedGeometry(THREE, shape) {
-  if (shape === "foil") return new THREE.PlaneGeometry(0.048, 0.048);
-  if (shape === "shard") return new THREE.CircleGeometry(0.046, 3);
-  if (shape === "star") return new THREE.CircleGeometry(0.03, 4);
-  if (shape === "bubble") return new THREE.CircleGeometry(0.026, 14);
-  if (shape === "droplet") {
-    const geometry = new THREE.CircleGeometry(0.02, 8);
-    geometry.scale(0.7, 1.5, 1);
-    return geometry;
+// ---- テーマ散り用のスプライトテクスチャ（Canvasで生成、白で描いて色はマテリアルで着ける） ----
+
+// やわらかい光の玉（中心が明るく、縁へ溶ける）
+let glowTextureCache = null;
+function getGlowTexture(THREE) {
+  if (glowTextureCache) return glowTextureCache;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+  const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gradient.addColorStop(0, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.22, "rgba(255,255,255,0.9)");
+  gradient.addColorStop(0.55, "rgba(255,255,255,0.28)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 64, 64);
+  glowTextureCache = new THREE.CanvasTexture(canvas);
+  return glowTextureCache;
+}
+
+// 十字の光条つきの星（またたく星屑用）
+let starTextureCache = null;
+function getStarTexture(THREE) {
+  if (starTextureCache) return starTextureCache;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 96;
+  const ctx = canvas.getContext("2d");
+  const core = ctx.createRadialGradient(48, 48, 0, 48, 48, 18);
+  core.addColorStop(0, "rgba(255,255,255,1)");
+  core.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = core;
+  ctx.fillRect(0, 0, 96, 96);
+  ctx.globalCompositeOperation = "lighter";
+  for (const rotate of [0, Math.PI / 2]) {
+    ctx.save();
+    ctx.translate(48, 48);
+    ctx.rotate(rotate);
+    const flare = ctx.createLinearGradient(-46, 0, 46, 0);
+    flare.addColorStop(0, "rgba(255,255,255,0)");
+    flare.addColorStop(0.5, "rgba(255,255,255,0.95)");
+    flare.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = flare;
+    ctx.fillRect(-46, -2.4, 92, 4.8);
+    ctx.restore();
   }
-  return new THREE.CircleGeometry(0.02, 8); // mote
+  starTextureCache = new THREE.CanvasTexture(canvas);
+  return starTextureCache;
+}
+
+// 泡（縁が明るいリング＋左上のハイライト）
+let bubbleTextureCache = null;
+function getBubbleTexture(THREE) {
+  if (bubbleTextureCache) return bubbleTextureCache;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+  const ring = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  ring.addColorStop(0, "rgba(255,255,255,0.06)");
+  ring.addColorStop(0.68, "rgba(255,255,255,0.1)");
+  ring.addColorStop(0.85, "rgba(255,255,255,0.95)");
+  ring.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = ring;
+  ctx.fillRect(0, 0, 64, 64);
+  const highlight = ctx.createRadialGradient(22, 20, 0, 22, 20, 7);
+  highlight.addColorStop(0, "rgba(255,255,255,0.95)");
+  highlight.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = highlight;
+  ctx.fillRect(0, 0, 64, 64);
+  bubbleTextureCache = new THREE.CanvasTexture(canvas);
+  return bubbleTextureCache;
 }
 
 // 名画テーマの散り演出: 花びらの代わりに、植物ごとの kind/shape/colors で
@@ -431,28 +489,53 @@ function createShedGeometry(THREE, shape) {
 function createShedSystem(THREE, theme, onLand, floorLocalY = -0.52, getSpawnArea = null, onWater = true) {
   const group = new THREE.Group();
   const items = [];
-  const geometry = createShedGeometry(THREE, theme.shape);
   const palette = theme.colors.map((value) => new THREE.Color(value));
-  const baseOpacity = theme.additive ? 0.85 : 0.92;
-  for (let i = 0; i < 10; i++) {
-    const material = new THREE.MeshBasicMaterial({
-      color: palette[i % palette.length].clone(),
-      transparent: true,
-      opacity: 0,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-      depthTest: false, // 植物の形・大きさによらず、絶対に隠れない
-      blending: theme.additive ? THREE.AdditiveBlending : THREE.NormalBlending
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.visible = false;
-    mesh.renderOrder = 4; // 最後に描く = 常に手前に見える
-    mesh.scale.setScalar(0.8 + Math.random() * 0.5);
-    group.add(mesh);
-    items.push({ mesh, active: false, phase: Math.random() * Math.PI * 2 });
+  // 箔・かけらは「物」なのでメッシュ（通常合成）、光・星・泡・雫は発光スプライト（加算合成）
+  const isMeshShape = theme.shape === "foil" || theme.shape === "shard";
+  const geometry = isMeshShape
+    ? (theme.shape === "foil" ? new THREE.PlaneGeometry(0.055, 0.055) : new THREE.CircleGeometry(0.05, 3))
+    : null;
+  const texture = theme.shape === "star"
+    ? getStarTexture(THREE)
+    : theme.shape === "bubble"
+      ? getBubbleTexture(THREE)
+      : getGlowTexture(THREE);
+  const baseScale = { mote: 0.12, star: 0.17, bubble: 0.09, droplet: 0.08 }[theme.shape] ?? 0.12;
+  const baseOpacity = isMeshShape ? 0.92 : 0.95;
+  for (let i = 0; i < 32; i++) {
+    let node;
+    if (isMeshShape) {
+      const material = new THREE.MeshBasicMaterial({
+        color: palette[i % palette.length].clone(),
+        transparent: true,
+        opacity: 0,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        depthTest: false, // 植物の形・大きさによらず、絶対に隠れない
+        blending: THREE.NormalBlending
+      });
+      node = new THREE.Mesh(geometry, material);
+    } else {
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        color: palette[i % palette.length].clone(),
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        depthTest: false,
+        blending: THREE.AdditiveBlending
+      });
+      node = new THREE.Sprite(material);
+    }
+    node.visible = false;
+    node.renderOrder = 4; // 最後に描く = 常に手前に見える
+    group.add(node);
+    items.push({ mesh: node, active: false, phase: Math.random() * Math.PI * 2, size: baseScale });
   }
 
-  let nextSpawnAt = 2500 + Math.random() * 3500;
+  // 絶え間ない流れ（数百msごとに1-2粒）+ ときどきどっと舞う（フラリー）
+  let nextSpawnAt = 600;
+  let nextFlurryAt = 4000 + Math.random() * 5000;
   let lastShedId = petalShedRequestId;
 
   const spawnOne = (nowMs) => {
@@ -467,9 +550,18 @@ function createShedSystem(THREE, theme, onLand, floorLocalY = -0.52, getSpawnAre
     idle.bornAt = nowMs;
     idle.phase = Math.random() * Math.PI * 2;
     idle.spin = (Math.random() - 0.5) * 2.6;
+    idle.size = baseScale * (0.65 + Math.random() * 0.85);
     idle.mesh.visible = true;
-    idle.mesh.rotation.set(0, 0, 0);
     idle.mesh.material.color.copy(palette[Math.floor(Math.random() * palette.length)]);
+    if (isMeshShape) {
+      idle.mesh.rotation.set(0, 0, 0);
+      idle.mesh.scale.setScalar(0.8 + Math.random() * 0.6);
+    } else if (theme.shape === "droplet") {
+      idle.mesh.scale.set(idle.size * 0.6, idle.size * 1.35, 1);
+    } else {
+      idle.mesh.scale.set(idle.size, idle.size, 1);
+      idle.mesh.material.rotation = Math.random() * Math.PI;
+    }
     if (theme.kind === "rise") {
       // 花のまわりから立ちのぼる（花粉・泡・虹色の粒）
       idle.ttl = 2600 + Math.random() * 2200;
@@ -508,13 +600,21 @@ function createShedSystem(THREE, theme, onLand, floorLocalY = -0.52, getSpawnAre
   const update = (t, nowMs) => {
     if (lastShedId !== petalShedRequestId) {
       lastShedId = petalShedRequestId;
-      for (let i = 0; i < petalShedRequestCount; i++) spawnOne(nowMs);
-      nextSpawnAt = nowMs + 3000 + Math.random() * 4000;
+      // タップ演出: プールの大半を使ってどっと舞わせる
+      for (let i = 0; i < petalShedRequestCount * 6; i++) spawnOne(nowMs);
+      nextSpawnAt = nowMs + 1500 + Math.random() * 1500;
     }
     if (nowMs >= nextSpawnAt) {
-      const count = Math.random() < 0.4 ? 2 + (Math.random() < 0.3 ? 1 : 0) : 1;
+      spawnOne(nowMs);
+      if (Math.random() < 0.35) spawnOne(nowMs);
+      const base = theme.kind === "droplet" ? 900 : 450;
+      nextSpawnAt = nowMs + base + Math.random() * base * 1.2;
+    }
+    if (nowMs >= nextFlurryAt) {
+      // ときどき、ひとしきり舞う
+      const count = 6 + Math.floor(Math.random() * 4);
       for (let i = 0; i < count; i++) spawnOne(nowMs);
-      nextSpawnAt = nowMs + 3500 + Math.random() * 5000;
+      nextFlurryAt = nowMs + 9000 + Math.random() * 8000;
     }
     items.forEach((item) => {
       if (!item.active) return;
@@ -533,7 +633,8 @@ function createShedSystem(THREE, theme, onLand, floorLocalY = -0.52, getSpawnAre
         mesh.position.x += Math.sin(t * 1.3 + item.phase) * 0.0016;
         if (theme.shape === "bubble") {
           // 泡は浮かびながらわずかにふくらむ
-          mesh.scale.setScalar((0.8 + item.phase % 0.5) * (1 + age * 0.00006));
+          const grow = item.size * (1 + age * 0.00008);
+          mesh.scale.set(grow, grow, 1);
         }
       } else if (theme.kind === "vortex") {
         item.angle += 0.016 * item.angSpeed;
@@ -564,6 +665,10 @@ function createShedSystem(THREE, theme, onLand, floorLocalY = -0.52, getSpawnAre
         const floaty = theme.kind === "floatfall";
         mesh.position.y -= item.fallSpeed * (floaty ? 0.7 + 0.3 * Math.sin(t + item.phase) : 1);
         mesh.position.x += item.driftX + Math.sin(t * 2.0 + item.phase) * (floaty ? 0.0012 : 0.0026);
+        if (floaty && mesh.isSprite) {
+          // 星屑は光条ごとゆっくり回る
+          mesh.material.rotation += 0.003 * (item.spin > 0 ? 1 : -1);
+        }
         if (!floaty) {
           // 箔・かけらは面を翻しながら落ちる
           mesh.rotation.z = Math.sin(t * 1.7 + item.phase) * 1.3;
@@ -592,7 +697,7 @@ function createShedSystem(THREE, theme, onLand, floorLocalY = -0.52, getSpawnAre
   };
 
   const dispose = () => {
-    geometry.dispose();
+    if (geometry) geometry.dispose();
     items.forEach((item) => item.mesh.material.dispose());
   };
 
