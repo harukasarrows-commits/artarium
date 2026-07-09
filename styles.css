@@ -3497,7 +3497,17 @@ body.is-demo-mode .demo-control {
   to { transform: translateX(70%); }
 }
 
-/* スポットライト: 照明が絞られ、作品にだけ光が当たる */
+/* ニスの帯が植物の上を通る瞬間、絵のハイライトが一拍だけ上がる */
+.daily-artwork canvas {
+  transition: filter 0.4s ease;
+}
+
+.daily-artwork canvas.is-varnish-gloss {
+  filter: saturate(1.22) brightness(1.1);
+}
+
+/* スポットライト: 照明が絞られ、作品にだけ光が当たる。
+   光の中心（--spot-x/--spot-y）はJSが花頭の実位置に合わせる。暗がりはタングステン照明の暖色 */
 .spotlight-veil {
   position: absolute;
   inset: 0;
@@ -3505,10 +3515,10 @@ body.is-demo-mode .demo-control {
   pointer-events: none;
   border-radius: inherit;
   background: radial-gradient(
-    ellipse 64% 56% at 50% 52%,
+    ellipse 64% 56% at var(--spot-x, 50%) var(--spot-y, 52%),
     transparent 42%,
-    rgba(7, 9, 7, 0.18) 68%,
-    rgba(7, 9, 7, 0.55) 100%
+    rgba(24, 14, 6, 0.2) 68%,
+    rgba(19, 11, 5, 0.58) 100%
   );
   opacity: 0;
   transition: opacity 0.9s ease;
