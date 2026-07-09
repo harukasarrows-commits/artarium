@@ -296,9 +296,12 @@ function currentHour() {
 }
 
 // 開花の祝福などから花火を打ち上げる（マウント済みの空FXレイヤーが消費する）
+// hue: 色相を指定するとその植物の絵に合った色で開く（未指定はお祝いのランダム色）
 let fireworksRequestId = 0;
+let fireworksHue = null;
 
-export function launchSkyFireworks() {
+export function launchSkyFireworks(hue = null) {
+  fireworksHue = Number.isFinite(Number(hue)) ? Number(hue) : null;
   fireworksRequestId++;
 }
 
@@ -399,10 +402,6 @@ export function mountSkyBackground(container, options = {}) {
     fireworks: [],
     burstsQueued: [],
     lastFireworksId: fireworksRequestId,
-    flies: Array.from({ length: 9 }, () => ({
-      x: Math.random(), y: 0.55 + Math.random() * 0.35, vx: 0, vy: 0, ph: Math.random() * 10
-    })),
-    fireflyLevel: 0,
     mist: Array.from({ length: 3 }, (_, i) => ({
       x: Math.random(), y: 0.64 + i * 0.04, speed: 0.006 + i * 0.004, w: 0.5 + Math.random() * 0.4
     })),
@@ -444,7 +443,7 @@ export function mountSkyBackground(container, options = {}) {
         fxState.burstsQueued.splice(i, 1);
         const cx = W * (0.22 + Math.random() * 0.56);
         const cy = H * (0.16 + Math.random() * 0.22);
-        const hue = [46, 42, 36, 350, 205][Math.random() * 5 | 0];
+        const hue = fireworksHue ?? [46, 42, 36, 350, 205][Math.random() * 5 | 0];
         for (let k = 0; k < 64; k++) {
           const a = Math.random() * Math.PI * 2;
           const sp = (0.3 + Math.random() * 0.7) * H * 0.5;
@@ -483,34 +482,6 @@ export function mountSkyBackground(container, options = {}) {
         fx.fillStyle = `hsla(${p.hue},90%,${62 + p.life * 22}%,${alpha.toFixed(3)})`;
         fx.fillRect(p.x - 1.4, p.y - 1.4, 2.8, 2.8);
       }
-      fx.globalCompositeOperation = "source-over";
-    }
-
-    // 蛍: 夜（星が見える・降っていない）に湖の上を明滅しながら飛ぶ
-    const fireflyTarget = starLevel > 0.25 && !raining ? 1 : 0;
-    fxState.fireflyLevel += (fireflyTarget - fxState.fireflyLevel) * Math.min(1, dt * 0.8);
-    if (fxState.fireflyLevel > 0.02) {
-      fx.globalCompositeOperation = "lighter";
-      fxState.flies.forEach((fly, i) => {
-        fly.vx += (Math.random() - 0.5) * 0.02;
-        fly.vy += (Math.random() - 0.5) * 0.015;
-        fly.vx *= 0.97;
-        fly.vy *= 0.97;
-        fly.x = (fly.x + fly.vx * dt + 1) % 1;
-        fly.y = Math.max(0.5, Math.min(0.93, fly.y + fly.vy * dt));
-        fly.ph += dt * (0.7 + (i % 5) * 0.14);
-        const glow = Math.pow(Math.max(Math.sin(fly.ph), 0), 3) * fxState.fireflyLevel;
-        if (glow < 0.02) return;
-        const x = fly.x * W;
-        const y = fly.y * H;
-        const r = (2 + glow * 6) * (W / 300);
-        const gr = fx.createRadialGradient(x, y, 0, x, y, r);
-        gr.addColorStop(0, `rgba(222,238,150,${(0.85 * glow).toFixed(3)})`);
-        gr.addColorStop(0.4, `rgba(184,222,116,${(0.25 * glow).toFixed(3)})`);
-        gr.addColorStop(1, "rgba(184,222,116,0)");
-        fx.fillStyle = gr;
-        fx.fillRect(x - r, y - r, r * 2, r * 2);
-      });
       fx.globalCompositeOperation = "source-over";
     }
 

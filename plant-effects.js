@@ -16,6 +16,14 @@ export function setPlantRain(level) {
   rainLevel = Math.max(0, Math.min(1, Number(level) || 0));
 }
 
+// 開花の祝福などの「静寂」: この時刻まで新しい粒を湧かせず、環境粒子も暗くする。
+// 出ている粒は自然に消えるのに任せる（急に消すと不自然なため）
+let calmUntil = 0;
+
+export function calmPlantEffects(ms) {
+  calmUntil = performance.now() + Math.max(0, Number(ms) || 0);
+}
+
 // petal: 舞い散る花びらの色。その植物の「花」の色に合わせる（未指定ならパレット3色目）
 // shed: 開花後の「散り」演出のテーマ（2026-07-09 ユーザー選択の案1: 植物ごとに名画に合わせる）
 //   kind: rise(立ちのぼる) / vortex(渦を巻く) / droplet(滴る) / flutter(ひらひら落ちる) / floatfall(ふわふわ降りて溶ける)
@@ -117,7 +125,7 @@ function createParticles(THREE, config, stage) {
   const points = new THREE.Points(geometry, material);
   points.renderOrder = 3;
 
-  const update = (t) => {
+  const update = (t, dim = 1) => {
     const attr = geometry.getAttribute("position");
     for (let i = 0; i < count; i++) {
       const s = seeds[i];
@@ -156,7 +164,7 @@ function createParticles(THREE, config, stage) {
     // またたき（種類によって速さを変える）
     const flickerSpeed = config.type === "sparkle" ? 2.6 : 0.9;
     const stageRatio = Math.min(1, stage / 6);
-    material.opacity = (0.45 + 0.35 * Math.abs(Math.sin(t * flickerSpeed))) * stageRatio;
+    material.opacity = (0.45 + 0.35 * Math.abs(Math.sin(t * flickerSpeed))) * stageRatio * dim;
   };
 
   const dispose = () => {
@@ -647,19 +655,22 @@ function createShedSystem(THREE, theme, onLand, floorLocalY = -0.52, getSpawnAre
   };
 
   const update = (t, nowMs) => {
+    const isCalm = nowMs < calmUntil; // 開花の見せ場: 新しい粒を湧かせない
     if (lastShedId !== petalShedRequestId) {
       lastShedId = petalShedRequestId;
       // タップ演出: どっと舞わせる（見せ場なのでここだけ多め）
-      for (let i = 0; i < petalShedRequestCount * 4; i++) spawnOne(nowMs);
-      nextSpawnAt = nowMs + 1500 + Math.random() * 1500;
+      if (!isCalm) {
+        for (let i = 0; i < petalShedRequestCount * 4; i++) spawnOne(nowMs);
+        nextSpawnAt = nowMs + 1500 + Math.random() * 1500;
+      }
     }
-    if (nowMs >= nextSpawnAt) {
+    if (!isCalm && nowMs >= nextSpawnAt) {
       spawnOne(nowMs);
       if (Math.random() < 0.25) spawnOne(nowMs);
       const base = theme.kind === "droplet" ? 1100 : 650;
       nextSpawnAt = nowMs + base + Math.random() * base * 1.2;
     }
-    if (nowMs >= nextFlurryAt) {
+    if (!isCalm && nowMs >= nextFlurryAt) {
       // ときどき、ひとしきり舞う
       const count = 4 + Math.floor(Math.random() * 3);
       for (let i = 0; i < count; i++) spawnOne(nowMs);
@@ -810,7 +821,7 @@ function createDewSystem(THREE, onLand, floorLocalY = -0.52, getSpawnArea = null
   };
 
   const update = (t, nowMs) => {
-    if (rainLevel > 0.15 && nowMs >= nextSpawnAt) {
+    if (rainLevel > 0.15 && nowMs >= nextSpawnAt && nowMs >= calmUntil) {
       spawnOne(nowMs);
       nextSpawnAt = nowMs + 1400 + Math.random() * 2200;
     }
@@ -1018,7 +1029,8 @@ export function createPlantEffects(THREE, plantDefinition, plantRoot, anchor = {
         material.emissiveIntensity = pulse;
       });
     }
-    if (particleSystem) particleSystem.update(t + seed);
+    // 開花の見せ場の間は環境粒子を暗くして植物に視線を集める
+    if (particleSystem) particleSystem.update(t + seed, nowMs < calmUntil ? 0.25 : 1);
     if (petalSystem) petalSystem.update(t + seed, nowMs);
     if (dewSystem) dewSystem.update(t + seed, nowMs);
   };

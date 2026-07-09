@@ -446,25 +446,6 @@ body.is-viewing-mode {
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.7); }
 }
 
-.bloom-burst i {
-  position: absolute;
-  left: 50%;
-  top: 55%;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fff6da, rgba(244, 214, 138, 0.9) 60%, transparent);
-  box-shadow: 0 0 8px rgba(255, 236, 180, 0.9);
-  opacity: 0;
-  animation: bloom-fly 1.9s cubic-bezier(0.15, 0.6, 0.35, 1) forwards;
-  animation-delay: var(--delay, 0s);
-}
-
-@keyframes bloom-fly {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
-  15% { opacity: 1; }
-  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1); }
-}
 
 .water-environment .water-surface-canvas {
   position: absolute;
@@ -3480,26 +3461,3 @@ body.is-demo-mode .demo-control {
   border-radius: inherit;
 }
 
-/* タップした場所から広がる光の輪 */
-.tap-glow-ring {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  margin: -6px 0 0 -6px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(216, 188, 120, 0.85);
-  box-shadow: 0 0 14px rgba(216, 188, 120, 0.45), inset 0 0 8px rgba(216, 188, 120, 0.3);
-  pointer-events: none;
-  z-index: 5;
-  animation: tap-glow-ring 0.9s cubic-bezier(0.16, 0.6, 0.4, 1) forwards;
-}
-
-@keyframes tap-glow-ring {
-  0% { transform: scale(0.4); opacity: 0.9; }
-  70% { opacity: 0.35; }
-  100% { transform: scale(9); opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tap-glow-ring { animation-duration: 0.01s; opacity: 0; }
-}

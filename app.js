@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-89";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, launchSkyFireworks, triggerShootingStar } from "./sky-background.js?v=20260709-89";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-89";
-import { createPlantEffects, setPlantWind, setPlantRain, shedPetalsNow } from "./plant-effects.js?v=20260709-89";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-89";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-90";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, launchSkyFireworks, triggerShootingStar } from "./sky-background.js?v=20260709-90";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-90";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-90";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-90";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260709-89";
+const ASSET_VERSION = "20260709-90";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
@@ -1961,27 +1961,38 @@ function addGrowthFromSteps(steps) {
 }
 
 // 成長の節目の演出: 画面がふわっと明るくなり、金色の粒が舞う
+// 開花花火の色相: その植物の絵に合わせる（統一感を出す）
+const PLANT_FIREWORK_HUES = {
+  "scream-bloom": 30,
+  "sunflower-bloom": 48,
+  "water-lily-bloom": 205,
+  "aquatic-bloom": 300,
+  "renaissance-smile-bloom": 42,
+  "nocturne-sky-bloom": 222,
+  "golden-embrace-bloom": 45,
+  "monochrome-fracture-bloom": 210,
+  "pearl-light-bloom": 40
+};
+
+// 開花の祝福（時系列で見せる）:
+// 0秒: 散り・粒子を静めて、光のフラッシュ + 開花ポップ（植物が主役）
+// 1.2秒: 空に花火（視線が植物→空へ移る）
+// 2.6秒: 完成プレート（CSS側の遅延で表示）
+// 4秒〜: 散り演出が静かに再開
 function playBloomCelebration(container) {
   if (!container || !container.isConnected) return;
   container.classList.remove("is-bloom-pop");
   void container.offsetWidth; // アニメーションを再実行できるようリフロー
   container.classList.add("is-bloom-pop");
-  // 開花の見せ場: 空に祝いの花火が上がる
-  launchSkyFireworks();
+  calmPlantEffects(4000);
 
   const burst = document.createElement("div");
   burst.className = "bloom-burst";
   burst.setAttribute("aria-hidden", "true");
-  for (let i = 0; i < 18; i++) {
-    const particle = document.createElement("i");
-    const angle = (i / 18) * Math.PI * 2 + Math.random() * 0.3;
-    const distance = 90 + Math.random() * 130;
-    particle.style.setProperty("--dx", `${Math.cos(angle) * distance}px`);
-    particle.style.setProperty("--dy", `${Math.sin(angle) * distance * 0.8}px`);
-    particle.style.setProperty("--delay", `${(Math.random() * 0.25).toFixed(2)}s`);
-    burst.appendChild(particle);
-  }
   container.appendChild(burst);
+
+  const hue = PLANT_FIREWORK_HUES[container.dataset.plantId] ?? null;
+  window.setTimeout(() => launchSkyFireworks(hue), 1200);
   setTimeout(() => {
     burst.remove();
     container.classList.remove("is-bloom-pop");
@@ -3618,25 +3629,10 @@ function createPetalLandHandler(waterSurface) {
   };
 }
 
-// タップした場所から光の輪がふわりと広がる（SHIZENの「音」の波紋を参考）
-function spawnTapGlowRing(sceneCanvas, clientX, clientY) {
-  const container = sceneCanvas.closest(".daily-artwork") || sceneCanvas.parentElement;
-  if (!container) return;
-  const rect = container.getBoundingClientRect();
-  const ring = document.createElement("i");
-  ring.className = "tap-glow-ring";
-  ring.style.left = `${clientX - rect.left}px`;
-  ring.style.top = `${clientY - rect.top}px`;
-  container.appendChild(ring);
-  ring.addEventListener("animationend", () => ring.remove());
-  window.setTimeout(() => ring.remove(), 1400); // 保険
-}
-
 // 水面のない（陸の）植物でも、タップで花びらがまとまって散る
 function attachPetalTapBurst(renderer) {
   let lastPetalBurstAt = 0;
-  renderer.domElement.addEventListener("pointerdown", (event) => {
-    spawnTapGlowRing(renderer.domElement, event.clientX, event.clientY);
+  renderer.domElement.addEventListener("pointerdown", () => {
     const now = performance.now();
     if (now - lastPetalBurstAt > 1500) {
       lastPetalBurstAt = now;
@@ -3650,7 +3646,6 @@ function attachWaterPointerRipples(THREE, renderer, camera, waterSurface) {
   const pointer = new THREE.Vector2();
   let lastPetalBurstAt = 0;
   renderer.domElement.addEventListener("pointerdown", (event) => {
-    spawnTapGlowRing(renderer.domElement, event.clientX, event.clientY);
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.set(
       ((event.clientX - rect.left) / rect.width) * 2 - 1,
