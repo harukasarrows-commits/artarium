@@ -671,8 +671,11 @@ function createShedSystem(THREE, theme, onLand, floorLocalY = -0.52, getSpawnAre
       // 出現300ms・寿命の最後800msでなめらかに現れて消える
       let alpha = Math.min(1, age / 300) * Math.min(1, remain / 800);
       if (theme.kind === "rise") {
+        // 蛍の飛び方（SHIZEN参考）: 速度に微小な乱れ＋減衰でふらふらと生き物らしく
+        item.vx = (item.vx || 0) + (Math.random() - 0.5) * 0.0005;
+        item.vx *= 0.97;
         mesh.position.y += item.riseSpeed;
-        mesh.position.x += Math.sin(t * 1.3 + item.phase) * 0.0016;
+        mesh.position.x += item.vx + Math.sin(t * 1.3 + item.phase) * 0.0009;
         if (theme.shape === "bubble") {
           // 泡は浮かびながらわずかにふくらむ
           const grow = item.size * (1 + age * 0.00008);
@@ -736,8 +739,10 @@ function createShedSystem(THREE, theme, onLand, floorLocalY = -0.52, getSpawnAre
           }
         }
       }
-      if (theme.twinkle) alpha *= 0.72 + 0.28 * Math.sin(t * 3.2 + item.phase * 3);
-      if (theme.glint) alpha *= 0.7 + 0.3 * Math.sin(t * 4.5 + item.phase * 5);
+      // またたき: sinの3乗で「ほぼ静かに、一瞬だけ強く光る」（SHIZENの蛍参考）
+      if (theme.twinkle) alpha *= 0.4 + 0.6 * Math.pow(Math.max(Math.sin(t * 2.6 + item.phase * 3), 0), 3);
+      // 金箔の照り返し: 高次のべきで鋭いキャッチライトに
+      if (theme.glint) alpha *= 0.55 + 0.45 * Math.pow(Math.abs(Math.sin(t * 3.5 + item.phase * 5)), 4);
       mesh.material.opacity = baseOpacity * alpha;
     });
   };
