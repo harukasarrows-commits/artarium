@@ -1029,6 +1029,21 @@ body.is-viewing-mode {
   background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.34));
 }
 
+.gallery-wall[data-artwork-count="1"] {
+  grid-template-columns: 1fr;
+  place-items: start center;
+  padding-top: 48px;
+}
+
+.gallery-wall[data-artwork-count="1"] .shadow-box {
+  width: min(78%, 270px);
+}
+
+.gallery-wall[data-artwork-count="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
 .shadow-box {
   position: relative;
   z-index: 1;
@@ -1252,6 +1267,8 @@ body.is-viewing-mode {
   display: block;
   color: rgba(232, 221, 200, 0.55);
   font-size: 0.68rem;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: 0.1em;
   line-height: 1.45;
 }
 
@@ -2324,6 +2341,12 @@ body::after {
   text-align: center;
 }
 
+.choice-state {
+  color: var(--primary);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+}
+
 .frame-swatch,
 .backdrop-swatch {
   width: 42px;
@@ -2345,10 +2368,14 @@ body::after {
 }
 
 .frame-choice-confirm {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
   width: 100%;
   min-height: 52px;
   justify-content: center;
   margin-top: 4px;
+  box-shadow: 0 -14px 24px var(--canvas);
 }
 
 @keyframes bloom-ring {
@@ -3398,6 +3425,28 @@ body.is-demo-mode .demo-control {
   letter-spacing: 0.1em;
   backdrop-filter: blur(8px);
   cursor: pointer;
+}
+
+.next-artwork-button {
+  position: absolute;
+  left: 18px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+  z-index: 3;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1px solid var(--primary-soft);
+  border-radius: 999px;
+  color: var(--primary);
+  background: rgba(12, 18, 14, 0.72);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+.next-artwork-button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
 }
 
 

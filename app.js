@@ -212,6 +212,7 @@ const state = {
   selectedPlantId: "",
   currentView: "home",
   newlyCompletedPlantId: "",
+  newlyCollectedPlantId: "",
   frameChoicePlantId: "",
   galleryFocusPlantId: "",
   galleryFocusAngle: 0,
@@ -285,7 +286,7 @@ const fallbackPlants = [
     copy: {
       seedLabel: "陽だまりを重ねる種",
       homeCaption: "歩みの粒が、厚い筆あとを思わせる光の花になります。",
-      completionNote: "黄色い記憶が、静かな開花として収蔵されました。",
+      completionNote: "黄色い記憶が、静かな開花を迎えました。額装して、あなたのコレクションへ。",
       collectionTitle: "ひまわりの記憶",
       collectionLabel: "明るい黄色と筆あとをイメージした植物作品"
     },
@@ -934,7 +935,10 @@ function loadProgress(plants, saved) {
       displayed: saved[plant.id]?.displayed ?? false,
       frameType: saved[plant.id]?.frameType ?? plant.defaultFrameType ?? "walnut",
       backgroundType: saved[plant.id]?.backgroundType ?? plant.defaultBackgroundType ?? "nocturne",
-      stepRemainder: saved[plant.id]?.stepRemainder ?? 0
+      stepRemainder: saved[plant.id]?.stepRemainder ?? 0,
+      completedAt: saved[plant.id]?.completedAt ?? "",
+      collectedAt: saved[plant.id]?.collectedAt ?? "",
+      completionSteps: saved[plant.id]?.completionSteps ?? 0
     };
     return progress;
   }, {});
@@ -1124,6 +1128,11 @@ function bindEvents() {
   });
 
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && state.frameChoicePlantId) {
+      state.frameChoicePlantId = "";
+      renderFrameChoiceModal();
+      return;
+    }
     if (!state.galleryFocusPlantId) return;
     if (event.key === "Escape") {
       closeGalleryFocus();
@@ -1251,9 +1260,18 @@ function bindEvents() {
     const completePlantButton = event.target.closest("[data-demo-complete-plant]");
     if (completePlantButton) {
       const progress = state.progress[state.selectedPlantId];
+      if (progress && isPlantComplete(progress)) {
+        state.demoModelStage = MODEL_STAGE_COUNT;
+        state.pendingBloomCelebration = state.selectedPlantId;
+        render();
+        return;
+      }
       if (progress && !isPlantComplete(progress)) {
         progress.points = COMPLETION_THRESHOLD;
         progress.stepRemainder = 0;
+        markPlantCompleted(progress);
+        state.demoModelStage = MODEL_STAGE_COUNT;
+        state.pendingBloomCelebration = state.selectedPlantId;
         state.newlyCompletedPlantId = state.selectedPlantId;
         saveProgress();
         render();
@@ -1525,6 +1543,7 @@ function renderHome() {
   const selectedPlant = getSelectedPlant();
   const hero = document.querySelector(".daily-hero");
   hero.querySelector(".seed-confirm-bar")?.remove();
+  hero.querySelector(".next-artwork-button")?.remove();
   if (!selectedPlant && seedPreviewId) {
     const previewPlant = state.plants.find((plant) => plant.id === seedPreviewId);
     if (previewPlant) {
@@ -1535,9 +1554,15 @@ function renderHome() {
   }
   if (!selectedPlant) {
     const homeArtwork = document.getElementById("home-active-artwork");
+    const availablePlants = state.plants.filter((plant) => !state.progress[plant.id].displayed);
+    const hasCollectedPlants = availablePlants.length < state.plants.length;
     hero.classList.add("is-seed-choice");
-    document.getElementById("home-title").textContent = "最初の作品を選ぶ。";
-    document.getElementById("home-active-caption").textContent = "選んだ作品が開花するまで、ひとつの植物を育てます。";
+    document.getElementById("home-title").textContent = availablePlants.length
+      ? hasCollectedPlants ? "次の作品を選ぶ。" : "最初の作品を選ぶ。"
+      : "コレクション完成。";
+    document.getElementById("home-active-caption").textContent = availablePlants.length
+      ? "選んだ作品が開花するまで、ひとつの植物を育てます。"
+      : "育てたすべての作品が、コレクションに並びました。";
     homeArtwork.removeAttribute("style");
     homeArtwork.removeAttribute("data-stage");
     homeArtwork.removeAttribute("data-home-model-viewer");
@@ -1550,7 +1575,7 @@ function renderHome() {
     renderCompletionPlaque(null, false);
     homeArtwork.innerHTML = `
       <div class="seed-choice-list">
-        ${state.plants.map((plant) => `
+        ${availablePlants.map((plant) => `
           <button class="seed-choice" type="button" data-seed="${plant.id}" style="${paletteVars(plant)}">
             <span class="seed-art">${plantMarkup(1)}</span>
             <span class="seed-copy">
@@ -1558,7 +1583,7 @@ function renderHome() {
               <small>${plant.copy?.seedLabel ?? `${plant.motif} / ${plant.artist}`}</small>
             </span>
           </button>
-        `).join("")}
+        `).join("") || '<button class="secondary-action" type="button" data-view-complete-gallery>コレクションを見る</button>'}
       </div>
     `;
     document.querySelectorAll("[data-seed]").forEach((button) => {
@@ -1566,6 +1591,10 @@ function renderHome() {
         seedPreviewId = button.dataset.seed;
         render();
       });
+    });
+    homeArtwork.querySelector("[data-view-complete-gallery]")?.addEventListener("click", () => {
+      state.currentView = "gallery";
+      render();
     });
     document.getElementById("daily-progress-line")?.setAttribute("hidden", "");
     return;
@@ -1606,8 +1635,10 @@ function renderHome() {
   const STAGE_NAMES = ["", "種", "芽生え", "つぼみ", "ふくらむ蕾", "ほころび", "開花"];
   const todaySteps = state.steps?.todaySteps || 0;
   document.getElementById("home-title").textContent = selectedPlant.name;
-  document.getElementById("home-active-caption").textContent = selectedComplete
-    ? "作品が完成しました。額装してコレクションへ。"
+  document.getElementById("home-active-caption").textContent = selectedProgress.displayed
+    ? "あなたの作品として、コレクションに収蔵されています。"
+    : selectedComplete
+      ? "作品が完成しました。額装してコレクションへ。"
     : `${STAGE_NAMES[selectedStage] ?? ""} ・ 今日 ${todaySteps.toLocaleString()}歩 ・ 開花まで あと${(Math.max(0, COMPLETION_THRESHOLD - selectedProgress.points) * STEPS_PER_POINT).toLocaleString()}歩`;
   // タブバー直上の目標達成ライン（1日の目標に対する今日の歩数）
   const progressLine = document.getElementById("daily-progress-line");
@@ -1619,6 +1650,22 @@ function renderHome() {
   }
   if (!selectedComplete) maybeShowTapHint(homeArtwork);
   renderCompletionPlaque(selectedPlant, awaitingFrameChoice);
+  if (selectedProgress.displayed) mountNextArtworkButton(hero);
+}
+
+function mountNextArtworkButton(hero) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "next-artwork-button";
+  button.textContent = "次の作品を選ぶ";
+  button.addEventListener("click", () => {
+    state.selectedPlantId = "";
+    state.newlyCollectedPlantId = "";
+    seedPreviewId = null;
+    saveProgress();
+    render();
+  });
+  hero.appendChild(button);
 }
 
 function renderSeedPreview(hero, plant) {
@@ -1956,8 +2003,14 @@ function addGrowthFromSteps(steps) {
     state.pendingBloomCelebration = state.selectedPlantId;
   }
   if (!wasComplete && isPlantComplete(progress)) {
+    markPlantCompleted(progress);
     state.newlyCompletedPlantId = state.selectedPlantId;
   }
+}
+
+function markPlantCompleted(progress) {
+  if (!progress.completedAt) progress.completedAt = new Date().toISOString();
+  if (!progress.completionSteps) progress.completionSteps = progress.points * STEPS_PER_POINT;
 }
 
 // スポットライトの中心を花頭の画面位置（%）に合わせる。計測がなければ null（CSSの既定値に任せる）
@@ -2366,6 +2419,8 @@ function renderDemoModelSettings() {
     { key: "reflectionScale", label: "反射 サイズ", min: 0.2, max: 2, step: 0.01 }
   ];
   const selectedPlant = getSelectedPlant();
+  const selectedProgress = selectedPlant ? state.progress[selectedPlant.id] : null;
+  const selectedPlantComplete = selectedProgress ? isPlantComplete(selectedProgress) : false;
   const stageSettings = getModelSettings(state.demoModelSettings, selectedPlant?.id, state.demoModelStage);
   const selectedSoilType = selectedPlant ? getSoilTypeForPlant(selectedPlant, { preferDemo: true }) : "";
 
@@ -2452,7 +2507,11 @@ function renderDemoModelSettings() {
         <button class="secondary-action" data-demo-bloom-preview type="button">開花演出を再生</button>
         <button class="secondary-action" data-demo-shooting-star type="button">流れ星を流す</button>
         <button class="secondary-action" data-demo-shed-petals type="button">花びらを散らす</button>
-        <button class="secondary-action" data-demo-complete-plant type="button">この植物を完成させる</button>
+        <button class="secondary-action" data-demo-complete-plant type="button" ${!selectedPlant || (selectedPlantComplete && state.demoModelStage === MODEL_STAGE_COUNT) ? "disabled" : ""}>
+          ${selectedPlantComplete
+            ? state.demoModelStage === MODEL_STAGE_COUNT ? "この植物は完成済み" : "完成済みのStage6を表示"
+            : "この植物を完成させる"}
+        </button>
         <button class="secondary-action" data-demo-parallax type="button">視差プレビュー: ${demoMouseParallax ? "オン" : "オフ"}</button>
       </div>
       ${controls.map((control) => {
@@ -2495,7 +2554,9 @@ function resetArtariumProgress() {
   localStorage.removeItem(STORAGE_KEY);
   state.progress = loadProgress(state.plants, {});
   state.steps = loadStepState({});
-  state.selectedPlantId = state.plants[0]?.id ?? "";
+  state.selectedPlantId = "";
+  state.newlyCompletedPlantId = "";
+  state.newlyCollectedPlantId = "";
   state.currentView = "home";
   render();
 }
@@ -2519,8 +2580,11 @@ function confirmFrameChoice() {
   const progress = state.progress[plantId];
   if (!progress) return;
   progress.displayed = true;
+  progress.collectedAt = new Date().toISOString();
+  markPlantCompleted(progress);
   state.frameChoicePlantId = "";
   state.newlyCompletedPlantId = "";
+  state.newlyCollectedPlantId = plantId;
   state.currentView = "gallery";
   saveProgress();
   render();
@@ -2613,11 +2677,15 @@ function renderFrameChoiceModal() {
       class="choice-option ${type === frameType ? "is-active" : ""}"
       data-frame-choice="${type}"
       type="button"
+      aria-pressed="${type === frameType}"
     >
       <span class="frame-swatch" style="--frame:${FRAME_TYPES[type]?.material ?? "#5a3b25"}"></span>
       <strong>${FRAME_TYPES[type]?.label ?? type}</strong>
+      ${type === frameType ? '<span class="choice-state">選択中</span>' : ""}
     </button>
   `).join("");
+  const confirmButton = modal.querySelector("[data-frame-choice-confirm]");
+  if (confirmButton) confirmButton.textContent = `「${FRAME_TYPES[frameType]?.label ?? frameType}」で収蔵する`;
   initGalleryModelViewers();
 }
 
@@ -2688,16 +2756,33 @@ function getCollectionTitle(plant) {
 }
 
 function getArchiveLine(plant) {
-  return `${state.userName || "Artarium Artist"} / ${plant.year}`;
+  const progress = state.progress[plant.id];
+  const parts = [state.userName || "Artarium Artist"];
+  if (progress?.collectedAt) parts.push(`収蔵 ${formatArchiveDate(progress.collectedAt)}`);
+  if (parts.length === 1) parts.push(plant.year);
+  return parts.join(" / ");
+}
+
+function formatArchiveDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const month = new Intl.DateTimeFormat("en-US", { month: "short" }).format(date).toUpperCase();
+  return `${String(date.getDate()).padStart(2, "0")} ${month} ${date.getFullYear()}`;
 }
 
 function renderGallery() {
   const displayedPlants = state.plants.filter((plant) => state.progress[plant.id].displayed);
-  document.getElementById("gallery-summary").textContent = `作品 ${displayedPlants.length} / ${state.plants.length}`;
+  const galleryWall = document.getElementById("gallery-wall");
+  galleryWall.dataset.artworkCount = String(displayedPlants.length);
+  const newlyCollectedPlant = state.plants.find((plant) => plant.id === state.newlyCollectedPlantId);
+  const gallerySummary = document.getElementById("gallery-summary");
+  gallerySummary.textContent = newlyCollectedPlant
+    ? `「${getCollectionTitle(newlyCollectedPlant)}」を収蔵しました · 作品 ${displayedPlants.length} / ${state.plants.length}`
+    : `作品 ${displayedPlants.length} / ${state.plants.length}`;
+  gallerySummary.setAttribute("role", "status");
 
   if (!displayedPlants.length) {
-    const wall = document.getElementById("gallery-wall");
-    wall.innerHTML = `
+    galleryWall.innerHTML = `
       <div class="empty-gallery">
         <div class="empty-frame is-lit" aria-hidden="true">
           <span class="empty-frame-plate">最初の作品を<br>待っています</span>
@@ -2707,14 +2792,14 @@ function renderGallery() {
         <button class="secondary-action" type="button" data-empty-jump-home>育てにいく</button>
       </div>
     `;
-    wall.querySelector("[data-empty-jump-home]")?.addEventListener("click", () => {
+    galleryWall.querySelector("[data-empty-jump-home]")?.addEventListener("click", () => {
       state.currentView = "home";
       render();
     });
     return;
   }
 
-  document.getElementById("gallery-wall").innerHTML = displayedPlants.map((plant) => `
+  galleryWall.innerHTML = displayedPlants.map((plant) => `
     <article
       class="shadow-box"
       style="${paletteVars(plant)}${backdropVars("nocturne")}"
