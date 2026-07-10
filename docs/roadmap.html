@@ -64,14 +64,14 @@
 </ul>
 <h2 id="%E5%84%AA%E5%85%88%E5%BA%A6-%E9%AB%98">優先度 高</h2>
 <h3 id="0.-%E7%9B%A3%E6%9F%BB%E3%81%A7%E8%A6%8B%E3%81%A4%E3%81%8B%E3%81%A3%E3%81%9F%E6%B1%BA%E7%9D%80%E4%BA%8B%E9%A0%85%EF%BC%882026-07-10-%E8%BF%BD%E5%8A%A0%EF%BC%89">0. 監査で見つかった決着事項（2026-07-10 追加）</h3>
-<p>2026-07-10 のコード監査（<code>requirements.md</code> / <code>architecture.md</code> / <code>ux-review.md</code>）で見つかった、リリース前に決着すべき項目。</p>
+<p>2026-07-10 のコード監査（<code>requirements.md</code> / <code>architecture.md</code> / <code>ux-review.md</code>）で見つかった、リリース前に決着すべき項目。 <strong>→ 全件対応済み（2026-07-10）</strong></p>
 <ul>
-<li>到達不能な育成ビュー（grow-view）の廃止または導線追加（requirements.md G-1）</li>
-<li>PWAインストール導線の実装または捕捉コードの削除（requirements.md G-2）</li>
-<li><code>app.js</code> の <code>ASSET_VERSION</code> と <code>?v=</code> の版数不一致の解消（architecture.md A-1）</li>
-<li>名前入力モーダルの「あとで決める」導線の追加（ux-review.md U-2）</li>
-<li>UI/UXレビュー §4 のCSS/文言一括修正（タップ領域・文字サイズ・z-index等の8件）</li>
-<li>ホームに歩数の入口を作る方針決定（ux-review.md U-1。歩数取得方針とセットで）</li>
+<li>~~到達不能な育成ビュー（grow-view）の廃止または導線追加~~ → 廃止・削除で決着</li>
+<li>~~PWAインストール導線の実装または捕捉コードの削除~~ → 初回額装後に一度だけ提案するUIを実装</li>
+<li>~~<code>ASSET_VERSION</code> と <code>?v=</code> の版数不一致の解消~~ → 統一済み。以後の版数更新は sync-models.mjs 経由に一本化</li>
+<li>~~名前入力モーダルの「あとで決める」導線の追加~~ → 閉じるボタンとEscを追加</li>
+<li>~~UI/UXレビュー §4 のCSS/文言一括修正~~ → 8件すべて適用</li>
+<li>~~ホームに歩数の入口を作る方針決定~~ → 起動時自動同期＋歩数計の自動再開＋進捗ラインのタップ同期を実装</li>
 </ul>
 <h3 id="1.-%E6%A4%8D%E7%89%A9%E3%83%A2%E3%83%87%E3%83%AB%E3%81%AE%E6%95%B4%E5%82%99">1. 植物モデルの整備</h3>
 <p>目的: 各植物の Stage1 から Stage6 までを、見た目の成長が自然に分かるように整える。</p>
@@ -307,10 +307,8 @@
 <li>ユーザー名の作者欄反映と初回額装前の名前入力（設定からの変更UIは未実装）</li>
 </ul>
 <h2 id="%E6%AC%A1%E3%81%AB%E3%82%84%E3%82%8B%E5%80%99%E8%A3%9C">次にやる候補</h2>
-<p>直近で進めるなら、以下の順番がよい（2026-07-10 更新）。</p>
+<p>直近で進めるなら、以下の順番がよい（2026-07-10 更新。監査の決着事項と§4修正は対応済み）。</p>
 <ol>
-<li>監査の決着事項（優先度高 0.）を処理する</li>
-<li>UI/UXレビュー §4 のCSS/文言一括修正を行う</li>
 <li>額縁GLB残り2種（walnut / floating-maple）を用意してアプリに反映する</li>
 <li>10種目の植物候補を決めてモデルを用意する</li>
 <li>コレクション画面を美術館らしく磨く</li>

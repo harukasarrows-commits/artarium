@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Artarium">
     <title>Artarium - 名画の庭</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260710-08">
-    <link rel="icon" href="./icon.svg?v=20260710-08" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="./icon.svg?v=20260710-08">
-    <link rel="stylesheet" href="./styles.css?v=20260710-09">
+    <link rel="manifest" href="./manifest.webmanifest?v=20260710-03">
+    <link rel="icon" href="./icon.svg?v=20260710-03" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon.svg?v=20260710-03">
+    <link rel="stylesheet" href="./styles.css?v=20260710-03">
   </head>
   <body>
     <div class="app-shell">
@@ -37,7 +37,7 @@
                 <p id="home-active-caption"></p>
               </div>
               <div class="daily-artwork" id="home-active-artwork"></div>
-              <div class="daily-progress-line" id="daily-progress-line" hidden aria-hidden="false" role="img">
+              <div class="daily-progress-line" id="daily-progress-line" hidden role="button" tabindex="0">
                 <span id="daily-progress-fill"></span>
               </div>
               <div class="completion-plaque" id="completion-plaque" hidden>
@@ -50,62 +50,6 @@
               </div>
             </section>
             <section class="settings-group demo-settings home-demo-settings" id="demo-model-settings" hidden></section>
-          </div>
-        </section>
-
-        <section class="view" id="grow-view" aria-labelledby="grow-title">
-          <div class="workspace">
-            <aside class="plant-list" aria-label="植物一覧">
-              <p class="eyebrow">Atelier selection</p>
-              <h2 id="grow-title">展示準備中の作品</h2>
-              <div id="plant-selector"></div>
-            </aside>
-            <section class="grow-stage" aria-live="polite">
-              <div class="stage-card">
-                <div class="plant-scene" id="grow-scene"></div>
-                <div class="growth-info">
-                  <div class="work-label">
-                    <div>
-                      <p class="eyebrow" id="grow-motif"></p>
-                      <h2 id="grow-name"></h2>
-                    </div>
-                    <p id="grow-description"></p>
-                  </div>
-                  <div class="step-dashboard" aria-label="歩数と育成状況">
-                    <div>
-                      <span>今日の歩数</span>
-                      <strong id="today-steps-label">0歩</strong>
-                    </div>
-                    <div>
-                      <span>累計歩数</span>
-                      <strong id="total-steps-label">0歩</strong>
-                    </div>
-                    <div>
-                      <span>成長ポイント</span>
-                      <strong id="growth-points-label">0pt</strong>
-                    </div>
-                    <div>
-                      <span>現在ステージ</span>
-                      <strong id="current-stage-label">Stage 1</strong>
-                    </div>
-                  </div>
-                  <div class="stage-meter" aria-label="開花段階">
-                    <div class="stage-meter-fill" id="stage-meter-fill"></div>
-                  </div>
-                  <div class="stats-row">
-                    <span id="grow-stage-label"></span>
-                    <span id="grow-points-label"></span>
-                  </div>
-                  <p class="step-status" id="step-status-label"></p>
-                  <div class="action-row">
-                    <button class="secondary-action" id="test-step-button" type="button">水やり</button>
-                    <button class="secondary-action" id="motion-button" type="button">歩数計を開始</button>
-                    <button class="primary-action" id="step-sync-button" type="button">成長確認</button>
-                    <button class="secondary-action" id="display-button" type="button">鑑賞</button>
-                  </div>
-                </div>
-              </div>
-            </section>
           </div>
         </section>
 
@@ -239,6 +183,6 @@
       </form>
     </div>
 
-    <script src="./app.js?v=20260710-09" type="module"></script>
+    <script src="./app.js?v=20260710-03" type="module"></script>
   </body>
 </html>

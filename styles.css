@@ -154,9 +154,7 @@ h3 {
 
 .tab-button,
 .primary-action,
-.secondary-action,
-.plant-option,
-.mini-plant {
+.secondary-action {
   min-height: 44px;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -204,9 +202,7 @@ h3 {
   background: var(--canvas);
 }
 
-.secondary-action:active,
-.plant-option:active,
-.mini-plant:active {
+.secondary-action:active {
   background: var(--surface-soft);
 }
 
@@ -234,8 +230,6 @@ h3 {
 .intro-panel,
 .daily-hero,
 .today-panel,
-.plant-list,
-.stage-card,
 .codex-card,
 .empty-gallery {
   border: 1px solid var(--hairline);
@@ -636,9 +630,7 @@ body.is-viewing-mode {
 }
 
 .panel-heading,
-.section-head,
-.stats-row,
-.action-row {
+.section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -650,8 +642,7 @@ body.is-viewing-mode {
 }
 
 .panel-heading span,
-.section-head span,
-.stats-row {
+.section-head span {
   color: var(--muted);
   font-weight: 740;
 }
@@ -690,239 +681,6 @@ body.is-viewing-mode {
 
 .app-notice.is-subtle {
   background: transparent;
-}
-
-.mini-plant {
-  display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  gap: 3px 14px;
-  align-items: center;
-  min-height: 108px;
-  padding: 12px;
-  text-align: left;
-  color: var(--ink);
-  border-color: var(--hairline);
-  background: rgba(255, 255, 255, 0.035);
-}
-
-.mini-plant.is-selected {
-  border-color: var(--primary-soft);
-  background:
-    linear-gradient(90deg, rgba(194, 164, 94, 0.16), rgba(255, 255, 255, 0.035));
-  box-shadow: inset 3px 0 0 rgba(194, 164, 94, 0.78);
-}
-
-.mini-plant .plant-visual {
-  grid-row: 1 / 3;
-  width: 72px;
-  height: 72px;
-}
-
-.mini-plant span {
-  align-self: end;
-  font-weight: 790;
-}
-
-.mini-plant small {
-  align-self: start;
-  color: var(--muted);
-}
-
-.workspace {
-  display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  gap: 24px;
-  align-items: stretch;
-}
-
-.plant-list {
-  padding: 22px;
-  background: var(--surface-card);
-}
-
-.plant-list h2 {
-  margin-bottom: 22px;
-  font-size: 1.35rem;
-  line-height: 1.12;
-}
-
-.plant-option {
-  display: block;
-  width: 100%;
-  min-height: 74px;
-  margin-bottom: 10px;
-  padding: 14px;
-  text-align: left;
-  color: var(--ink);
-  border-color: var(--hairline);
-  background: var(--canvas);
-}
-
-.plant-option span,
-.plant-option small {
-  display: block;
-}
-
-.plant-option span {
-  font-weight: 500;
-}
-
-.plant-option small {
-  margin-top: 4px;
-  color: var(--muted);
-}
-
-.plant-option.is-selected {
-  border-color: var(--primary-soft);
-  background: rgba(194, 164, 94, 0.1);
-  box-shadow: inset 3px 0 0 rgba(194, 164, 94, 0.78);
-}
-
-.plant-option:disabled {
-  cursor: not-allowed;
-  opacity: 0.38;
-}
-
-.stage-card {
-  display: grid;
-  grid-template-rows: minmax(440px, 1fr) auto;
-  min-height: 720px;
-  overflow: hidden;
-  background: var(--surface-card);
-}
-
-.plant-scene {
-  position: relative;
-  display: grid;
-  place-items: center;
-  min-height: 520px;
-  overflow: hidden;
-  background: linear-gradient(180deg, var(--surface-dark-soft) 0%, var(--surface-dark) 68%);
-  box-shadow: none;
-}
-
-.plant-scene::before {
-  content: "";
-  position: absolute;
-  top: -22%;
-  left: 50%;
-  width: 46%;
-  height: 72%;
-  transform: translateX(-50%);
-  background: radial-gradient(ellipse at 50% 0, rgba(255, 238, 190, 0.22), transparent 70%);
-  pointer-events: none;
-}
-
-.plant-scene::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 9%;
-  width: min(46%, 400px);
-  height: 8%;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.58), transparent 68%);
-  pointer-events: none;
-}
-
-.plant-scene .plant-visual {
-  z-index: 1;
-  width: min(60%, 450px);
-  height: min(60%, 450px);
-  filter: drop-shadow(0 32px 28px rgba(0, 0, 0, 0.44));
-}
-
-.growth-info {
-  padding: clamp(20px, 3vw, 34px);
-  border-top: 1px solid var(--hairline);
-  background: var(--surface-card);
-}
-
-.work-label {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.8fr) minmax(260px, 1fr);
-  gap: 20px;
-  align-items: end;
-  margin-bottom: 18px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--hairline);
-}
-
-.work-label h2 {
-  margin-bottom: 0;
-  font-size: clamp(1.45rem, 2.6vw, 2.55rem);
-}
-
-.growth-info p:not(.eyebrow) {
-  margin-bottom: 0;
-  color: var(--muted);
-  line-height: 1.7;
-}
-
-.stage-meter {
-  height: 7px;
-  margin: 14px 0 12px;
-  overflow: hidden;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.stage-meter-fill {
-  height: 100%;
-  width: 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #45584f, var(--primary));
-  transition: width 220ms ease;
-}
-
-.step-dashboard {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin: 0 0 14px;
-}
-
-.step-dashboard div {
-  min-height: 76px;
-  padding: 12px;
-  border: 1px solid var(--hairline);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.035);
-}
-
-.step-dashboard span,
-.step-dashboard strong {
-  display: block;
-}
-
-.step-dashboard span {
-  margin-bottom: 7px;
-  color: var(--muted);
-  font-size: 0.77rem;
-  font-weight: 730;
-}
-
-.step-dashboard strong {
-  font-size: clamp(1.05rem, 2vw, 1.4rem);
-  line-height: 1.1;
-}
-
-.step-status {
-  margin: 14px 0 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-  font-weight: 650;
-  line-height: 1.55;
-}
-
-.action-row {
-  justify-content: flex-start;
-  margin-top: 20px;
-  padding-top: 18px;
-  border-top: 1px solid var(--hairline);
-  flex-wrap: wrap;
 }
 
 .section-head {
@@ -1625,10 +1383,9 @@ body.is-viewing-mode {
 
 @media (max-width: 860px) {
   .topbar,
-  .home-grid,
-  .daily-home,
-  .workspace,
-  .section-head {
+.home-grid,
+.daily-home,
+.section-head {
     grid-template-columns: 1fr;
   }
 
@@ -1653,18 +1410,9 @@ body.is-viewing-mode {
     min-height: auto;
   }
 
-  .stage-card {
-    min-height: auto;
-  }
-
-  .work-label,
   .artwork-plaque {
     grid-template-columns: 1fr;
     align-items: start;
-  }
-
-  .step-dashboard {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1685,35 +1433,8 @@ body.is-viewing-mode {
     padding-inline: 10px;
   }
 
-  .mini-plant {
-    grid-template-columns: 72px minmax(0, 1fr);
-  }
-
-  .mini-plant .plant-visual {
-    width: 64px;
-    height: 64px;
-  }
-
-  .plant-scene {
-    min-height: 360px;
-  }
-
-  .plant-scene .plant-visual {
-    width: min(76%, 300px);
-    height: min(76%, 300px);
-  }
-
   .intro-panel::after {
     display: none;
-  }
-
-  .stats-row {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .step-dashboard {
-    grid-template-columns: 1fr;
   }
 
   .gallery-wall {
@@ -1777,8 +1498,6 @@ body.is-viewing-mode {
 
   .home-grid,
   .daily-home,
-  .workspace,
-  .work-label,
   .artwork-plaque,
   .section-head {
     grid-template-columns: 1fr;
@@ -1851,71 +1570,9 @@ body.is-viewing-mode {
   }
 
   .today-panel,
-  .plant-list,
-  .stage-card,
   .codex-card,
   .empty-gallery {
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.42);
-  }
-
-  .plant-list {
-    padding: 16px;
-  }
-
-  #plant-selector {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(184px, 1fr);
-    gap: 10px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scroll-snap-type: x mandatory;
-  }
-
-  .plant-option {
-    min-height: 72px;
-    margin-bottom: 0;
-    scroll-snap-align: start;
-  }
-
-  .stage-card {
-    min-height: auto;
-    grid-template-rows: auto auto;
-  }
-
-  .plant-scene {
-    min-height: 420px;
-  }
-
-  .plant-scene .plant-visual {
-    width: min(78%, 330px);
-    height: min(78%, 330px);
-  }
-
-  .growth-info {
-    padding: 18px;
-  }
-
-  .work-label {
-    align-items: start;
-  }
-
-  .work-label h2 {
-    font-size: 1.65rem;
-  }
-
-  .step-dashboard {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .step-dashboard div {
-    min-height: 72px;
-  }
-
-  .action-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
   }
 
   .app-notice {
@@ -1967,10 +1624,8 @@ body.is-viewing-mode {
   }
 
   .home-grid,
-  .daily-home,
-  .workspace,
-  .work-label,
-  .section-head {
+.daily-home,
+.section-head {
     grid-template-columns: 1fr;
   }
 
@@ -1981,28 +1636,6 @@ body.is-viewing-mode {
     gap: 10px;
     overflow-x: auto;
     padding-bottom: 4px;
-  }
-
-  .plant-option {
-    margin-bottom: 0;
-  }
-
-  .stage-card {
-    min-height: auto;
-  }
-
-  .plant-scene {
-    min-height: 420px;
-  }
-
-  .step-dashboard {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .action-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
   }
 
   .app-notice {
@@ -2682,11 +2315,6 @@ body::after {
   background: var(--surface-card);
 }
 
-.mini-plant {
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-}
-
 .collection-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3106,8 +2734,6 @@ body.is-demo-mode .demo-control {
 .tab-button:focus-visible,
 .primary-action:focus-visible,
 .secondary-action:focus-visible,
-.plant-option:focus-visible,
-.mini-plant:focus-visible,
 .settings-row:focus-visible,
 .seed-choice:focus-visible,
 .viewing-mode-button:focus-visible,
@@ -3267,7 +2893,19 @@ body.is-demo-mode .demo-control {
   z-index: 2;
   border-radius: 999px;
   background: rgba(237, 234, 224, 0.16);
-  pointer-events: none;
+  cursor: pointer;
+}
+
+/* 2pxの線のままではタップできないので、不可視のヒット領域を上下に広げる */
+.daily-progress-line::after {
+  content: "";
+  position: absolute;
+  inset: -21px 0;
+}
+
+.daily-progress-line:focus-visible {
+  outline: 2px solid rgba(194, 164, 94, 0.75);
+  outline-offset: 6px;
 }
 
 .daily-progress-line span {
@@ -3277,6 +2915,54 @@ body.is-demo-mode .demo-control {
   border-radius: inherit;
   background: linear-gradient(90deg, var(--accent-teal), var(--primary));
   transition: width 0.8s ease;
+}
+
+.daily-progress-line.is-syncing span {
+  animation: progress-sync-pulse 0.9s ease;
+}
+
+@keyframes progress-sync-pulse {
+  0% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.85;
+  }
+}
+
+/* 初回額装後に一度だけ出すホーム画面追加の誘い */
+.install-invite {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+  transform: translateX(-50%);
+  z-index: 25;
+  display: grid;
+  gap: 12px;
+  width: min(92%, 360px);
+  padding: 18px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: rgba(17, 24, 19, 0.94);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.install-invite p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.install-invite-actions {
+  display: flex;
+  gap: 10px;
 }
 
 /* 初回だけの水面タップヒント */
@@ -3738,13 +3424,12 @@ body.is-demo-mode .demo-control {
   }
 
   .plant-visual,
-  .stage-meter-fill,
-  .recap-bar,
-  .model-loading span,
-  .daily-artwork.is-newly-complete::after,
-  .empty-frame.is-lit::before,
-  .tap-hint,
-  .completion-plaque {
+.recap-bar,
+.model-loading span,
+.daily-artwork.is-newly-complete::after,
+.empty-frame.is-lit::before,
+.tap-hint,
+.completion-plaque {
     animation: none;
     transition: none;
   }

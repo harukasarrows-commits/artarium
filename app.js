@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-02";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-02";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-02";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-02";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-02";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-03";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-03";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-03";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-03";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-03";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -56,8 +56,10 @@ const PRODUCTION_MODEL_STORAGE_KEY = "artarium-production-model-settings";
 const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
+const INSTALL_HINT_KEY = "artarium-install-hinted";
+const MOTION_AUTO_KEY = "artarium-motion-auto";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-02";
+const ASSET_VERSION = "20260710-03";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
@@ -652,6 +654,8 @@ async function init() {
   exposeStepBridge();
   exposeTuneBridge();
   render();
+  if (window.ArtariumStepBridge?.getTodaySteps) syncSmartphoneSteps();
+  resumeMotionCounterIfEnabled();
   observeWaterSurfaces();
   initWeatherSync((weather) => {
     lastRealWeather = weather;
@@ -1012,13 +1016,6 @@ function bindEvents() {
     });
   });
 
-  document.querySelectorAll("[data-jump]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.currentView = button.dataset.jump;
-      if (state.currentView === "gallery") state.newlyCompletedPlantId = "";
-      render();
-    });
-  });
 
   document.querySelector("[data-save-artwork]")?.addEventListener("click", () => {
     saveArtworkImage();
@@ -1042,21 +1039,20 @@ function bindEvents() {
     openFrameChoice(plant.id);
   });
 
-  document.getElementById("step-sync-button").addEventListener("click", () => {
-    syncSmartphoneSteps();
-  });
-
-  document.getElementById("motion-button").addEventListener("click", () => {
-    startMotionStepCounter();
-  });
-
-  document.getElementById("test-step-button").addEventListener("click", () => {
-    addStepsToSelectedPlant(10, "水やりとして10歩分の成長を記録しました");
-    rainBurst();
-  });
-
-  document.getElementById("display-button").addEventListener("click", () => {
-    openFrameChoice(state.selectedPlantId);
+  const progressLine = document.getElementById("daily-progress-line");
+  const syncStepsFromHome = () => {
+    if (!progressLine || progressLine.hidden) return;
+    progressLine.classList.remove("is-syncing");
+    void progressLine.offsetWidth;
+    progressLine.classList.add("is-syncing");
+    if (!state.steps.motionEnabled) startMotionStepCounter();
+    if (window.ArtariumStepBridge?.getTodaySteps) syncSmartphoneSteps();
+  };
+  progressLine?.addEventListener("click", syncStepsFromHome);
+  progressLine?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    syncStepsFromHome();
   });
 
   document.addEventListener("keydown", (event) => {
@@ -1473,7 +1469,6 @@ function bindAppLifecycleEvents() {
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
     deferredInstallPrompt = event;
-    renderInstallNotice();
   });
 
   window.addEventListener("online", renderNetworkStatus);
@@ -1509,11 +1504,8 @@ function render() {
   // 今日の歩数の達成度を湖の「光の道」の長さに反映する（デバッグの強制値が優先）
   setSkyStepProgress(debugGlintOverride ?? (state.steps?.todaySteps || 0) / DAILY_STEP_GOAL);
   renderTabs();
-  renderInstallNotice();
   renderNetworkStatus();
   renderHome();
-  renderPlantSelector();
-  renderGrowView();
   renderGallery();
   renderCodex();
   renderSettings();
@@ -1521,13 +1513,6 @@ function render() {
   renderGalleryFocusModal();
   initHomeModelViewer();
   initGalleryModelViewers();
-}
-
-function renderInstallNotice() {
-  const notice = document.getElementById("install-notice");
-  if (!notice) return;
-  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
-  notice.hidden = isStandalone || !deferredInstallPrompt;
 }
 
 function renderNetworkStatus() {
@@ -1657,7 +1642,7 @@ function renderHome() {
   const progressLine = document.getElementById("daily-progress-line");
   if (progressLine) {
     progressLine.hidden = false;
-    progressLine.setAttribute("aria-label", `今日の目標 ${DAILY_STEP_GOAL.toLocaleString()}歩 のうち ${todaySteps.toLocaleString()}歩`);
+    progressLine.setAttribute("aria-label", `今日の目標 ${DAILY_STEP_GOAL.toLocaleString()}歩 のうち ${todaySteps.toLocaleString()}歩。タップで歩数を同期します`);
     const fill = document.getElementById("daily-progress-fill");
     if (fill) fill.style.width = `${Math.round(Math.min(1, todaySteps / DAILY_STEP_GOAL) * 100)}%`;
   }
@@ -1864,75 +1849,14 @@ function renderCompletionPlaque(plant, shouldShow) {
   if (action) {
     const progress = state.progress[plant.id];
     action.textContent = progress?.displayed ? "コレクションを見る" : "額装を選ぶ";
-    action.dataset.jump = progress?.displayed ? "gallery" : "";
     action.dataset.frameChoiceOpen = progress?.displayed ? "" : plant.id;
   }
-}
-
-function renderPlantSelector() {
-  const locked = isActivePlantLocked();
-  document.getElementById("plant-selector").innerHTML = state.plants.map((plant) => {
-    const progress = state.progress[plant.id];
-    const stage = getStage(progress.points);
-    const isLocked = locked && plant.id !== state.selectedPlantId;
-    return `
-      <button class="plant-option ${plant.id === state.selectedPlantId ? "is-selected" : ""}" type="button" data-plant="${plant.id}" ${isLocked ? "disabled" : ""}>
-        <span>${plant.name}</span>
-        <small>${isLocked ? "現在の作品が開花するまで選択できません" : `開花段階 ${stage} / ${progress.points}pt`}</small>
-      </button>
-    `;
-  }).join("");
-
-  document.querySelectorAll("[data-plant]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.selectedPlantId = button.dataset.plant;
-      render();
-    });
-  });
-}
-
-function renderGrowView() {
-  const plant = getSelectedPlant();
-  if (!plant) {
-    state.currentView = "home";
-    return;
-  }
-
-  const progress = state.progress[plant.id];
-  const stage = getStage(progress.points);
-  const nextThreshold = getNextThreshold(stage);
-  const previousThreshold = STAGE_THRESHOLDS[stage - 1];
-  const stageProgress = isPlantComplete(progress) ? 100 : ((progress.points - previousThreshold) / (nextThreshold - previousThreshold)) * 100;
-
-  document.getElementById("grow-scene").style.cssText = paletteVars(plant);
-  document.getElementById("grow-scene").innerHTML = plantMarkup(stage);
-  document.getElementById("grow-motif").textContent = `${plant.motif} / ${plant.artist}, ${plant.year}`;
-  document.getElementById("grow-name").textContent = plant.name;
-  document.getElementById("grow-description").textContent = plant.temperament;
-  document.getElementById("stage-meter-fill").style.width = `${stageProgress}%`;
-  document.getElementById("grow-stage-label").textContent = isPlantComplete(progress)
-    ? `Stage ${stage}: ${plant.stageNames[stage - 1]} / 開花完了`
-    : `Stage ${stage}: ${plant.stageNames[stage - 1]}`;
-  document.getElementById("grow-points-label").textContent = isPlantComplete(progress) ? `${progress.points}pt / 完成` : `${progress.points}pt / 次 ${nextThreshold}pt`;
-  document.getElementById("today-steps-label").textContent = `${formatNumber(state.steps.todaySteps)}歩`;
-  document.getElementById("total-steps-label").textContent = `${formatNumber(state.steps.totalSteps)}歩`;
-  document.getElementById("growth-points-label").textContent = `${progress.points}pt`;
-  document.getElementById("current-stage-label").textContent = isPlantComplete(progress) ? "Stage 6 開花完了" : `Stage ${stage}`;
-  document.getElementById("step-status-label").textContent = state.steps.sourceStatus;
-
-  const displayButton = document.getElementById("display-button");
-  displayButton.disabled = !isPlantComplete(progress) || progress.displayed;
-  displayButton.textContent = progress.displayed ? "展示済み" : "額装を選ぶ";
-
-  document.getElementById("step-sync-button").disabled = isPlantComplete(progress);
-  document.getElementById("motion-button").disabled = isPlantComplete(progress) || state.steps.motionEnabled;
-  document.getElementById("test-step-button").disabled = isPlantComplete(progress);
 }
 
 async function syncSmartphoneSteps() {
   const bridge = window.ArtariumStepBridge;
   if (!bridge?.getTodaySteps) {
-    state.steps.sourceStatus = "スマホ歩数計ブリッジが未接続です。テストボタンで加算できます。";
+    state.steps.sourceStatus = "スマホ歩数計ブリッジが未接続です。ホームの進捗ラインか設定から歩数計を開始できます。";
     saveProgress();
     render();
     return;
@@ -1943,7 +1867,7 @@ async function syncSmartphoneSteps() {
     applyStepSnapshot(data, "スマホ歩数計から同期しました");
   } catch (error) {
     console.warn(error);
-    state.steps.sourceStatus = "歩数データを取得できませんでした。テストボタンで加算できます。";
+    state.steps.sourceStatus = "歩数データを取得できませんでした。しばらくして再度お試しください。";
     saveProgress();
     render();
   }
@@ -2200,7 +2124,7 @@ function bindDeviceTiltParallax() {
 
 async function startMotionStepCounter() {
   if (!window.DeviceMotionEvent) {
-    state.steps.sourceStatus = "この端末ではモーション歩数検知を利用できません。テストボタンで加算できます。";
+    state.steps.sourceStatus = "この端末ではモーション歩数検知を利用できません。";
     saveProgress();
     render();
     return;
@@ -2210,7 +2134,7 @@ async function startMotionStepCounter() {
     if (typeof DeviceMotionEvent.requestPermission === "function") {
       const permission = await DeviceMotionEvent.requestPermission();
       if (permission !== "granted") {
-        state.steps.sourceStatus = "モーション利用が許可されませんでした。テストボタンで加算できます。";
+        state.steps.sourceStatus = "モーション利用が許可されませんでした。端末の設定から許可できます。";
         saveProgress();
         render();
         return;
@@ -2219,14 +2143,27 @@ async function startMotionStepCounter() {
 
     window.addEventListener("devicemotion", handleDeviceMotion);
     state.steps.motionEnabled = true;
+    localStorage.setItem(MOTION_AUTO_KEY, "1");
     state.steps.sourceStatus = "簡易歩数計を開始しました。スマホを持って歩くと加算します。";
     saveProgress();
     render();
   } catch (error) {
     console.warn(error);
-    state.steps.sourceStatus = "歩数計を開始できませんでした。テストボタンで加算できます。";
+    state.steps.sourceStatus = "歩数計を開始できませんでした。しばらくして再度お試しください。";
     saveProgress();
     render();
+  }
+}
+
+// 一度許可された歩数計は次回起動時に自動で再開する。
+// iOSは権限リクエストにユーザー操作が必要なため、最初のタップまで待つ
+function resumeMotionCounterIfEnabled() {
+  if (!localStorage.getItem(MOTION_AUTO_KEY)) return;
+  if (!window.DeviceMotionEvent || state.steps.motionEnabled) return;
+  if (typeof DeviceMotionEvent.requestPermission === "function") {
+    window.addEventListener("pointerdown", () => startMotionStepCounter(), { once: true });
+  } else {
+    startMotionStepCounter();
   }
 }
 
@@ -2569,6 +2506,7 @@ function renderDemoModelSettings() {
 function resetArtariumProgress() {
   if (!confirm("Artariumの進行状況を初期化しますか？")) return;
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(MOTION_AUTO_KEY);
   state.progress = loadProgress(state.plants, {});
   state.steps = loadStepState({});
   state.selectedPlantId = "";
@@ -2611,6 +2549,43 @@ function confirmFrameChoice() {
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
     });
   });
+  // 収蔵演出が落ち着いてから、一度だけホーム画面追加を提案する
+  window.setTimeout(() => maybeOfferInstallInvite(), 2600);
+}
+
+function maybeOfferInstallInvite() {
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+  if (isStandalone || !deferredInstallPrompt) return;
+  if (localStorage.getItem(INSTALL_HINT_KEY)) return;
+  if (document.querySelector(".install-invite")) return;
+  const invite = document.createElement("div");
+  invite.className = "install-invite";
+  invite.innerHTML = `
+    <p class="eyebrow">Museum in your pocket — いつでも鑑賞</p>
+    <p>この庭を、ホーム画面に。開くだけで続きが育ちます。</p>
+    <div class="install-invite-actions">
+      <button class="primary-action" data-install-accept type="button">ホーム画面に追加</button>
+      <button class="secondary-action" data-install-later type="button">あとで</button>
+    </div>
+  `;
+  invite.querySelector("[data-install-accept]").addEventListener("click", async () => {
+    const prompt = deferredInstallPrompt;
+    dismissInstallInvite();
+    if (!prompt) return;
+    deferredInstallPrompt = null;
+    try {
+      await prompt.prompt();
+    } catch (error) {
+      console.warn(error);
+    }
+  });
+  invite.querySelector("[data-install-later]").addEventListener("click", () => dismissInstallInvite());
+  document.body.appendChild(invite);
+}
+
+function dismissInstallInvite() {
+  localStorage.setItem(INSTALL_HINT_KEY, "1");
+  document.querySelector(".install-invite")?.remove();
 }
 
 function openGalleryFocus(plantId) {

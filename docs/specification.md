@@ -251,12 +251,25 @@ Web版で対応する入力:
 - `window.Artarium.receiveStepData({ todaySteps, totalSteps })`
 - `window.ArtariumStepBridge.getTodaySteps()`
 - `DeviceMotionEvent` による簡易歩数検知
-- 開発用テスト加算
+- 開発用テスト加算（デモモードのみ）
+
+同期の導線（2026-07-10）:
+
+- 起動時にブリッジがあれば自動同期する
+- 一度開始した簡易歩数計は、次回起動時に自動で再開する（iOSは権限が必要なため最初のタップで再開）
+- ホームの進捗ライン（タブバー直上）をタップすると、同期と歩数計開始をその場で行える
+- 歩数まわりの操作は「ホームの進捗ライン」と「設定」の2箇所に集約する（旧 grow-view は廃止）
 
 スマホアプリ化後の想定:
 
 - iOS: HealthKit
 - Android: Health Connect
+
+## PWAインストール誘導
+
+- 初回の額装（コレクション収蔵）の約2.6秒後に、一度だけ「ホーム画面に追加」を控えめに提案する
+- 「あとで」を選ぶか一度提案したら、以後は表示しない（`artarium-install-hinted`）
+- `beforeinstallprompt` が使えるブラウザ（Android Chrome等）のみ。スタンドアロン起動中は出さない
 
 ## 環境演出
 
@@ -320,6 +333,8 @@ Web版で対応する入力:
 | `artarium-tap-hinted` | 水面タップヒントの既読 |
 | `artarium-weather-greet` | 天気挨拶の当日表示済み |
 | `artarium-recap-week` | 週間振り返りの表示済み週 |
+| `artarium-install-hinted` | ホーム画面追加の提案済み |
+| `artarium-motion-auto` | 簡易歩数計の自動再開 |
 
 ## 植物データ
 
@@ -594,4 +609,3 @@ Tripoなどで作成するGLBは軽量化を優先する。
 - スマホアプリ版への移行
 - クラウド保存、端末間同期
 - マネタイズ設計の具体化
-- 到達不能な育成ビュー（grow-view）の廃止判断と、PWAインストール導線の決着（`requirements.md` G-1 / G-2）
