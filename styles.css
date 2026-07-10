@@ -2477,6 +2477,14 @@ body::after {
   grid-template-rows: auto minmax(360px, 1fr);
 }
 
+.daily-hero.is-seed-preview {
+  grid-template-rows: minmax(500px, 1fr);
+}
+
+.daily-hero.is-seed-preview .daily-copy {
+  display: none;
+}
+
 .daily-hero.is-seed-preview .daily-artwork::before {
   content: "";
   position: absolute;
@@ -2527,6 +2535,10 @@ body::after {
   transition: opacity 220ms ease, transform 300ms ease;
 }
 
+.daily-hero.is-seed-preview .seed-specimen-label {
+  top: calc(env(safe-area-inset-top, 0px) + 28px);
+}
+
 .seed-specimen-label span {
   color: var(--primary);
   font-size: 0.62rem;
@@ -2548,12 +2560,13 @@ body::after {
 
 .daily-hero.is-planting-seed .seed-specimen-label {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(-8px);
 }
 
 .daily-hero.is-planting-seed .seed-confirm-bar {
   pointer-events: none;
-  opacity: 0.72;
+  opacity: 0;
+  transform: translateY(18px);
 }
 
 .daily-hero.is-seed-choice .daily-progress-card,
@@ -3312,6 +3325,7 @@ body.is-demo-mode .demo-control {
   display: grid;
   grid-template-columns: 1fr 1.4fr;
   gap: 10px;
+  transition: opacity 180ms ease, transform 240ms ease;
 }
 
 .seed-confirm-bar [data-seed-confirm] {

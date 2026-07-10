@@ -1724,6 +1724,8 @@ function renderSeedPreview(hero, plant) {
   bar.querySelector("[data-seed-confirm]").addEventListener("click", async () => {
     bar.querySelectorAll("button").forEach((button) => { button.disabled = true; });
     hero.classList.add("is-planting-seed");
+    // 操作UIを先に退場させてから、種だけに視線を集めて植え付ける。
+    await new Promise((resolve) => window.setTimeout(resolve, 240));
     if (homeArtwork.__artariumSeedPreview?.plant) {
       await homeArtwork.__artariumSeedPreview.plant();
     } else {
@@ -3307,7 +3309,15 @@ async function createGalleryScene(container, runtime, token) {
 
 function mountSeedSpecimenMotion(container, token, renderer, scene, camera, plantGroup, settings) {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const rotationStartedAt = performance.now();
+  const rotationDuration = 12000;
+  const restingRotation = {
+    x: plantGroup.rotation.x,
+    y: plantGroup.rotation.y,
+    z: plantGroup.rotation.z
+  };
   let plantingStart = 0;
+  let plantingOrigin = null;
   let plantingResolve = null;
 
   container.__artariumSeedPreview = {
@@ -3318,7 +3328,15 @@ function mountSeedSpecimenMotion(container, token, renderer, scene, camera, plan
         renderer.render(scene, camera);
         return Promise.resolve();
       }
-      if (!plantingStart) plantingStart = performance.now();
+      if (!plantingStart) {
+        plantingStart = performance.now();
+        plantingOrigin = {
+          y: plantGroup.position.y,
+          rotationX: plantGroup.rotation.x,
+          rotationY: plantGroup.rotation.y,
+          rotationZ: plantGroup.rotation.z
+        };
+      }
       return new Promise((resolve) => { plantingResolve = resolve; });
     }
   };
@@ -3330,10 +3348,12 @@ function mountSeedSpecimenMotion(container, token, renderer, scene, camera, plan
       const eased = progress < 0.5
         ? 4 * progress * progress * progress
         : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-      plantGroup.position.y = settings.previewY + (settings.plantedY - settings.previewY) * eased;
+      plantGroup.position.y = plantingOrigin.y + (settings.plantedY - plantingOrigin.y) * eased;
       const scale = 1 + (settings.plantedScale - 1) * eased;
       plantGroup.scale.setScalar(scale);
-      plantGroup.rotation.y *= 1 - eased;
+      plantGroup.rotation.x = plantingOrigin.rotationX + (restingRotation.x - plantingOrigin.rotationX) * eased;
+      plantGroup.rotation.y = plantingOrigin.rotationY + (restingRotation.y - plantingOrigin.rotationY) * eased;
+      plantGroup.rotation.z = plantingOrigin.rotationZ + (restingRotation.z - plantingOrigin.rotationZ) * eased;
       if (progress >= 1) {
         renderer.render(scene, camera);
         plantingResolve?.();
@@ -3341,7 +3361,11 @@ function mountSeedSpecimenMotion(container, token, renderer, scene, camera, plan
         return;
       }
     } else if (!reduceMotion) {
-      plantGroup.rotation.y = Math.sin(now / 1600) * 0.14;
+      const rotationProgress = ((now - rotationStartedAt) % rotationDuration) / rotationDuration;
+      plantGroup.position.y = settings.previewY;
+      plantGroup.rotation.x = restingRotation.x;
+      plantGroup.rotation.y = restingRotation.y + rotationProgress * Math.PI * 2;
+      plantGroup.rotation.z = restingRotation.z;
     }
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
@@ -3411,7 +3435,7 @@ async function createPlantScene(container, runtime, token) {
     ? {
         ...baseModelSettings,
         plantScale: baseModelSettings.plantScale * 2.4,
-        plantY: baseModelSettings.plantY + 0.68
+        plantY: baseModelSettings.plantY + 0.9
       }
     : baseModelSettings;
   const environmentType = container.dataset.environment || "soil";
