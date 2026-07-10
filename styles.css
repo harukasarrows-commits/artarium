@@ -157,7 +157,7 @@ h3 {
 .secondary-action,
 .plant-option,
 .mini-plant {
-  min-height: 40px;
+  min-height: 44px;
   border: 1px solid transparent;
   border-radius: 8px;
   cursor: pointer;
@@ -484,6 +484,28 @@ body.is-viewing-mode {
     radial-gradient(circle at 50% 50%, rgba(20, 20, 19, 0.14), transparent 24%),
     radial-gradient(circle at 50% 50%, rgba(194, 164, 94, 0.08), transparent 62%);
   box-shadow: 0 0 24px rgba(194, 164, 94, 0.08);
+  animation: loading-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes loading-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.94);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.model-loading small {
+  display: none;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
 }
 
 .daily-artwork.is-3d .model-loading,
@@ -663,7 +685,7 @@ body.is-viewing-mode {
 }
 
 .app-notice .secondary-action {
-  min-height: 38px;
+  min-height: 44px;
 }
 
 .app-notice.is-subtle {
@@ -1020,6 +1042,18 @@ body.is-viewing-mode {
   box-shadow: inset 0 48px 88px rgba(255, 255, 255, 0.025), inset 0 -70px 90px rgba(0, 0, 0, 0.34);
 }
 
+#gallery-view .section-head {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+#gallery-summary {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+}
+
 .gallery-wall::after {
   content: "";
   position: absolute;
@@ -1061,6 +1095,56 @@ body.is-viewing-mode {
 .shadow-box:focus-visible {
   transform: translateY(-3px);
   filter: brightness(1.08);
+}
+
+.shadow-box.is-new-arrival {
+  animation: collection-arrival 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.shadow-box.is-new-arrival .exhibit-light {
+  animation: collection-light-on 1.6s ease-out both;
+}
+
+@keyframes collection-arrival {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.97);
+    filter: brightness(0.55);
+  }
+  58% {
+    opacity: 1;
+    transform: translateY(0) scale(1.008);
+    filter: brightness(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes collection-light-on {
+  0%, 20% { opacity: 0; }
+  52% { opacity: 1; filter: blur(2px) brightness(1.45); }
+  100% { opacity: 1; filter: blur(2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shadow-box.is-new-arrival,
+  .shadow-box.is-new-arrival .exhibit-light {
+    animation: none;
+  }
+}
+
+/* 収蔵完了文が長くても展示室名を圧迫させない */
+#gallery-view .section-head {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+#gallery-summary {
+  justify-self: start;
 }
 
 .exhibit-light {
@@ -1266,7 +1350,7 @@ body.is-viewing-mode {
 .artwork-plaque small {
   display: block;
   color: rgba(232, 221, 200, 0.55);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-variant-numeric: lining-nums tabular-nums;
   letter-spacing: 0.1em;
   line-height: 1.45;
@@ -1275,7 +1359,7 @@ body.is-viewing-mode {
 .plaque-frame-label {
   margin-top: 8px;
   color: rgba(232, 221, 200, 0.5);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   line-height: 1.4;
 }
 
@@ -1316,7 +1400,7 @@ body.is-viewing-mode {
 
 .gallery-wall .artwork-plaque small,
 .gallery-wall .plaque-frame-label {
-  font-size: 0.62rem;
+  font-size: 0.72rem;
 }
 
 .gallery-focus-modal {
@@ -1738,7 +1822,7 @@ body.is-viewing-mode {
   }
 
   .daily-progress-card span {
-    font-size: 0.68rem;
+    font-size: 0.72rem;
   }
 
   .daily-progress-card strong {
@@ -2194,7 +2278,7 @@ body::after {
 .frame-choice-modal {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 40;
   display: grid;
   place-items: end center;
   padding: 18px;
@@ -2211,7 +2295,7 @@ body::after {
   display: grid;
   gap: 14px;
   width: min(100%, 430px);
-  max-height: calc(100vh - 36px);
+  max-height: calc(100dvh - 36px);
   overflow: auto;
   padding: clamp(24px, 5vw, 32px);
   border: 1px solid var(--hairline);
@@ -2343,7 +2427,7 @@ body::after {
 
 .choice-state {
   color: var(--primary);
-  font-size: 0.62rem;
+  font-size: 0.72rem;
   letter-spacing: 0.12em;
 }
 
@@ -2391,6 +2475,85 @@ body::after {
 
 .daily-hero.is-seed-choice {
   grid-template-rows: auto minmax(360px, 1fr);
+}
+
+.daily-hero.is-seed-preview .daily-artwork::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 19%;
+  z-index: 1;
+  width: min(58vw, 250px);
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(216, 188, 120, 0.18), rgba(194, 164, 94, 0.05) 42%, transparent 70%);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+.daily-hero.is-seed-preview .daily-artwork {
+  background:
+    radial-gradient(circle at 50% 58%, rgba(194, 164, 94, 0.12), transparent 28%),
+    linear-gradient(180deg, #18201a, #0c110d);
+  transition: filter 420ms ease, opacity 420ms ease;
+}
+
+.daily-hero.is-seed-preview .sky-canvas,
+.daily-hero.is-seed-preview .sky-fx-canvas,
+.daily-hero.is-seed-preview .water-surface-canvas {
+  opacity: 0.08;
+  transition: opacity 420ms ease;
+}
+
+.daily-hero.is-planting-seed .daily-artwork {
+  filter: brightness(0.58);
+}
+
+.seed-specimen-label {
+  position: absolute;
+  left: 20px;
+  top: calc(env(safe-area-inset-top, 0px) + 132px);
+  z-index: 3;
+  display: grid;
+  gap: 3px;
+  width: min(58%, 240px);
+  padding: 12px 14px;
+  border-left: 1px solid rgba(194, 164, 94, 0.72);
+  color: var(--ink);
+  background: linear-gradient(90deg, rgba(12, 18, 14, 0.72), transparent);
+  backdrop-filter: blur(5px);
+  pointer-events: none;
+  transition: opacity 220ms ease, transform 300ms ease;
+}
+
+.seed-specimen-label span {
+  color: var(--primary);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.seed-specimen-label strong {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+.seed-specimen-label small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.daily-hero.is-planting-seed .seed-specimen-label {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.daily-hero.is-planting-seed .seed-confirm-bar {
+  pointer-events: none;
+  opacity: 0.72;
 }
 
 .daily-hero.is-seed-choice .daily-progress-card,
@@ -3003,12 +3166,12 @@ body.is-demo-mode .demo-control {
 
 .daily-hero .daily-copy h2 {
   color: #edeae0;
-  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 1px 18px rgba(0, 0, 0, 0.55), 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 .daily-hero .daily-copy p:not(.eyebrow) {
-  color: rgba(237, 234, 224, 0.85);
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.3);
+  color: rgba(237, 234, 224, 0.9);
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.28);
 }
 
 /* 完成プレートと鑑賞ボタンはタブバーより上に浮かぶ */
@@ -3278,9 +3441,9 @@ body.is-demo-mode .demo-control {
 
 .codex-status {
   flex: none;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   letter-spacing: 0.12em;
-  color: var(--muted-soft);
+  color: var(--muted);
   border: 1px solid var(--hairline);
   border-radius: 999px;
   padding: 3px 10px;
@@ -3356,8 +3519,8 @@ body.is-demo-mode .demo-control {
 }
 
 .recap-day small {
-  color: var(--muted-soft);
-  font-size: 0.68rem;
+  color: var(--muted);
+  font-size: 0.72rem;
   letter-spacing: 0.1em;
 }
 
@@ -3559,4 +3722,30 @@ body.is-demo-mode .demo-control {
   .daily-artwork canvas {
     transition: none;
   }
+
+  .plant-visual,
+  .stage-meter-fill,
+  .recap-bar,
+  .model-loading span,
+  .daily-artwork.is-newly-complete::after,
+  .empty-frame.is-lit::before,
+  .tap-hint,
+  .completion-plaque {
+    animation: none;
+    transition: none;
+  }
+
+  .model-loading small {
+    display: block;
+  }
+}
+
+/* 長い作品名・作者名（最大24字）が狭幅セルで溢れないように */
+.choice-option strong,
+.seed-copy strong,
+.seed-copy small,
+.artwork-plaque h3,
+.artwork-plaque small,
+.completion-plaque h3 {
+  overflow-wrap: anywhere;
 }

@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260709-99";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260709-99";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260709-99";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260709-99";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260709-99";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-02";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-02";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-02";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-02";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-02";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -57,7 +57,7 @@ const DEMO_SOIL_STORAGE_KEY = "artarium-demo-soil-assignments";
 const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260709-91";
+const ASSET_VERSION = "20260710-02";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
@@ -1128,6 +1128,11 @@ function bindEvents() {
   });
 
   document.addEventListener("keydown", (event) => {
+    const nameEntryModal = document.getElementById("name-entry-modal");
+    if (event.key === "Escape" && nameEntryModal && !nameEntryModal.hidden) {
+      closeNameEntryModal();
+      return;
+    }
     if (event.key === "Escape" && state.frameChoicePlantId) {
       state.frameChoicePlantId = "";
       renderFrameChoiceModal();
@@ -1138,6 +1143,10 @@ function bindEvents() {
       closeGalleryFocus();
       return;
     }
+  });
+
+  document.querySelector("[data-name-entry-close]")?.addEventListener("click", () => {
+    closeNameEntryModal();
   });
 
   document.getElementById("name-entry-form")?.addEventListener("submit", (event) => {
@@ -1542,7 +1551,9 @@ let seedPreviewId = null;
 function renderHome() {
   const selectedPlant = getSelectedPlant();
   const hero = document.querySelector(".daily-hero");
+  hero.classList.remove("is-planting-seed");
   hero.querySelector(".seed-confirm-bar")?.remove();
+  hero.querySelector(".seed-specimen-label")?.remove();
   hero.querySelector(".next-artwork-button")?.remove();
   if (!selectedPlant && seedPreviewId) {
     const previewPlant = state.plants.find((plant) => plant.id === seedPreviewId);
@@ -1569,6 +1580,7 @@ function renderHome() {
     homeArtwork.removeAttribute("data-plant-model");
     homeArtwork.removeAttribute("data-soil-model");
     homeArtwork.removeAttribute("data-environment");
+    homeArtwork.removeAttribute("data-seed-preview");
     homeArtwork.removeAttribute("data-ready");
     homeArtwork.dataset.modelRenderToken = String(++modelRenderSerial);
     homeArtwork.classList.remove("is-3d", "is-water-environment", "is-bloom-complete", "is-newly-complete", "is-pearl-material");
@@ -1615,6 +1627,7 @@ function renderHome() {
   homeArtwork.dataset.plantModel = getPlantModelPath(selectedPlant, visualStage);
   homeArtwork.dataset.soilModel = getSoilModelPath(selectedPlant, { preferDemo: DEMO_MODE });
   homeArtwork.dataset.environment = getEnvironmentTypeForPlant(selectedPlant, { preferDemo: DEMO_MODE });
+  homeArtwork.removeAttribute("data-seed-preview");
   homeArtwork.removeAttribute("data-ready");
   homeArtwork.dataset.modelRenderToken = String(++modelRenderSerial);
   homeArtwork.classList.remove("is-3d");
@@ -1648,7 +1661,6 @@ function renderHome() {
     const fill = document.getElementById("daily-progress-fill");
     if (fill) fill.style.width = `${Math.round(Math.min(1, todaySteps / DAILY_STEP_GOAL) * 100)}%`;
   }
-  if (!selectedComplete) maybeShowTapHint(homeArtwork);
   renderCompletionPlaque(selectedPlant, awaitingFrameChoice);
   if (selectedProgress.displayed) mountNextArtworkButton(hero);
 }
@@ -1673,26 +1685,35 @@ function renderSeedPreview(hero, plant) {
   hero.classList.add("is-seed-preview");
   document.getElementById("home-title").textContent = plant.name;
   document.getElementById("home-active-caption").textContent =
-    `${plant.motif} / ${plant.artist}, ${plant.year} — 開花後の姿`;
+    `${plant.copy?.seedLabel ?? "育てはじめの種"} — 育成開始前`;
   const homeArtwork = document.getElementById("home-active-artwork");
   homeArtwork.style.cssText = paletteVars(plant);
-  homeArtwork.dataset.stage = "6";
+  homeArtwork.dataset.stage = "1";
   homeArtwork.dataset.homeModelViewer = "true";
   homeArtwork.dataset.plantId = plant.id;
-  homeArtwork.dataset.plantModel = getPlantModelPath(plant, 6);
+  homeArtwork.dataset.plantModel = getPlantModelPath(plant, 1);
   homeArtwork.dataset.soilModel = getSoilModelPath(plant, { preferDemo: DEMO_MODE });
   homeArtwork.dataset.environment = getEnvironmentTypeForPlant(plant, { preferDemo: DEMO_MODE });
+  homeArtwork.dataset.seedPreview = "true";
   homeArtwork.removeAttribute("data-ready");
   homeArtwork.dataset.modelRenderToken = String(++modelRenderSerial);
   homeArtwork.classList.remove("is-3d", "is-bloom-complete", "is-newly-complete");
   homeArtwork.classList.toggle("is-water-environment", getEnvironmentTypeForPlant(plant, { preferDemo: DEMO_MODE }) === "water");
   homeArtwork.classList.toggle("is-pearl-material", plant.id === "pearl-light-bloom");
-  homeArtwork.innerHTML = getPlantModelPath(plant, 6)
+  homeArtwork.innerHTML = getPlantModelPath(plant, 1)
     ? modelLoadingMarkup()
-    : `${environmentLayerMarkup(plant, { preferDemo: DEMO_MODE })}${plantMarkup(6)}`;
+    : `${environmentLayerMarkup(plant, { preferDemo: DEMO_MODE })}${plantMarkup(1)}`;
   mountSkyBackground(homeArtwork, { waterTint: skyWaterTint(plant) });
   renderCompletionPlaque(null, false);
   document.getElementById("daily-progress-line")?.setAttribute("hidden", "");
+  const specimenLabel = document.createElement("div");
+  specimenLabel.className = "seed-specimen-label";
+  specimenLabel.innerHTML = `
+    <span>Seed specimen — 種の標本</span>
+    <strong>${plant.name}</strong>
+    <small>${plant.copy?.seedLabel ?? "育てはじめの種"}</small>
+  `;
+  hero.appendChild(specimenLabel);
   const bar = document.createElement("div");
   bar.className = "seed-confirm-bar";
   bar.innerHTML = `
@@ -1700,7 +1721,15 @@ function renderSeedPreview(hero, plant) {
     <button class="secondary-action" type="button" data-seed-back>ほかの種を見る</button>
   `;
   hero.appendChild(bar);
-  bar.querySelector("[data-seed-confirm]").addEventListener("click", () => {
+  bar.querySelector("[data-seed-confirm]").addEventListener("click", async () => {
+    bar.querySelectorAll("button").forEach((button) => { button.disabled = true; });
+    hero.classList.add("is-planting-seed");
+    if (homeArtwork.__artariumSeedPreview?.plant) {
+      await homeArtwork.__artariumSeedPreview.plant();
+    } else {
+      await new Promise((resolve) => window.setTimeout(resolve, 1200));
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 220));
     state.selectedPlantId = plant.id;
     seedPreviewId = null;
     saveProgress();
@@ -1711,9 +1740,6 @@ function renderSeedPreview(hero, plant) {
     render();
   });
 }
-
-const TAP_HINT_KEY = "artarium-tap-hinted";
-let tapHintDismissed = false;
 
 // 雨や雷の日にアプリを開いたら、その日一度だけシーンに一言添える
 const WEATHER_GREET_KEY = "artarium-weather-greet";
@@ -1749,23 +1775,6 @@ function maybeShowWeatherGreeting(weather) {
     greet.classList.add("is-done");
     window.setTimeout(() => greet.remove(), 700);
   }, 6000);
-}
-
-function maybeShowTapHint(container) {
-  if (tapHintDismissed || localStorage.getItem(TAP_HINT_KEY)) return;
-  if (container.querySelector(".tap-hint")) return;
-  const hint = document.createElement("div");
-  hint.className = "tap-hint";
-  hint.textContent = "水面にふれてみて";
-  container.appendChild(hint);
-  const dismiss = () => {
-    tapHintDismissed = true;
-    localStorage.setItem(TAP_HINT_KEY, "1");
-    hint.classList.add("is-done");
-    window.setTimeout(() => hint.remove(), 700);
-    window.removeEventListener("artarium:ripple", dismiss);
-  };
-  window.addEventListener("artarium:ripple", dismiss);
 }
 
 // 空・水面・植物のキャンバスを1枚に合成し、美術館プレート付きで保存する
@@ -2382,6 +2391,12 @@ function requestUserNameIfNeeded() {
   window.setTimeout(() => input?.focus(), 80);
 }
 
+function closeNameEntryModal() {
+  const modal = document.getElementById("name-entry-modal");
+  if (modal) modal.hidden = true;
+  pendingFrameChoiceAfterName = "";
+}
+
 function renderDemoModelSettings() {
   const panel = document.getElementById("demo-model-settings");
   if (!panel) return;
@@ -2588,6 +2603,12 @@ function confirmFrameChoice() {
   state.currentView = "gallery";
   saveProgress();
   render();
+  window.requestAnimationFrame(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+    });
+  });
 }
 
 function openGalleryFocus(plantId) {
@@ -2801,7 +2822,7 @@ function renderGallery() {
 
   galleryWall.innerHTML = displayedPlants.map((plant) => `
     <article
-      class="shadow-box"
+      class="shadow-box ${plant.id === state.newlyCollectedPlantId ? "is-new-arrival" : ""}"
       style="${paletteVars(plant)}${backdropVars("nocturne")}"
       data-gallery-open="${plant.id}"
       role="button"
@@ -3284,6 +3305,50 @@ async function createGalleryScene(container, runtime, token) {
   }
 }
 
+function mountSeedSpecimenMotion(container, token, renderer, scene, camera, plantGroup, settings) {
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let plantingStart = 0;
+  let plantingResolve = null;
+
+  container.__artariumSeedPreview = {
+    plant: () => {
+      if (reduceMotion) {
+        plantGroup.position.y = settings.plantedY;
+        plantGroup.scale.setScalar(settings.plantedScale);
+        renderer.render(scene, camera);
+        return Promise.resolve();
+      }
+      if (!plantingStart) plantingStart = performance.now();
+      return new Promise((resolve) => { plantingResolve = resolve; });
+    }
+  };
+
+  const frame = (now) => {
+    if (!isCurrentModelRender(container, token) || container.dataset.seedPreview !== "true") return;
+    if (plantingStart) {
+      const progress = Math.min(1, (now - plantingStart) / 1200);
+      const eased = progress < 0.5
+        ? 4 * progress * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+      plantGroup.position.y = settings.previewY + (settings.plantedY - settings.previewY) * eased;
+      const scale = 1 + (settings.plantedScale - 1) * eased;
+      plantGroup.scale.setScalar(scale);
+      plantGroup.rotation.y *= 1 - eased;
+      if (progress >= 1) {
+        renderer.render(scene, camera);
+        plantingResolve?.();
+        plantingResolve = null;
+        return;
+      }
+    } else if (!reduceMotion) {
+      plantGroup.rotation.y = Math.sin(now / 1600) * 0.14;
+    }
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
 // 額縁: GLBを使わず、カメラ可視範囲に合わせてコードで組み立てるシャドーボックス。
 // 見付け（前面の枠板）は開口の外から画面端の先まで覆い、外側の水面などを隠す。
 function buildShadowBoxFrame(THREE, frameType, { innerW, innerH, centerX, bottomY, frontZ, faceW, faceH, boxDepth }) {
@@ -3340,7 +3405,15 @@ function buildShadowBoxFrame(THREE, frameType, { innerW, innerH, centerX, bottom
 async function createPlantScene(container, runtime, token) {
   const { THREE, GLTFLoader } = runtime;
   const loader = new GLTFLoader();
-  const modelSettings = getSceneModelSettings(container.dataset.stage, container.dataset.plantId);
+  const isSeedPreview = container.dataset.seedPreview === "true";
+  const baseModelSettings = getSceneModelSettings(container.dataset.stage, container.dataset.plantId);
+  const modelSettings = isSeedPreview
+    ? {
+        ...baseModelSettings,
+        plantScale: baseModelSettings.plantScale * 2.4,
+        plantY: baseModelSettings.plantY + 0.68
+      }
+    : baseModelSettings;
   const environmentType = container.dataset.environment || "soil";
   const plantDefinition = state.plants.find((plant) => plant.id === container.dataset.plantId);
   const [plantModel, soilModel] = await Promise.all([
@@ -3370,9 +3443,15 @@ async function createPlantScene(container, runtime, token) {
 
   const plant = normalizeModel(THREE, plantModel.scene, modelSettings.plantScale);
   preparePlantSurfaceModel(THREE, plant, plantDefinition, Number(container.dataset.stage) || 1);
-  const reflectionPlant = environmentType === "water" ? prepareReflectionModel(THREE, plant.clone(true), Number(container.dataset.stage) || 1, modelSettings) : null;
-  const waterSurface = environmentType === "water" ? createShaderWaterSurface(THREE, plantDefinition, modelSettings) : null;
-  const soil = environmentType !== "water" && soilModel ? normalizeModel(THREE, soilModel.scene, modelSettings.soilScale) : null;
+  const reflectionPlant = environmentType === "water" && !isSeedPreview
+    ? prepareReflectionModel(THREE, plant.clone(true), Number(container.dataset.stage) || 1, modelSettings)
+    : null;
+  const waterSurface = environmentType === "water" && !isSeedPreview
+    ? createShaderWaterSurface(THREE, plantDefinition, modelSettings)
+    : null;
+  const soil = environmentType !== "water" && soilModel && !isSeedPreview
+    ? normalizeModel(THREE, soilModel.scene, modelSettings.soilScale)
+    : null;
   if (soil) prepareSoilModel(THREE, soil, plantDefinition);
   const artworkGroup = new THREE.Group();
   let homeSoilGroup = null;
@@ -3389,7 +3468,7 @@ async function createPlantScene(container, runtime, token) {
   }
   if (waterSurface) {
     artworkGroup.add(waterSurface.mesh);
-  } else if (environmentType === "water") {
+  } else if (environmentType === "water" && !isSeedPreview) {
     artworkGroup.add(createWaterEnvironmentGroup(THREE, plantDefinition, modelSettings));
   }
   let reflectionGroup = null;
@@ -3406,6 +3485,13 @@ async function createPlantScene(container, runtime, token) {
     roll: modelSettings.plantRotZ
   });
   artworkGroup.add(plantGroup);
+  if (isSeedPreview) {
+    mountSeedSpecimenMotion(container, token, renderer, scene, camera, plantGroup, {
+      previewY: modelSettings.plantY,
+      plantedY: baseModelSettings.plantY,
+      plantedScale: baseModelSettings.plantScale / modelSettings.plantScale
+    });
+  }
   // 額縁: 作品の実寸から額の開口を計算して組み立てる
   if (container.dataset.frameType) {
     const plantBox = new THREE.Box3().setFromObject(plantGroup);
@@ -3982,6 +4068,7 @@ function modelLoadingMarkup() {
   return `
     <div class="model-loading" aria-hidden="true">
       <span></span>
+      <small>読み込み中</small>
     </div>
   `;
 }
