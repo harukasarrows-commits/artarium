@@ -80,12 +80,34 @@ void main() {
     float sd = length(p - sp);
     col += uSunCol * (exp(-sd * sd * 900.0) * 0.6 + exp(-sd * 5.0) * 0.12);
 
-    // 星（夜のみ・地平線近くは薄く）
+    // 星（夜のみ・地平線近くは薄く）。
+    // セル内のランダム位置に丸い光点を置く（セルごと光る四角い星を避ける）
     if (uStars > 0.001) {
-      vec2 cell = floor(p * vec2(160.0, 110.0));
-      float star = step(0.9972, hash21(cell));
-      float twinkle = 0.6 + 0.4 * sin(uTime * 1.4 + hash21(cell + 7.0) * 40.0);
-      col += vec3(0.9, 0.95, 1.0) * star * twinkle * uStars * smoothstep(0.1, 0.6, skyT);
+      float horizonFade = smoothstep(0.08, 0.55, skyT);
+      vec2 grid = vec2(110.0, 80.0);
+      vec2 cell = floor(p * grid);
+      vec2 f = fract(p * grid);
+      float h = hash21(cell);
+      vec2 starPos = vec2(hash21(cell + 3.1), hash21(cell + 5.7)) * 0.8 + 0.1;
+      float d = length(f - starPos);
+      // 色温度のばらつき: 大半は青白、まれに琥珀色の星
+      float hue = hash21(cell + 9.3);
+      vec3 starCol = mix(vec3(0.78, 0.86, 1.0), vec3(1.0, 0.9, 0.7), smoothstep(0.72, 0.95, hue));
+      // 淡い星屑（多数・星ごとに違う速さでゆっくり瞬く）
+      float faint = step(0.955, h) * exp(-d * d * 300.0);
+      float twinkleFaint = 0.7 + 0.3 * sin(uTime * (0.8 + h * 1.5) + h * 40.0);
+      col += starCol * faint * twinkleFaint * 0.5 * uStars * horizonFade;
+      // ひときわ明るい星（まれ・大きめ・十字の煌めき・深い瞬き）
+      float bright = step(0.9915, h);
+      if (bright > 0.0) {
+        float core = exp(-d * d * 120.0);
+        float spikes = (exp(-abs(f.x - starPos.x) * 34.0) + exp(-abs(f.y - starPos.y) * 34.0)) * exp(-d * 3.5) * 0.35;
+        float twinkleBright = 0.55 + 0.45 * sin(uTime * (1.2 + h * 2.0) + h * 60.0);
+        col += starCol * (core + spikes) * twinkleBright * 1.1 * uStars * horizonFade;
+      }
+      // 天の川: 斜めに流れるごく淡い光の帯
+      float band = exp(-pow(dot(p - vec2(0.15, 0.9), normalize(vec2(0.55, 1.0))), 2.0) * 26.0);
+      col += vec3(0.72, 0.8, 0.95) * band * fbm(p * 6.0 + 3.0) * 0.05 * uStars * horizonFade;
     }
 
     // 雲（2層をゆっくり流す・地平線近くほど平たく密に見える）
