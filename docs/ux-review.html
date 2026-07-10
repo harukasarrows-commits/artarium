@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Artarium UI/UXレビュー（ux-review.md） | Artarium Docs</title>
+    <link rel="stylesheet" href="./docs.css">
+  </head>
+  <body>
+    <div class="doc-shell">
+      <aside class="doc-nav">
+        <a class="brand" href="./index.html"><svg viewBox="0 0 96 104" aria-hidden="true"><rect x="10" y="7" width="76" height="90" rx="10" fill="none" stroke="#b99a55" stroke-width="8"/><path d="M48 82 V45" stroke="#eee6d5" stroke-width="7" stroke-linecap="round" fill="none"/><path d="M48 57 C33 56 23 45 21.5 27 C39 30 47.5 42 48 57 Z" fill="#eee6d5"/><path d="M48 49 C48.5 32.5 59 21 74.5 18.5 C73 35.5 62 47 48 49 Z" fill="#eee6d5"/></svg><span>Artarium Docs</span></a>
+        <nav><a class="" href="./presentation.html">プレゼン資料</a>
+<a class="" href="./brand-identity.html">ブランドガイドライン</a>
+<a class="" href="./development-instructions.html">開発指示書</a>
+<a class="" href="./specification.html">仕様書</a>
+<a class="" href="./requirements.html">要件定義書（2026-07-10監査）</a>
+<a class="" href="./architecture.html">アーキテクチャ設計書</a>
+<a class="is-active" href="./ux-review.html">UI/UXレビュー（2026-07-10）</a>
+<a class="" href="./testing.html">検証チェックリスト</a>
+<a class="" href="./roadmap.html">今後の開発計画</a>
+<a class="" href="./development-schedule.html">開発スケジュール案</a>
+<a class="" href="./development-schedule-dates.html">開発スケジュール（実日付版）</a></nav>
+      </aside>
+      <main class="doc-main">
+        <h1 id="artarium-ui%2Fux%E3%83%AC%E3%83%93%E3%83%A5%E3%83%BC%EF%BC%88ux-review.md%EF%BC%89">Artarium UI/UXレビュー（ux-review.md）</h1>
+<p>作成日: 2026-07-10 方法: コード実査（app.js のフロー追跡＋styles.css / index.html の実装監査）。実機・実端末での目視検証は未実施（§7に検証手順を提示）。 前提: <code>CLAUDE.md</code> の「ダークギャラリー」方針・構成の原則（没入型ホーム、額縁メタファーはコレクションのみ、金はCTA限定、英語ラベルに日本語併記、種選択2段階、点灯式演出）は<strong>確定事項として変更しない</strong>。本レビューはその方針の内側での改善提案。 参照: <a href="requirements.html">requirements.md</a> の要件ID（FR/G）、<a href="architecture.html">architecture.md</a> の課題ID（A）。 更新ルール: この文書は<strong>日付つきスナップショット（レビュー記録）</strong>。指摘が解消したら該当行に「→ 対応済み（日付）」を追記する。新たな指摘は次回レビューとして別日付の節を立てるか、<code>roadmap.md</code> へ起票する。</p>
+<p>---</p>
+<h2 id="1.-%E7%94%BB%E9%9D%A2%E9%81%B7%E7%A7%BB%E3%81%AE%E7%8F%BE%E7%8A%B6">1. 画面遷移の現状</h2>
+<pre><code>                    ┌─────────────── 上部タブ ───────────────┐
+                    ホーム          コレクション        設定
+                     │                │                 │
+   ┌── 植物未選択 ──┤                ├ 額装作品の壁     ├ 歩数計開始/同期
+   │  種選択リスト   │                │  └ 拡大鑑賞      ├ 週間振り返り
+   │   └ 開花プレビュー              │     (ドラッグ回転) ├ 環境音 on/off
+   │      └「この種を育てる」         └ 図鑑「名画の由来」 └ リセット
+   │                │
+   └── 植物選択済 ──┤
+       3Dシーン(没入) ├ 「眺める」→ 鑑賞モード (Esc/タップで解除)
+       進捗ライン     ├ 水面タップ→波紋 / 傾き視差
+                     └ 開花完了 → 点灯式 → 完成プレート
+                          └「額装を選ぶ」→ [名前入力(初回)] → 額縁選択モーダル
+                             └「この額装で飾る」→ コレクションへ収蔵
+                                └ ホームに「次の作品を選ぶ」
+
+   ※ grow-view（歩数同期・歩数計・成長確認ボタンを持つ育成画面）は
+     どこからも到達できない（G-1）</code></pre>
+<p>物語の弧（育てている間は生きた庭 → 完成したら美術館へ）と画面構成は一致しており、幹となるフロー自体は健全。問題は「毎日の入口」と「モーダルの出口」に集中している（§2）。</p>
+<h2 id="2.-%E6%8C%87%E6%91%98%E4%B8%80%E8%A6%A7%EF%BC%88%E9%87%8D%E8%A6%81%E5%BA%A6%E9%A0%86%EF%BC%89">2. 指摘一覧（重要度順）</h2>
+<h3 id="%E9%87%8D%E8%A6%81%E5%BA%A6-a-%E2%80%94-%E3%82%B3%E3%82%A2%E4%BD%93%E9%A8%93%E3%82%92%E6%90%8D%E3%81%AA%E3%81%86%E3%82%82%E3%81%AE">重要度 A — コア体験を損なうもの</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>指摘</th><th>詳細</th><th>根拠</th></tr></thead>
+<tbody>
+<tr><td>U-1</td><td><strong>毎日のコアループに「歩数の入口」がない</strong></td><td>本番のホームには歩数を反映する操作が一切なく、歩数計の開始・同期ボタンは<strong>設定タブの奥</strong>にしかない（該当ボタン群を持つ grow-view は到達不能 = G-1）。ネイティブブリッジが無いWeb版では、ユーザーは「開く→設定→歩数計を開始」を毎回辿らないと植物が育たない。「開くだけで庭が育っている」という約束（FR-2）と導線が噛み合っていない</td><td>app.js renderHome（歩数操作なし）、index.html:150-166（設定内の同期UI）</td></tr>
+<tr><td>U-2</td><td><strong>名前入力モーダルに出口がない</strong></td><td><code>name-entry-modal</code> は閉じるボタンが無く、<code>required</code> 入力のため<strong>名前を入れない限り額装に進めも戻りもできない</strong>。「プレートに刻む名前」という情緒的な位置づけに対し、強制はトーンに反する。Esc・背景クリックも効かない → <strong>対応済み（2026-07-10）</strong>: 閉じるボタン（×）とEscで中断できるようにした（額装は完成プレートからいつでも再開可能）</td><td>index.html:228-239、app.js の close 処理なし</td></tr>
+<tr><td>U-3</td><td><strong>モーダルの作法が4種でバラバラ</strong></td><td>額縁選択=×とEscのみ / 拡大鑑賞=背景クリック可 / 週間振り返り=×のみ（Esc不可）/ 名前入力=出口なし。さらに<strong>全モーダルで背景スクロールロックが無い</strong>（鑑賞モードのみ実装済み）。加えて額縁選択モーダル(z-index:20)とPC時の固定タブバー(z-index:20)が同値で、タブバーがモーダルに被る可能性</td><td>styles.css:2195,1874、app.js:1083-1176</td></tr>
+</tbody></table></div>
+<h3 id="%E9%87%8D%E8%A6%81%E5%BA%A6-b-%E2%80%94-%E5%93%81%E8%B3%AA%E3%83%BB%E4%BF%A1%E9%A0%BC%E6%84%9F%E3%81%AB%E9%96%A2%E3%82%8F%E3%82%8B%E3%82%82%E3%81%AE">重要度 B — 品質・信頼感に関わるもの</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>指摘</th><th>詳細</th><th>根拠</th></tr></thead>
+<tbody>
+<tr><td>U-4</td><td><strong><code>prefers-reduced-motion</code> 対応が点灯式の一部のみ</strong></td><td>無効化されるのはスポットライトveil/glowとcanvasのfilter遷移だけ。植物のスケール変化・ステージメーター・振り返りの棒グラフ・keyframes群・JS駆動の粒子/花火は残る。動きに敏感なユーザーには「対応していない」のと同じ</td><td>styles.css:3554-3560</td></tr>
+<tr><td>U-5</td><td><strong>11px未満の文字が多用されている</strong></td><td>eyebrow基底 0.7rem≈11.2px、額縁選択の状態表示 0.62rem≈9.9px、図鑑ステータス等 0.68rem≈10.9px。装飾ラベル（英語眉ラベル）は日本語併記ルールで救われているが、<strong>情報を運ぶテキスト</strong>（choice-state、codex-status、recap-day）が10px前後なのは可読下限を割る</td><td>styles.css:102,2344,3279,3358</td></tr>
+<tr><td>U-6</td><td><strong>補足テキストのコントラスト不足</strong></td><td><code>--muted-soft:#6c7266</code> を使う箇所（placeholder、図鑑ステータス、振り返りの曜日）は暗背景でWCAG 4.5:1未達の可能性大。<code>--muted:#8f9587</code> も境界線上。また没入ホームの動的背景上の白85%テキストは、昼の明るい空ではシーン次第で読めなくなる</td><td>styles.css:2277,3281,3357,3008</td></tr>
+<tr><td>U-7</td><td><strong>横向き（landscape）で破綻リスク</strong></td><td>orientation対応CSSがゼロ。ホームは100dvh＋絶対配置ボタン（bottom+safe-area）の構成のため、横向きの低い画面では daily-copy / 完成プレート / 眺めるボタンが過密・重複しうる。左右の <code>safe-area-inset-left/right</code> も未使用</td><td>styles.css:2947,3013-3025</td></tr>
+<tr><td>U-8</td><td><strong>3D読込中の表示が「待っている」と伝わらない</strong></td><td><code>.model-loading</code> は静的に光る円のみで回転等の動きが無い。GLB読込は回線次第で数秒かかるため、初回体験で「壊れている」と誤認されるリスク</td><td>styles.css:470-492</td></tr>
+</tbody></table></div>
+<h3 id="%E9%87%8D%E8%A6%81%E5%BA%A6-c-%E2%80%94-%E7%A3%A8%E3%81%8D%E8%BE%BC%E3%81%BF">重要度 C — 磨き込み</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>指摘</th></tr></thead>
+<tbody>
+<tr><td>U-9</td><td>PC幅のタブボタンが40px、オフライン通知内ボタンが38pxで、タップ領域44pxルール（FR方針）未達。モバイル幅は52pxで問題なし</td></tr>
+<tr><td>U-10</td><td>長文対策の不在: <code>text-overflow</code> / <code>line-clamp</code> / <code>overflow-wrap</code> の指定が皆無。植物名・作者名（最大24字）が狭幅セル（額縁選択の3列グリッド等）で不自然に折り返す恐れ</td></tr>
+<tr><td>U-11</td><td>額縁選択パネルの <code>max-height:100vh</code>（dvh未使用）。iOS Safariのアドレスバー分だけ確定ボタンが画面外に落ちうる</td></tr>
+<tr><td>U-12</td><td>週間振り返りの自動表示（日曜18時以降）は良い仕掛けだが、閉じ方が×のみ（U-3と同根）。また「今週の歩み」を見られることが設定タブにしか示されず、機能の存在に気づきにくい</td></tr>
+<tr><td>U-13</td><td>PWAインストール誘導が存在しない（G-2）。「ホーム画面に追加」はこのアプリの毎日の再訪動線そのものなので、実装しないなら少なくとも捕捉コードは削除（A-2）、実装するなら初回完成（点灯式後）など感情のピークに合わせるのが効果的</td></tr>
+</tbody></table></div>
+<h2 id="3.-%E8%89%AF%E3%81%84%E7%82%B9%EF%BC%88%E7%B6%AD%E6%8C%81%E3%81%99%E3%81%B9%E3%81%8D%E8%A8%AD%E8%A8%88%EF%BC%89">3. 良い点（維持すべき設計）</h2>
+<ul>
+<li><strong>点灯式の演出構造</strong>（暗転0.45s→スポットライト→2.6s後にプレート→4sで平常）: 「達成の瞬間を美術館の文法で祝う」というコンセプトの核が実装として成立している。スポット中心を花頭のNDC位置に合わせる芸の細かさも良い</li>
+<li><strong>種選択の2段階</strong>（カード→開花プレビュー→決定）: 開花後の姿を先に見せることで「60,000歩の目標」に絵が付く</li>
+<li><strong>focus-visible の金リング</strong>が主要導線に整備済み。キーボード/スイッチ操作への配慮が既にある</li>
+<li><strong>safe-area対応の網羅性</strong>（ホームインジケータ回避が浮遊ボタン全てに入っている）</li>
+<li><strong>名前入力のタイミング</strong>（初回額装の直前）: 意味が生まれる瞬間に聞く設計は正しい。問題は出口がないことだけ（U-2）</li>
+<li><strong>daily-copy の <code>pointer-events:none</code></strong>: コピー帯が背後の水面タップを妨げない</li>
+<li>図鑑「名画の由来」が収蔵数に応じて増える構造: 収集の報酬が「教養」であるのはこのアプリらしい</li>
+</ul>
+<h2 id="4.-%E6%94%B9%E5%96%84%E6%A1%88-%E2%80%94-css%2F%E6%96%87%E8%A8%80%E3%81%A0%E3%81%91%E3%81%A7%E7%9B%B4%E3%81%9B%E3%82%8B%E3%82%82%E3%81%AE">4. 改善案 — CSS/文言だけで直せるもの</h2>
+<p>構造変更なし・低リスク。まとめて1コミットで対応可能な粒度。 <strong>→ 対応済み（2026-07-10）: 本表の8件すべて適用</strong>（reduced-motion は tap-hint / bloom-ring / 収蔵演出も対象に含めた。U-8 はローディング円の明滅＋reduced-motion時は「読み込み中」の文言表示で実装。実機での見た目確認は §7 のとおり未実施）。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>対象</th><th>変更</th></tr></thead>
+<tbody>
+<tr><td>U-3(一部)</td><td><code>.frame-choice-modal</code> の z-index を 20→40 に（タブバー20より上、鑑賞モード90より下）</td></tr>
+<tr><td>U-4</td><td>reduced-motion ブロックに <code>.plant-visual</code>, <code>.stage-meter-fill</code>, <code>.recap-bar</code>, keyframesアニメ要素への <code>animation: none; transition: none</code> を追加</td></tr>
+<tr><td>U-5</td><td>0.62〜0.68rem の情報テキストを 0.72rem 以上へ。装飾eyebrowは現状維持でよい（日本語併記ルールが担保）</td></tr>
+<tr><td>U-6</td><td><code>--muted-soft</code> の用途を装飾に限定し、情報テキストは <code>--muted</code> 以上へ。動的背景上のコピーは text-shadow を強めるか、現在の下地グラデーションを昼空でも効く濃度に</td></tr>
+<tr><td>U-8</td><td><code>.model-loading</code> にゆっくりした明滅か回転を追加（reduced-motion時は「読み込み中」の文言表示に切替）</td></tr>
+<tr><td>U-9</td><td>PC幅 <code>.tab-button</code> を min-height:44px に、<code>.app-notice .secondary-action</code> を44pxに</td></tr>
+<tr><td>U-10</td><td>植物名・ラベル系セルに <code>overflow-wrap: anywhere</code> と、狭幅セルに <code>line-clamp</code> を追加</td></tr>
+<tr><td>U-11</td><td><code>.frame-choice-panel</code> の <code>100vh</code> → <code>100dvh</code></td></tr>
+</tbody></table></div>
+<h2 id="5.-%E6%94%B9%E5%96%84%E6%A1%88-%E2%80%94-%E6%A7%8B%E9%80%A0%E3%83%BB%E4%BB%95%E6%A7%98%E3%81%AE%E5%A4%89%E6%9B%B4%E3%81%8C%E5%BF%85%E8%A6%81%E3%81%AA%E3%82%82%E3%81%AE">5. 改善案 — 構造・仕様の変更が必要なもの</h2>
+<p>いずれも「どうするか」の決定が先。実装前に方針確認を推奨。</p>
+<h3 id="5.1-%E6%AD%A9%E6%95%B0%E3%81%AE%E5%85%A5%E5%8F%A3%EF%BC%88u-1%E3%80%81%E6%9C%80%E5%84%AA%E5%85%88%EF%BC%89">5.1 歩数の入口（U-1、最優先）</h3>
+<p>方針案（排他ではない）:</p>
+<ol>
+<li><strong>ホームの没入シーンに最小限の歩数アクションを1つ置く</strong>。例: 進捗ライン（タブバー直上）をタップ可能にし、「歩数を確認」= ブリッジ同期→なければ歩数計開始の提案、を1タップで行う。没入原則を守るため常設ボタンは増やさない</li>
+<li><strong>起動時の自動同期</strong>: ブリッジがあれば <code>init()</code> で自動同期（現在は手動のみ）。DeviceMotion は権限が必要なので、初回に一度許可されたら次回以降は起動時に自動再開を試みる</li>
+<li>grow-view は<strong>廃止して削除</strong>（機能はホーム＋設定に既に分散済み。残すと二重管理になる）— A-2 と同じ結論</li>
+</ol>
+<h3 id="5.2-%E3%83%A2%E3%83%BC%E3%83%80%E3%83%AB%E3%81%AE%E5%85%B1%E9%80%9A%E4%BD%9C%E6%B3%95%EF%BC%88u-2%2C-u-3%2C-u-12%EF%BC%89">5.2 モーダルの共通作法（U-2, U-3, U-12）</h3>
+<p>「Artariumのモーダルはこう振る舞う」を1つ決めて全モーダルへ適用する:</p>
+<ul>
+<li>Escで閉じる / 背景クリックで閉じる（確定操作を失わない範囲で）/ 表示中は背景スクロールロック</li>
+<li>名前入力のみ例外扱いにせず、<strong>「あとで決める」の逃げ道</strong>を付ける（スキップ時は「作者名なし」で額装し、設定から後で入力できる = requirements.md S-1 とセット）</li>
+<li>実装は共通の openModal/closeModal ヘルパーに寄せる（architecture.md §8.2 のビュー分割と相性が良い）</li>
+</ul>
+<h3 id="5.3-%E6%A8%AA%E5%90%91%E3%81%8D%E3%83%BB%E5%B0%8F%E7%94%BB%E9%9D%A2%EF%BC%88u-7%EF%BC%89">5.3 横向き・小画面（U-7）</h3>
+<ul>
+<li>短期: <code>@media (orientation: landscape) and (max-height: 500px)</code> で絶対配置ボタン群の退避レイアウトを用意</li>
+<li>または portrait 前提を明示する（manifest は既に <code>portrait</code> 指定なので、Web表示でも「縦向きでお楽しみください」の案内を出す選択もある。工数最小）</li>
+</ul>
+<h3 id="5.4-%E6%A9%9F%E8%83%BD%E3%81%AE%E5%8F%AF%E7%99%BA%E8%A6%8B%E6%80%A7%EF%BC%88u-12%2C-u-13%EF%BC%89">5.4 機能の可発見性（U-12, U-13）</h3>
+<ul>
+<li>週間振り返り: 日曜の自動表示に加え、ホームの進捗ラインのロングタップ/タップメニューから開けると「歩数まわりは進捗ラインに集まっている」という一貫した心的モデルになる（5.1と同じ場所）</li>
+<li>PWAインストール: 初回の額装完了直後（感情のピーク）に一度だけ、美術館の文体で控えめに提案</li>
+</ul>
+<h2 id="6.-%E5%AF%BE%E5%BF%9C%E3%81%AE%E6%8E%A8%E5%A5%A8%E9%A0%86%E5%BA%8F">6. 対応の推奨順序</h2>
+<ol>
+<li><strong>§4 の一括修正</strong>（CSS/文言のみ、半日以内の粒度）</li>
+<li><strong>U-2 名前入力の逃げ道</strong>（トラップ解消は単独でも価値が高い）</li>
+<li><strong>5.1 歩数の入口</strong>（コアループの成立。M-3 の歩数取得方針とセットで決める）</li>
+<li><strong>5.2 モーダル共通化</strong>（app.js 分割 = architecture.md §8.2 の最初の題材にすると一石二鳥）</li>
+<li>5.3 / 5.4 は上記の後で</li>
+</ol>
+<h2 id="7.-%E6%9C%AA%E6%A4%9C%E8%A8%BC%E4%BA%8B%E9%A0%85%EF%BC%88%E5%AE%9F%E6%A9%9F%E3%81%A7%E7%A2%BA%E8%AA%8D%E3%81%99%E3%81%B9%E3%81%8D%E3%81%93%E3%81%A8%EF%BC%89">7. 未検証事項（実機で確認すべきこと）</h2>
+<p>本レビューはコード実査であり、以下は実端末での確認が必要:</p>
+<ul>
+<li>[ ] 昼の明るい空シーンでのホームのコピー可読性（U-6 の実害確認）</li>
+<li>[ ] iOS Safari 実機での額縁選択モーダル下端（U-11）と 100dvh 挙動</li>
+<li>[ ] DeviceMotion 歩数計の精度と、バックグラウンド/画面消灯時の挙動（仕様上は動かない想定の再確認）</li>
+<li>[ ] 点灯式が低速端末（古いAndroid）でフレーム落ちしないか</li>
+<li>[ ] VoiceOver / TalkBack での額装フロー一周（aria-live の読み上げタイミング含む）</li>
+<li>[ ] 旧localStorageが残った端末での表示（CLAUDE.md 鉄則2の check-stale-settings.mjs 方式）</li>
+</ul>
+      </main>
+    </div>
+  </body>
+</html>

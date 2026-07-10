@@ -7,6 +7,10 @@ const docs = [
   { source: "brand-identity.md", output: "brand-identity.html", label: "ブランドガイドライン" },
   { source: "development-instructions.md", output: "development-instructions.html", label: "開発指示書" },
   { source: "specification.md", output: "specification.html", label: "仕様書" },
+  { source: "requirements.md", output: "requirements.html", label: "要件定義書（2026-07-10監査）" },
+  { source: "architecture.md", output: "architecture.html", label: "アーキテクチャ設計書" },
+  { source: "ux-review.md", output: "ux-review.html", label: "UI/UXレビュー（2026-07-10）" },
+  { source: "testing.md", output: "testing.html", label: "検証チェックリスト" },
   { source: "roadmap.md", output: "roadmap.html", label: "今後の開発計画" },
   { source: "development-schedule.md", output: "development-schedule.html", label: "開発スケジュール案" },
   { source: "development-schedule-dates.md", output: "development-schedule-dates.html", label: "開発スケジュール（実日付版）" }
@@ -24,6 +28,7 @@ function escapeHtml(value) {
 
 function inlineMarkdown(value) {
   return escapeHtml(value)
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (match, text, href) => `<a href="${href.replace(/\.md(?=$|#)/, ".html")}">${text}</a>`)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 }
@@ -77,7 +82,7 @@ function parseTableRow(line) {
     .replace(/^\|/, "")
     .replace(/\|$/, "")
     .split("|")
-    .map((cell) => cell.trim().replace(/:?-+:?/g, "---"));
+    .map((cell) => cell.trim().replace(/^:?-+:?$/, "---"));
 }
 
 function markdownToHtml(markdown) {

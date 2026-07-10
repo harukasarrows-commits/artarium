@@ -1,12 +1,13 @@
 # Artarium 仕様書
 
-最終更新: 2026-06-29
+最終更新: 2026-07-10
 
 ## 更新ルール
 
 この仕様書は Artarium の現在仕様を記録する。
 仕様変更があった場合は、実装と同時に該当項目を書き換える。
-外部説明用の要約は `docs/presentation.md`、作業手順は `docs/development-instructions.md` に反映する。
+外部説明用の要約は `presentation.md`、作業手順は `development-instructions.md` に反映する。
+要件・設計・UI/UXの監査記録（日付つきスナップショット）は `requirements.md` / `architecture.md` / `ux-review.md` を参照する。
 
 ## アプリ名
 
@@ -64,7 +65,9 @@ Artarium - 名画の庭
 - `index.html`: 画面構造
 - `styles.css`: デザイン
 - `app.js`: ロジック、状態管理、3D表示
+- `sky-background.js` / `water-surface.js` / `plant-effects.js` / `weather.js` / `ambient-sound.js`: 空・水面・植物演出・天気・環境音の各モジュール
 - `data/plants.json`: 植物データ
+- `data/model-settings.json`: 3D配置の焼き込み値（配置調整の正）
 - `models/`: GLBモデル
 - `vendor/`: Three.js関連ファイル
 - `sw.js`: Service Worker
@@ -83,6 +86,8 @@ Artarium - 名画の庭
 仕様:
 
 - 1度植物を選んだら、開花するまで他の植物は選べない
+- 種候補を押した確認画面では、開花後ではなく Stage1 の種モデルを、土・水面を見せない標本展示として表示する
+- 「この種を育てる」で種が縮小・下降し、暗転を挿んで通常の土台の育成画面へ移る
 - 額装・収蔵後は「次の作品を選ぶ」から未収蔵の植物を選べる
 - 余計な数値表示はホームに出しすぎない
 - デモモードでは3D調整パネルを併設する
@@ -97,6 +102,7 @@ Artarium - 名画の庭
 
 - Stage6 到達だけでは表示されない
 - 額縁を選び、確定した植物だけ表示する
+- 額装確定後はコレクション上部へ移動し、新しい作品の照明が点く収蔵演出を表示する
 - 作品名と説明を表示する
 - 作者名と収蔵日を、美術館の収蔵票を意識した形式でプレートに表示する
 - 実在作家名は表示しない
@@ -111,9 +117,48 @@ Artarium - 名画の庭
 
 - 歩数同期
 - DeviceMotionによる簡易歩数検知
-- 開発用歩数加算
+- 開発用歩数加算（デモモードのみ表示）
 - リセット
 - ユーザー名関連
+- 環境音のオン/オフ
+- 週間振り返りの表示
+
+### 週間振り返り
+
+役割:
+
+- 直近7日の歩数と成長を振り返る
+
+仕様:
+
+- 直近7日の歩数を棒グラフで表示
+- 合計歩数と植物の成長コメントを表示
+- 日曜18時以降に週1回自動表示（週キーで表示済み管理）
+- 設定画面から手動でも開ける
+
+### 鑑賞モード
+
+役割:
+
+- UIを消して空と植物だけを全画面で眺める
+
+仕様:
+
+- ホームの「眺める」ボタンで開始
+- Escまたはタップで解除
+- 表示中は背景スクロールをロック
+
+### 図鑑「名画の由来」
+
+役割:
+
+- 収蔵した作品のモチーフとなった名画の解説を読む
+
+仕様:
+
+- コレクション画面の下部に表示
+- 収蔵済みの作品の数だけ解説が増える
+- 解説データは `app.js` の `CODEX_NOTES` で管理
 
 ### 額縁選択
 
@@ -213,6 +258,47 @@ Web版で対応する入力:
 - iOS: HealthKit
 - Android: Health Connect
 
+## 環境演出
+
+### 空・天気・季節
+
+- 空はWebGL2シェーダーで描画し、時刻（8ポイントの色補間）・季節・実天気に連動する
+- 天気は Open-Meteo API から取得する（現在地、位置情報拒否時は東京、30分キャッシュ）
+- 取得失敗・オフライン時は時刻連動のみで動作する
+- WebGL2非対応時はCSS背景にフォールバックする
+
+### 水面
+
+- 波動方程式シミュレーションによるリアルタイム水面
+- タップで波紋、雨天時は雨滴が発生する
+- float texture 非対応時はCSS水面にフォールバックする
+
+### 植物エフェクト
+
+- 植物ごとにモチーフに合わせた揺れ・粒子・開花後の散りを定義する
+- 散る花びらの色は開花モデルの実テクスチャから採取する
+
+### 環境音
+
+- Web Audio によるリアルタイム合成（雨・波紋・雷鳴）。音声ファイルは使わない
+- 設定画面でオン/オフを切り替え、`localStorage` に保存する
+
+### 点灯式（開花演出）
+
+ステージ上昇・開花完了時の演出。
+
+1. 暗転（約0.45秒）で場内が静まる
+2. スポットライトが点灯する（光の中心は花頭の位置に合わせる）
+3. 約2.6秒後に完成プレートが現れる
+4. 約4秒で平常の明るさへ戻る
+
+`prefers-reduced-motion` 設定時は遷移を省略する。
+
+### 作品画像の保存
+
+- 完成プレートから、空・水面・植物を1枚に合成したPNGを保存できる
+- 画像には美術館プレート（作品名・作者名・日付・総歩数）を描画する
+
 ## 状態管理
 
 保存先:
@@ -230,6 +316,10 @@ Web版で対応する入力:
 | `artarium-demo-soil-assignments` | デモ用土台割り当て |
 | `artarium-production-soil-assignments` | 本番用土台割り当て |
 | `artarium-production-sync` | デモから本番への反映通知 |
+| `artarium-ambient-sound` | 環境音のオン/オフ |
+| `artarium-tap-hinted` | 水面タップヒントの既読 |
+| `artarium-weather-greet` | 天気挨拶の当日表示済み |
+| `artarium-recap-week` | 週間振り返りの表示済み週 |
 
 ## 植物データ
 
@@ -263,7 +353,7 @@ data/plants.json
 ## 現在の植物
 
 初期リリースでは10種類程度の植物を用意する方針。
-現在実装済みの植物は以下。
+現在実装済みの植物は以下の9種類（各6ステージのGLBを配置済み）。
 
 ### The Scream Bloom
 
@@ -307,6 +397,38 @@ data/plants.json
 - 説明: `やわらかな表情と深い陰影をイメージした植物作品`
 - 土台: `gallery-loam`
 - 額縁初期値: `walnut`
+
+### Nocturne Sky Bloom
+
+- `id`: `nocturne-sky-bloom`
+- 作品名: `星夜の記憶`
+- 説明: `深い青と星のきらめきをイメージした植物作品`
+- 土台: `gallery-loam`
+- 額縁初期値: `museum-black`
+
+### Golden Embrace Bloom
+
+- `id`: `golden-embrace-bloom`
+- 作品名: `金色の抱擁`
+- 説明: `金の装飾とやわらかな抱擁をイメージした植物作品`
+- 土台: `gallery-loam`
+- 額縁初期値: `museum-black`
+
+### Monochrome Fracture Bloom
+
+- `id`: `monochrome-fracture-bloom`
+- 作品名: `白黒の断片`
+- 説明: `モノクロームと断片的な形をイメージした植物作品`
+- 土台: `gallery-loam`
+- 額縁初期値: `museum-black`
+
+### Pearl Light Bloom
+
+- `id`: `pearl-light-bloom`
+- 作品名: `真珠光の記憶`
+- 説明: `真珠の光と静かな色合いをイメージした植物作品`
+- 土台: `gallery-loam`
+- 額縁初期値: `museum-black`
 
 ## 土台仕様
 
@@ -362,13 +484,10 @@ Three.js を使用する。
 | `museum-black` | Museum Black |
 | `floating-maple` | Floating Maple |
 
-GLB配置予定:
+GLB配置状況（2026-07-10時点）:
 
-```text
-models/frames/walnut-shadow-box/frame.glb
-models/frames/museum-black/frame.glb
-models/frames/floating-maple/frame.glb
-```
+- `museum-black`: 配置済み（`models/frames/museum-black/`）
+- `walnut` / `floating-maple`: 未配置。CSSの額縁フォールバックで表示
 
 GLBがない場合はCSSの額縁フォールバックを使う。
 
@@ -468,10 +587,11 @@ Tripoなどで作成するGLBは軽量化を優先する。
 ## 未実装・今後の検討
 
 - 実機のHealthKit / Health Connect連携
-- 額縁GLBの本番投入
+- 額縁GLB残り2種（walnut / floating-maple）の本番投入
 - 背景選択機能
-- ユーザー名を作者欄に反映
+- ユーザー名の設定画面からの変更（作者欄への反映は実装済み）
 - コレクション画面の展示演出強化
 - スマホアプリ版への移行
 - クラウド保存、端末間同期
 - マネタイズ設計の具体化
+- 到達不能な育成ビュー（grow-view）の廃止判断と、PWAインストール導線の決着（`requirements.md` G-1 / G-2）

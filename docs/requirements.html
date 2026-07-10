@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Artarium 要件定義書（requirements.md） | Artarium Docs</title>
+    <link rel="stylesheet" href="./docs.css">
+  </head>
+  <body>
+    <div class="doc-shell">
+      <aside class="doc-nav">
+        <a class="brand" href="./index.html"><svg viewBox="0 0 96 104" aria-hidden="true"><rect x="10" y="7" width="76" height="90" rx="10" fill="none" stroke="#b99a55" stroke-width="8"/><path d="M48 82 V45" stroke="#eee6d5" stroke-width="7" stroke-linecap="round" fill="none"/><path d="M48 57 C33 56 23 45 21.5 27 C39 30 47.5 42 48 57 Z" fill="#eee6d5"/><path d="M48 49 C48.5 32.5 59 21 74.5 18.5 C73 35.5 62 47 48 49 Z" fill="#eee6d5"/></svg><span>Artarium Docs</span></a>
+        <nav><a class="" href="./presentation.html">プレゼン資料</a>
+<a class="" href="./brand-identity.html">ブランドガイドライン</a>
+<a class="" href="./development-instructions.html">開発指示書</a>
+<a class="" href="./specification.html">仕様書</a>
+<a class="is-active" href="./requirements.html">要件定義書（2026-07-10監査）</a>
+<a class="" href="./architecture.html">アーキテクチャ設計書</a>
+<a class="" href="./ux-review.html">UI/UXレビュー（2026-07-10）</a>
+<a class="" href="./testing.html">検証チェックリスト</a>
+<a class="" href="./roadmap.html">今後の開発計画</a>
+<a class="" href="./development-schedule.html">開発スケジュール案</a>
+<a class="" href="./development-schedule-dates.html">開発スケジュール（実日付版）</a></nav>
+      </aside>
+      <main class="doc-main">
+        <h1 id="artarium-%E8%A6%81%E4%BB%B6%E5%AE%9A%E7%BE%A9%E6%9B%B8%EF%BC%88requirements.md%EF%BC%89">Artarium 要件定義書（requirements.md）</h1>
+<p>作成日: 2026-07-10 作成方法: <code>specification.md</code>（2026-06-29版）・<code>roadmap.md</code>・コード実態（app.js ほか全モジュール）の突き合わせ 位置づけ: 「何を作るか・何ができているか・何が足りないか」を1枚で見渡すための要件整理。個別仕様の正は引き続き <code>specification.md</code> に置く。 更新ルール: この文書は<strong>日付つきスナップショット（監査記録）</strong>。原則として書き換えず、指摘が解消したら該当行に「→ 対応済み（日付）」を追記する。確定した仕様は <code>specification.md</code>、バックログは <code>roadmap.md</code> へ転記する。</p>
+<p>---</p>
+<h2 id="1.-%E3%83%97%E3%83%AD%E3%83%80%E3%82%AF%E3%83%88%E6%A6%82%E8%A6%81">1. プロダクト概要</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>項目</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>プロダクト名</td><td>Artarium - 名画の庭</td></tr>
+<tr><td>コンセプト</td><td>「歩くほど、絵は育つ」— 名画をモチーフにした植物を歩数で育て、開花したら額装して自分だけの美術館に収蔵する</td></tr>
+<tr><td>形態</td><td>現在: Web PWA（モバイルファースト）。将来: Expo / React Native によるiOS・Androidアプリ</td></tr>
+<tr><td>コア体験</td><td>①毎日歩く → ②植物が6段階で成長 → ③60,000歩で開花（点灯式演出） → ④額縁を選んで額装 → ⑤コレクションで鑑賞</td></tr>
+<tr><td>差別化</td><td>健康管理アプリの「数字」ではなく、美術館のような情緒的・鑑賞的な成果物に歩数を変換する</td></tr>
+</tbody></table></div>
+<h2 id="2.-%E5%AF%BE%E8%B1%A1%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E3%81%A8%E5%88%A9%E7%94%A8%E5%8B%95%E6%A9%9F">2. 対象ユーザーと利用動機</h2>
+<ul>
+<li>美術館・アート鑑賞が好きな20代後半〜50代</li>
+<li>散歩・歩数習慣を楽しく続けたい人（派手なゲームUIや競争要素が苦手な層）</li>
+<li>植物・花・インテリアが好きな人</li>
+</ul>
+<p>重視する体験: 毎日少しずつ進む / 開花時の達成感 / コレクションを眺める満足感 / 無課金でも基本体験が成立する</p>
+<h2 id="3.-%E6%A9%9F%E8%83%BD%E8%A6%81%E4%BB%B6-%E2%80%94-%E5%AE%9F%E8%A3%85%E6%B8%88%E3%81%BF%EF%BC%88%E3%82%B3%E3%83%BC%E3%83%89%E3%81%A7%E7%A2%BA%E8%AA%8D%E6%B8%88%E3%81%BF%EF%BC%89">3. 機能要件 — 実装済み（コードで確認済み）</h2>
+<p>要件IDは以降のドキュメント（architecture.md / ux-review.md）から参照する。</p>
+<h3 id="fr-1-%E8%82%B2%E6%88%90%E3%82%B3%E3%82%A2">FR-1 育成コア</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>要件</th><th>実装状況</th></tr></thead>
+<tbody>
+<tr><td>FR-1.1</td><td>10歩 = 1成長ポイント（端数は繰越し）</td><td>✅ <code>STEPS_PER_POINT=10</code>、<code>stepRemainder</code> で繰越し</td></tr>
+<tr><td>FR-1.2</td><td>Stage1〜6 の成長（1,000pt=10,000歩刻みの線形カーブ）</td><td>✅ <code>STAGE_THRESHOLDS=[0..5000]</code></td></tr>
+<tr><td>FR-1.3</td><td>6,000pt（60,000歩）で開花完了</td><td>✅ <code>COMPLETION_THRESHOLD=6000</code></td></tr>
+<tr><td>FR-1.4</td><td>1度植物を選んだら開花まで他の植物は選べない</td><td>✅ ホームの種選択は未選択時のみ</td></tr>
+<tr><td>FR-1.5</td><td>1日の目標歩数 8,000歩（進捗ライン・湖の「光の道」に反映）</td><td>✅ <code>DAILY_STEP_GOAL=8000</code></td></tr>
+</tbody></table></div>
+<h3 id="fr-2-%E6%AD%A9%E6%95%B0%E9%80%A3%E6%90%BA">FR-2 歩数連携</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>要件</th><th>実装状況</th></tr></thead>
+<tbody>
+<tr><td>FR-2.1</td><td>ネイティブブリッジ受信（<code>window.Artarium.receiveStepData</code> / <code>ArtariumStepBridge.getTodaySteps</code>）</td><td>✅ 将来のHealthKit / Health Connect差し替え口</td></tr>
+<tr><td>FR-2.2</td><td>DeviceMotion による簡易歩数検知（加速度ピーク検出）</td><td>✅ iOSの権限リクエスト対応込み</td></tr>
+<tr><td>FR-2.3</td><td>取得不可時の開発用テスト加算（育成+10歩 / 設定+100歩）</td><td>✅ 設定側はデモモード限定</td></tr>
+<tr><td>FR-2.4</td><td>日付が変わったら今日の歩数を0にリセット、履歴を21日分保持</td><td>✅ ローカル日付キーで管理</td></tr>
+</tbody></table></div>
+<h3 id="fr-3-%E7%94%BB%E9%9D%A2%E3%83%BB%E3%83%95%E3%83%AD%E3%83%BC">FR-3 画面・フロー</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>要件</th><th>実装状況</th></tr></thead>
+<tbody>
+<tr><td>FR-3.1</td><td>3タブ構成（ホーム / コレクション / 設定）＋下部固定でない上部タブ</td><td>✅</td></tr>
+<tr><td>FR-3.2</td><td>ホーム = 没入型（3Dシーンが画面そのもの、UIは上に浮く）</td><td>✅ 2026-07-08の構成原則どおり</td></tr>
+<tr><td>FR-3.3</td><td>種選択は「カード → 開花プレビュー → この種を育てる」の2段階</td><td>✅</td></tr>
+<tr><td>FR-3.4</td><td>名前入力は初回起動でなく「最初の額装の直前」に要求</td><td>✅ 24文字上限</td></tr>
+<tr><td>FR-3.5</td><td>額装フロー: 完成プレート → 額縁3種をライブ3Dプレビューで選択 → コレクション収蔵</td><td>✅ walnut / museum-black / floating-maple</td></tr>
+<tr><td>FR-3.6</td><td>コレクション = 額装確定した作品のみ表示（Stage6到達だけでは出ない）</td><td>✅ <code>displayed</code> フラグで管理</td></tr>
+<tr><td>FR-3.7</td><td>コレクション拡大鑑賞（ドラッグで±0.38rad回転）</td><td>✅</td></tr>
+<tr><td>FR-3.8</td><td>図鑑「名画の由来」— 収蔵数に応じて名画解説が増える</td><td>✅ <code>CODEX_NOTES</code> 9作品分</td></tr>
+<tr><td>FR-3.9</td><td>鑑賞モード（UIを消して空と植物のみ全画面、Escで解除）</td><td>✅</td></tr>
+<tr><td>FR-3.10</td><td>週間振り返り（直近7日の棒グラフ、日曜18時以降に週1回自動提示＋設定から手動）</td><td>✅</td></tr>
+<tr><td>FR-3.11</td><td>進行の初期化（confirm付きリセット）</td><td>✅</td></tr>
+</tbody></table></div>
+<h3 id="fr-4-%E6%A4%8D%E7%89%A9%E3%83%BB%E3%83%87%E3%83%BC%E3%82%BF">FR-4 植物・データ</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>要件</th><th>実装状況</th></tr></thead>
+<tbody>
+<tr><td>FR-4.1</td><td>植物データは <code>data/plants.json</code> で管理（fetch失敗時は <code>fallbackPlants</code> に切替）</td><td>✅ <code>sync-models.mjs</code> で両者を同期</td></tr>
+<tr><td>FR-4.2</td><td>植物は名画モチーフ、実在作家名は表示しない（artist は &quot;Artarium Archive&quot;）</td><td>✅</td></tr>
+<tr><td>FR-4.3</td><td><strong>9種</strong>実装済み: 叫び / ひまわり / 神奈川沖浪裏 / モネ水の庭 / モナリザ / 星月夜 / 接吻 / ゲルニカ / 真珠の耳飾りの少女</td><td>✅ 各6ステージ = 54 GLB配置済み</td></tr>
+<tr><td>FR-4.4</td><td>土台タイプ: <code>gallery-loam</code>（土の丘）と <code>water-surface</code>（水面）を植物に紐づけ</td><td>✅ ユーザーは選べない仕様</td></tr>
+<tr><td>FR-4.5</td><td>3D配置値の正は <code>data/model-settings.json</code>（焼き込み、キー単位マージ）</td><td>✅ CLAUDE.md の鉄則どおり</td></tr>
+</tbody></table></div>
+<h3 id="fr-5-%E6%BC%94%E5%87%BA%E3%83%BB%E7%92%B0%E5%A2%83%E8%A1%A8%E7%8F%BE">FR-5 演出・環境表現</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>要件</th><th>実装状況</th></tr></thead>
+<tbody>
+<tr><td>FR-5.1</td><td>空: 時間帯（8ポイント補間）×季節×実天気連動のGLSLシェーダー背景</td><td>✅ WebGL2、非対応時CSS</td></tr>
+<tr><td>FR-5.2</td><td>実天気連携: Open-Meteo API（現在地、拒否時は東京、30分キャッシュ）</td><td>✅ 失敗時は時刻連動のみ</td></tr>
+<tr><td>FR-5.3</td><td>水面: 波動方程式シミュレーション（タップで波紋、雨で雨滴）</td><td>✅ float texture非対応時CSS</td></tr>
+<tr><td>FR-5.4</td><td>植物エフェクト: モチーフ別の揺れ・粒子・開花後の散り（花色は実テクスチャから採取）</td><td>✅ 9種それぞれ定義</td></tr>
+<tr><td>FR-5.5</td><td>点灯式（開花演出）: 暗転→スポットライト点灯→2.6秒後に完成プレート→4秒で平常</td><td>✅ <code>prefers-reduced-motion</code> 尊重</td></tr>
+<tr><td>FR-5.6</td><td>環境音: Web Audio 合成（雨・波紋・雷鳴）、設定でon/off</td><td>✅ 音声ファイル不使用</td></tr>
+<tr><td>FR-5.7</td><td>演出の疎結合連携: <code>artarium:lightning</code> / <code>artarium:ripple</code> CustomEvent</td><td>✅</td></tr>
+<tr><td>FR-5.8</td><td>傾き視差（DeviceOrientation で空と植物に奥行き）</td><td>✅</td></tr>
+<tr><td>FR-5.9</td><td>作品画像の保存: 空・水面・植物を1枚に合成し美術館プレート付きPNGでダウンロード</td><td>✅ <code>navigator.share</code> は未使用</td></tr>
+<tr><td>FR-5.10</td><td>当日1回の天気挨拶 / 初回の水面タップヒント</td><td>✅</td></tr>
+</tbody></table></div>
+<h3 id="fr-6-pwa%E3%83%BB%E3%82%AA%E3%83%95%E3%83%A9%E3%82%A4%E3%83%B3">FR-6 PWA・オフライン</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>要件</th><th>実装状況</th></tr></thead>
+<tbody>
+<tr><td>FR-6.1</td><td>Service Worker によるアプリシェルキャッシュ（<code>?v=</code> 世代管理）</td><td>✅ v235</td></tr>
+<tr><td>FR-6.2</td><td><code>.json</code> とナビゲーションはネットワーク優先、画像・GLBはキャッシュ優先</td><td>✅ CLAUDE.md 鉄則6の対策済み</td></tr>
+<tr><td>FR-6.3</td><td>manifest（standalone / portrait / テーマ色 #111813）</td><td>✅</td></tr>
+<tr><td>FR-6.4</td><td>オンライン/オフライン状態の画面内表示</td><td>✅</td></tr>
+</tbody></table></div>
+<h3 id="fr-7-%E9%96%8B%E7%99%BA%E3%83%BB%E9%81%8B%E7%94%A8%E6%94%AF%E6%8F%B4%EF%BC%88%60%3Fdemo%3D1%60-%E3%81%AE%E3%81%BF%EF%BC%89">FR-7 開発・運用支援（<code>?demo=1</code> のみ）</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>要件</th><th>実装状況</th></tr></thead>
+<tbody>
+<tr><td>FR-7.1</td><td>3D配置調整パネル（植物×ステージ×土×スライダー群、保存・本番反映）</td><td>✅</td></tr>
+<tr><td>FR-7.2</td><td>天気・季節・時刻・光の道の強制切替（URL <code>?weather=</code> でも可）</td><td>✅</td></tr>
+<tr><td>FR-7.3</td><td>演出プレビュー（点灯式再生・流れ星・花びら散らし・即完成）</td><td>✅</td></tr>
+<tr><td>FR-7.4</td><td>自動化ブリッジ <code>window.__artariumTune</code>（get/set/dump）＋ NDC計測</td><td>✅</td></tr>
+<tr><td>FR-7.5</td><td><code>sync-models.mjs</code>: GLB差し替え＋fallback同期＋バージョン一括更新</td><td>✅</td></tr>
+</tbody></table></div>
+<h2 id="4.-%E9%9D%9E%E6%A9%9F%E8%83%BD%E8%A6%81%E4%BB%B6">4. 非機能要件</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>要件</th><th>現状</th></tr></thead>
+<tbody>
+<tr><td>NFR-1</td><td><strong>段階的フォールバック</strong>: WebGL2不可→CSS空、float texture不可→CSS水面、Three.js読込失敗（ローカル→CDN）→CSS額装、JSON取得失敗→焼き込みデータ、天気API失敗→時刻連動のみ</td><td>✅ 全経路実装済み</td></tr>
+<tr><td>NFR-2</td><td><strong>省電力</strong>: 雲の低解像度描画・フレーム間引き・非表示時停止・GPUコンテキスト解放</td><td>✅</td></tr>
+<tr><td>NFR-3</td><td><strong>モデル軽量化</strong>: テクスチャ512〜1K、ポリゴン20,000以下目安</td><td>✅ 運用ルールとして規定</td></tr>
+<tr><td>NFR-4</td><td><strong>アクセシビリティ</strong>: <code>prefers-reduced-motion</code> 尊重、aria-live/aria-label、タップ領域44px以上</td><td>✅ 方針あり（網羅検証は ux-review.md で扱う）</td></tr>
+<tr><td>NFR-5</td><td><strong>移行容易性</strong>: localStorage→AsyncStorage、ブリッジ→HealthKit/Health Connect、Three.js→expo-three を差し替えやすい構造</td><td>△ 方針はあるが app.js が単一巨大ファイル（architecture.md で扱う）</td></tr>
+<tr><td>NFR-6</td><td><strong>データ保全</strong>: 進行データはローカルのみ。端末変更・ブラウザデータ削除で消失</td><td>⚠️ クラウド保存は未実装（既知の検討事項）</td></tr>
+<tr><td>NFR-7</td><td><strong>プライバシー</strong>: 位置情報は天気取得のみに使用、外部送信は Open-Meteo への座標のみ</td><td>✅ ただし明文化されたポリシーはない</td></tr>
+</tbody></table></div>
+<h2 id="5.-%E4%BB%95%E6%A7%98%E3%81%A8%E5%AE%9F%E8%A3%85%E3%81%AE%E3%82%BA%E3%83%AC%E3%83%BB%E6%9B%96%E6%98%A7%E7%82%B9%EF%BC%88%E4%BB%8A%E5%9B%9E%E3%81%AE%E8%AA%BF%E6%9F%BB%E3%81%A7%E3%81%AE%E7%99%BA%E8%A6%8B%EF%BC%89">5. 仕様と実装のズレ・曖昧点（今回の調査での発見）</h2>
+<p>優先度: 高=リリース前に解消すべき / 中=ドキュメント整合 / 低=気づきの記録</p>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>優先度</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>G-1</td><td><strong>高</strong></td><td><strong>育成ビュー（grow-view）がタブバーから到達できない</strong>。歩数同期・歩数計開始・成長確認ボタン群を持つ完全な画面だが、現行UIに導線がない。「ホームに統合して廃止する」か「導線を作る」かの決定が必要（ux-review.md で扱う）</td></tr>
+<tr><td>G-2</td><td><strong>高</strong></td><td><strong>PWAインストール誘導が未完成</strong>。<code>beforeinstallprompt</code> を捕捉・保持するが、<code>prompt()</code> を呼ぶUIが存在しない（<code>install-notice</code> 要素も index.html にない）。実装するか削除するかの決定が必要</td></tr>
+<tr><td>G-3</td><td>中</td><td>仕様書（specification.md）は植物5種のままだが実装は<strong>9種</strong>。localStorage キー一覧にも新キー4つ（音・タップヒント・天気挨拶・週次振り返り）が未記載。天気連携・環境音・点灯式・週間振り返り・図鑑・鑑賞モード自体が仕様書に未記載 → <strong>対応済み（2026-07-10）</strong>: specification.md を現状に同期</td></tr>
+<tr><td>G-4</td><td>中</td><td>README の起動URL・バージョン表記が古い（<code>v=20260701-23</code>、現在は <code>20260709-99</code>）。実装内容リストにも9種化・演出系が未反映 → <strong>対応済み（2026-07-10）</strong>: README を更新し、ドキュメントの役割分担も追記</td></tr>
+<tr><td>G-5</td><td>低</td><td>額縁GLBは museum-black のみ実配置。walnut / floating-maple はCSSフォールバック表示（roadmap の既知項目だが、額装体験の均質性に影響）</td></tr>
+<tr><td>G-6</td><td>低</td><td><code>DESIGN.md</code> は Artarium の設計書ではなく Claude ブランドのデザイントークン集。CLAUDE.md に「色は不採用・構造原則のみ参照」と明記済みだが、ファイル名が誤解を招く → <strong>対応済み（2026-07-10）</strong>: <code>docs/claude-design-tokens.md</code> へ移動・改名</td></tr>
+</tbody></table></div>
+<h2 id="6.-%E6%9C%AA%E5%AE%9F%E8%A3%85%E8%A6%81%E4%BB%B6%EF%BC%88%E5%84%AA%E5%85%88%E5%BA%A6%E4%BB%98%E3%81%8D%E3%83%90%E3%83%83%E3%82%AF%E3%83%AD%E3%82%B0%EF%BC%89">6. 未実装要件（優先度付きバックログ）</h2>
+<p>roadmap.md の優先度を踏襲しつつ、MoSCoW で再整理。</p>
+<h3 id="must%EF%BC%88%E5%88%9D%E6%9C%9F%E3%83%AA%E3%83%AA%E3%83%BC%E3%82%B9%E3%81%AB%E5%BF%85%E8%A6%81%EF%BC%89">Must（初期リリースに必要）</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>要件</th><th>根拠</th></tr></thead>
+<tbody>
+<tr><td>M-1</td><td>G-1 / G-2 の解消（到達不能ビューと未完成のインストール導線の決着）</td><td>未完成のまま出すと体験が壊れる</td></tr>
+<tr><td>M-2</td><td>額縁GLB残り2種（walnut / floating-maple）の実配置</td><td>額装＝コア体験の見せ場のため</td></tr>
+<tr><td>M-3</td><td>実機の歩数取得（HealthKit / Health Connect、またはWeb版継続ならブリッジ仕様の確定）</td><td>「歩いて育てる」が成立する前提条件</td></tr>
+<tr><td>M-4</td><td>仕様書・READMEの現状同期（G-3 / G-4） → <strong>対応済み（2026-07-10）</strong></td><td>開発継続の正確な土台</td></tr>
+</tbody></table></div>
+<h3 id="should%EF%BC%88%E3%83%AA%E3%83%AA%E3%83%BC%E3%82%B9%E5%BE%8C%E6%97%A9%E6%9C%9F%EF%BC%89">Should（リリース後早期）</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>要件</th></tr></thead>
+<tbody>
+<tr><td>S-1</td><td>ユーザー名の設定画面からの変更（現在は表示のみで変更導線なし）</td></tr>
+<tr><td>S-2</td><td>コレクション作品詳細（育成にかかった歩数・完成日・額縁タイプ）</td></tr>
+<tr><td>S-3</td><td>成長履歴（Stage到達日の保存 — 現在は保存していないため後から復元不可。<strong>早めにデータだけでも記録開始すべき</strong>）</td></tr>
+<tr><td>S-4</td><td>スマホアプリ化の技術検証（expo-three / react-three-fiber、AsyncStorage 移行）</td></tr>
+</tbody></table></div>
+<h3 id="could%EF%BC%88%E5%B0%86%E6%9D%A5%EF%BC%89">Could（将来）</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>要件</th></tr></thead>
+<tbody>
+<tr><td>C-1</td><td>背景選択機能（額装時。現在は無効化済み）</td></tr>
+<tr><td>C-2</td><td>通知（歩数が少ない日・開花間近。美術館らしい控えめな文体で）</td></tr>
+<tr><td>C-3</td><td>クラウド保存・端末間同期（NFR-6 の解消）</td></tr>
+<tr><td>C-4</td><td>マネタイズ実装（植物パック / 額縁パック / 展示室テーマ。成長速度課金・鑑賞を妨げる広告は不採用と決定済み）</td></tr>
+<tr><td>C-5</td><td>追加植物（10種目以降）、新土台タイプ（石の台座・砂地・苔）</td></tr>
+</tbody></table></div>
+<h2 id="7.-%E5%88%B6%E7%B4%84%E3%83%BB%E5%89%8D%E6%8F%90">7. 制約・前提</h2>
+<ul>
+<li><strong>技術制約</strong>: Web単体ではiOS/Androidの歩数を直接読めない（DeviceMotionは画面点灯中のみ・精度限定）。ここが Web PWA のままでは越えられない壁で、M-3 の判断に直結する。</li>
+<li><strong>データ制約</strong>: 保存先は localStorage のみ。容量・消失リスクを許容した設計（コレクションは再生成可能なパラメータのみ保存し、画像は保存しない方針が合理的に機能している）。</li>
+<li><strong>デザイン制約</strong>: 「ダークギャラリー」トークン（CLAUDE.md）が正。ゲーム的な派手さ・強い課金誘導・実在作家名の表示は禁止。英語ラベルには必ず日本語を併記。</li>
+<li><strong>運用制約</strong>: 新規ファイル追加時は sw.js の CACHE リスト追加、版数アップは「内容生成後」、配置値の焼き込みは意図したキーのみ（CLAUDE.md 鉄則1〜7）。</li>
+</ul>
+<h2 id="8.-%E4%B8%BB%E8%A6%81%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AA%E3%83%BC%EF%BC%88%E5%8F%97%E3%81%91%E5%85%A5%E3%82%8C%E5%9F%BA%E6%BA%96%E3%81%A4%E3%81%8D%EF%BC%89">8. 主要ユーザーストーリー（受け入れ基準つき）</h2>
+<ol>
+<li><strong>散歩好きの会社員として</strong>、日々の歩数が美しい植物の成長に変わってほしい。なぜなら数字だけの歩数計は続かないから。</li>
+</ol>
+<ul>
+<li>受け入れ基準: アプリを開くと今日の歩数が反映され、ステージが上がる瞬間に点灯式が再生される。</li>
+</ul>
+<ol>
+<li><strong>アート好きとして</strong>、完成した植物を額装して自分の美術館に並べたい。なぜなら「集めて眺める」満足感が続ける理由になるから。</li>
+</ol>
+<ul>
+<li>受け入れ基準: 開花後に額縁を選べ、コレクションに作品名・作者名（自分の名前）付きで並び、拡大して鑑賞できる。</li>
+</ul>
+<ol>
+<li><strong>忙しい日でも</strong>、アプリを数秒開くだけで庭の空気（天気・時間帯・季節）を感じたい。</li>
+</ol>
+<ul>
+<li>受け入れ基準: 起動するだけで現実の天気・時刻と連動したシーンが表示される。操作は不要。</li>
+</ul>
+<ol>
+<li><strong>完成の記念に</strong>、作品を画像として手元に残したい。</li>
+</ol>
+<ul>
+<li>受け入れ基準: 完成プレートから美術館プレート付きPNGを保存できる。</li>
+</ul>
+      </main>
+    </div>
+  </body>
+</html>

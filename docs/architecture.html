@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Artarium アーキテクチャ設計書（architecture.md） | Artarium Docs</title>
+    <link rel="stylesheet" href="./docs.css">
+  </head>
+  <body>
+    <div class="doc-shell">
+      <aside class="doc-nav">
+        <a class="brand" href="./index.html"><svg viewBox="0 0 96 104" aria-hidden="true"><rect x="10" y="7" width="76" height="90" rx="10" fill="none" stroke="#b99a55" stroke-width="8"/><path d="M48 82 V45" stroke="#eee6d5" stroke-width="7" stroke-linecap="round" fill="none"/><path d="M48 57 C33 56 23 45 21.5 27 C39 30 47.5 42 48 57 Z" fill="#eee6d5"/><path d="M48 49 C48.5 32.5 59 21 74.5 18.5 C73 35.5 62 47 48 49 Z" fill="#eee6d5"/></svg><span>Artarium Docs</span></a>
+        <nav><a class="" href="./presentation.html">プレゼン資料</a>
+<a class="" href="./brand-identity.html">ブランドガイドライン</a>
+<a class="" href="./development-instructions.html">開発指示書</a>
+<a class="" href="./specification.html">仕様書</a>
+<a class="" href="./requirements.html">要件定義書（2026-07-10監査）</a>
+<a class="is-active" href="./architecture.html">アーキテクチャ設計書</a>
+<a class="" href="./ux-review.html">UI/UXレビュー（2026-07-10）</a>
+<a class="" href="./testing.html">検証チェックリスト</a>
+<a class="" href="./roadmap.html">今後の開発計画</a>
+<a class="" href="./development-schedule.html">開発スケジュール案</a>
+<a class="" href="./development-schedule-dates.html">開発スケジュール（実日付版）</a></nav>
+      </aside>
+      <main class="doc-main">
+        <h1 id="artarium-%E3%82%A2%E3%83%BC%E3%82%AD%E3%83%86%E3%82%AF%E3%83%81%E3%83%A3%E8%A8%AD%E8%A8%88%E6%9B%B8%EF%BC%88architecture.md%EF%BC%89">Artarium アーキテクチャ設計書（architecture.md）</h1>
+<p>作成日: 2026-07-10 前提: <a href="requirements.html">requirements.md</a> の要件ID（FR/NFR/G/M/S/C）を参照する。 位置づけ: 現状構造の記録（as-is）と、改善の方向づけ（to-be）。実装手順の正は <code>development-instructions.md</code>、運用の鉄則は <code>CLAUDE.md</code>。 更新ルール: この文書は<strong>日付つきスナップショット（設計記録）</strong>。構造が大きく変わったら改訂日を明記して該当章を更新する。§9 の不変条件だけは常に最新を維持する。</p>
+<p>---</p>
+<h2 id="1.-%E6%8A%80%E8%A1%93%E3%82%B9%E3%82%BF%E3%83%83%E3%82%AF%E3%81%A8%E8%A8%AD%E8%A8%88%E6%80%9D%E6%83%B3">1. 技術スタックと設計思想</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>項目</th><th>採用</th><th>理由・特記</th></tr></thead>
+<tbody>
+<tr><td>言語・実行形態</td><td>バニラJS（ES Modules）、<strong>ビルド工程なし</strong></td><td><code>python3 -m http.server</code> だけで動く。トランスパイル・バンドラ・型チェックなし</td></tr>
+<tr><td>3D</td><td>Three.js r164（<code>vendor/</code> 同梱、CDNフォールバック）</td><td>GLTFLoader / BufferGeometryUtils 同梱で完全オフライン動作可</td></tr>
+<tr><td>シェーダー</td><td>自作GLSL（空: WebGL2生API / 水面: WebGL2生API + Three.js ShaderMaterial）</td><td>ライブラリに頼らず演出を完全制御</td></tr>
+<tr><td>状態管理</td><td>単一 <code>state</code> オブジェクト + <code>render()</code> 一括再描画</td><td>フレームワークなし。React的な「状態→全再描画」を手書きで踏襲</td></tr>
+<tr><td>永続化</td><td>localStorage（+ リポジトリ焼き込みJSON）</td><td>将来 AsyncStorage へ差し替え前提（NFR-5）</td></tr>
+<tr><td>配信</td><td>PWA（Service Worker + <code>?v=</code> クエリの世代管理）</td><td>静的ホスティングのみで完結</td></tr>
+<tr><td>外部依存</td><td>Open-Meteo API（天気）のみ。APIキー・アカウント不要</td><td>失敗しても時刻連動で動く（NFR-1）</td></tr>
+</tbody></table></div>
+<p><strong>設計思想</strong>: 「サーバーもビルドもない、1フォルダで完結する美術館」。すべての外部要因（GPU機能・ネットワーク・センサー権限）に対して段階的フォールバックを持ち、<strong>最悪でもCSSだけで体験が成立する</strong>ことを不変条件にしている。</p>
+<h2 id="2.-%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90">2. 全体構成</h2>
+<pre><code>┌────────────────────────────────────────────────────────────┐
+│ index.html（画面骨格） + styles.css（ダークギャラリートークン）│
+├────────────────────────────────────────────────────────────┤
+│                    app.js（統合ハブ・約3,900行）              │
+│  状態管理 / ビュー描画 / 歩数→成長 / 額装フロー / 3Dシーン構築 │
+│  デモ調整パネル / 画像保存 / SW登録                           │
+├──────────┬──────────┬───────────┬──────────┬───────────────┤
+│ sky-     │ water-   │ plant-    │ weather  │ ambient-      │
+│ background│ surface  │ effects   │ .js      │ sound.js      │
+│ (空・季節 │ (波動sim │ (揺れ・粒子│ (Open-   │ (WebAudio     │
+│  ・時刻)  │  ・反射)  │  ・散り)  │  Meteo)  │  合成音)      │
+├──────────┴──────────┴───────────┴──────────┴───────────────┤
+│ data/plants.json・model-settings.json │ models/ (GLB×57+)   │
+│ vendor/ (Three.js r164)               │ sw.js / manifest    │
+└────────────────────────────────────────────────────────────┘</code></pre>
+<p><strong>依存方向</strong>: app.js → 各モジュール（一方向）。モジュール間の直接依存は <strong>water-surface → sky-background</strong>（太陽位置・歩数進捗の同期）の1本のみ。</p>
+<p><strong>疎結合の仕掛け</strong>:</p>
+<ul>
+<li><strong>CustomEvent</strong>: <code>artarium:lightning</code>（空→雷鳴音）、<code>artarium:ripple</code>（水面→波紋音）。音モジュールは他モジュールを一切importしない。</li>
+<li><strong>依存注入</strong>: plant-effects と water-surface のThree.js部分は <code>THREE</code> を引数で受け取る。three.module.js を直接importするのは app.js の動的import（<code>loadThreeRuntime</code>）だけ。将来 expo-three へ差し替える際の変更点が1箇所に集約されている（NFR-5）。</li>
+</ul>
+<h2 id="3.-%E3%83%A2%E3%82%B8%E3%83%A5%E3%83%BC%E3%83%AB%E4%B8%80%E8%A6%A7">3. モジュール一覧</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>ファイル</th><th>行数</th><th>役割</th><th>主要export</th><th>特記</th></tr></thead>
+<tbody>
+<tr><td>app.js</td><td>3,915</td><td>統合ハブ（下記 §4）</td><td>なし（エントリポイント）</td><td><strong>肥大化が最大の技術的負債</strong>（§8）</td></tr>
+<tr><td>sky-background.js</td><td>708</td><td>空＋湖のGLSL背景。時刻8点補間×季節×天気。FXレイヤー（花火・蛍・流れ星）</td><td>mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress ほか</td><td>低解像度雲・フレーム間引き・非表示停止の省電力設計（NFR-2）</td></tr>
+<tr><td>water-surface.js</td><td>575</td><td>波動方程式シミュレーション水面（独立canvas版とThree.jsメッシュ版の2系統）</td><td>mountWaterSurface, observeWaterSurfaces, createThreeWater, setAmbientRain, rainBurst</td><td>RG16F ping-pong FBO。光の道は空の太陽位置と同期</td></tr>
+<tr><td>plant-effects.js</td><td>1,045</td><td>モチーフ別演出（揺れ・粒子・開花後の散り・雨の露）。頂点シェーダー注入</td><td>createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow</td><td>花びら色はGLBテクスチャの実画素から採取</td></tr>
+<tr><td>weather.js</td><td>105</td><td>Open-Meteo→表現パラメータ変換。30分キャッシュ</td><td>initWeatherSync, WEATHER_PRESETS</td><td>位置情報拒否時は東京固定</td></tr>
+<tr><td>ambient-sound.js</td><td>126</td><td>WebAudio合成音（雨・波紋・雷鳴）</td><td>setSoundEnabled, setRainSoundLevel, playRipplePlop</td><td>音声ファイル不使用。オフ時はAudioContext自体を作らない</td></tr>
+<tr><td>sw.js</td><td>71</td><td>アプリシェルキャッシュ</td><td>—</td><td><code>.json</code> はネットワーク優先（鉄則6）</td></tr>
+<tr><td>scripts/sync-models.mjs</td><td>—</td><td>GLB差し替え＋fallback同期＋版数一括更新</td><td>—</td><td>運用の要（§7）</td></tr>
+<tr><td>docs/build-html.mjs</td><td>—</td><td>Markdown→HTML資料ビルダー</td><td>—</td><td>自前パーサ</td></tr>
+</tbody></table></div>
+<h2 id="4.-app.js-%E3%81%AE%E5%86%85%E9%83%A8%E6%A7%8B%E9%80%A0%EF%BC%88as-is%EF%BC%89">4. app.js の内部構造（as-is）</h2>
+<p>単一ファイルだが、内部は概ね以下の順に区画化されている（行番号は 2026-07-10 時点）:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>区画</th><th>行範囲(目安)</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>定数・植物データ</td><td>1〜635</td><td>import、成長定数（<code>STEPS_PER_POINT</code> 等）、<code>CODEX_NOTES</code>、額縁定義、<code>fallbackPlants</code>（plants.json の複製）、<code>state</code> 定義</td></tr>
+<tr><td>起動・読込</td><td>637〜930</td><td><code>init()</code>、plants.json / model-settings.json fetch、localStorage読み書き、モデル設定の正規化・レガシー移行</td></tr>
+<tr><td>進行・成長ロジック</td><td>931〜1005</td><td><code>loadProgress</code> / <code>saveProgress</code>、<code>getStage</code>、<code>isPlantComplete</code></td></tr>
+<tr><td>イベント結線</td><td>1007〜1487</td><td><code>bindEvents()</code>（約330行の一枚岩）、デモパネル操作、マルチタブ同期</td></tr>
+<tr><td>ビュー描画</td><td>1489〜1911</td><td><code>render()</code> と renderXxx 群（ホーム・種選択・完成プレート・育成）</td></tr>
+<tr><td>歩数・成長適用</td><td>1913〜2007</td><td>ブリッジ同期、<code>addGrowthFromSteps</code>、完成マーク</td></tr>
+<tr><td>演出</td><td>2009〜2180</td><td>点灯式（<code>playBloomCelebration</code>）、鑑賞モード、傾き視差</td></tr>
+<tr><td>センサー・日付</td><td>2182〜2350</td><td>DeviceMotion歩数計、日付リセット、週間振り返り、図鑑、設定</td></tr>
+<tr><td>額装・コレクション</td><td>2352〜2760</td><td>デモパネル描画、額縁選択、拡大鑑賞、ギャラリー描画</td></tr>
+<tr><td>3Dシーン構築</td><td>2761〜3915</td><td><code>loadThreeRuntime</code>、<code>createGalleryScene</code> / <code>createPlantScene</code>、額縁組み立て、反射・水面・真珠質マテリアル、アニメーションループ、GLB読込、フォールバック</td></tr>
+</tbody></table></div>
+<p><strong>描画モデル</strong>: <code>render()</code> が全ビューの renderXxx を呼び、<code>is-active</code> の切替とinnerHTML再構築で更新する。3Dシーンだけは <code>container.__artariumScene</code> とトークン（<code>isCurrentModelRender</code>）で管理し、再描画時に持続canvas（空・FX・水面）を除いて破棄・再構築する（CLAUDE.md 鉄則5の背景）。</p>
+<h2 id="5.-%E3%83%87%E3%83%BC%E3%82%BF%E3%83%95%E3%83%AD%E3%83%BC">5. データフロー</h2>
+<h3 id="5.1-%E6%AD%A9%E6%95%B0-%E2%86%92-%E6%88%90%E9%95%B7-%E2%86%92-%E4%BF%9D%E5%AD%98-%E2%86%92-%E8%A1%A8%E7%A4%BA%EF%BC%88%E3%82%B3%E3%82%A2%E3%83%AB%E3%83%BC%E3%83%97%EF%BC%89">5.1 歩数 → 成長 → 保存 → 表示（コアループ）</h3>
+<pre><code>[歩数ソース]                       [変換]                [永続化]
+ ネイティブブリッジ ─┐
+ DeviceMotion歩数計 ─┼→ applyStepSnapshot / addStepsToSelectedPlant
+ テスト加算        ─┘        │
+                    addGrowthFromSteps(FR-1.1: 10歩=1pt, 端数繰越)
+                              │
+              points更新 → getStage() でステージ判定
+                              │ ステージ上昇?
+                              ├─ Yes → pendingBloomCelebration 予約
+                              │         (次回描画完了時に点灯式 FR-5.5)
+                              ├─ 6000pt到達 → newlyCompletedPlantId
+                              │         (完成プレート → 額装フロー FR-3.5)
+                              └→ saveProgress() → localStorage &quot;artarium-mvp-state&quot;
+                                       │
+                              render() → ホーム3Dシーン(該当stageのGLB) ＋
+                                        setSkyStepProgress(湖の光の道 FR-1.5)</code></pre>
+<h3 id="5.2-%E5%A4%A9%E6%B0%97-%E2%86%92-%E3%82%B7%E3%83%BC%E3%83%B3%E4%B8%80%E6%8B%AC%E5%8F%8D%E6%98%A0%EF%BC%88%E3%83%95%E3%82%A1%E3%83%B3%E3%82%A2%E3%82%A6%E3%83%88%EF%BC%89">5.2 天気 → シーン一括反映（ファンアウト）</h3>
+<pre><code>weather.js (Open-Meteo, 30分毎) → applyWeatherToScene(weather)
+   ├→ setSkyWeather()      … 空の雲・雨・雷
+   ├→ setAmbientRain()     … 全水面の雨滴
+   ├→ setRainSoundLevel()  … 雨音量
+   ├→ setPlantWind() / setPlantRain() … 植物の揺れ・葉の露
+   └→ maybeShowWeatherGreeting() … 当日1回の挨拶</code></pre>
+<h3 id="5.3-%E8%A8%AD%E5%AE%9A%E5%80%A4%E3%81%AE%E5%84%AA%E5%85%88%E9%A0%86%E4%BD%8D%EF%BC%883d%E9%85%8D%E7%BD%AE%EF%BC%89">5.3 設定値の優先順位（3D配置）</h3>
+<pre><code>data/model-settings.json（焼き込み・正）
+   │ 起動時 fetch → applyBakedModelSettings（キー単位マージ・鉄則1）
+   ▼
+localStorage（demo系 / production系）→ 正規化・レガシー移行
+   ▼
+getSceneModelSettings(stage, plantId) → シーン構築へ</code></pre>
+<p>デモパネルの調整は localStorage 側に保存され、「本番へ反映」で production 系キーへコピー＋<code>storage</code> イベントで他タブへ通知される。</p>
+<h2 id="6.-3d%E3%82%B7%E3%83%BC%E3%83%B3%E6%A7%8B%E7%AF%89%EF%BC%882%E7%B3%BB%E7%B5%B1%EF%BC%89">6. 3Dシーン構築（2系統）</h2>
+<div class="table-wrap"><table>
+<thead><tr><th></th><th>createPlantScene（ホーム育成）</th><th>createGalleryScene（額装・コレクション）</th></tr></thead>
+<tbody>
+<tr><td>内容</td><td>植物GLB＋土/水面＋植物エフェクト</td><td>額縁（GLBまたは <code>buildShadowBoxFrame</code> で生成）＋開花植物＋反射</td></tr>
+<tr><td>使用箇所</td><td>ホーム、種プレビュー</td><td>コレクション壁、額縁選択プレビュー、拡大鑑賞</td></tr>
+<tr><td>共通処理</td><td><code>normalizeModel</code>（寸法正規化）、<code>createTunedModelGroup</code>（焼き込み値適用）、水面なら <code>createWaterEnvironmentGroup</code>（shader水面＋Y反転クローン反射）</td><td>同左</td></tr>
+</tbody></table></div>
+<p><strong>フォールバック連鎖（NFR-1）</strong>: vendor Three.js → CDN → 失敗なら <code>renderModelFallback</code> / <code>restoreGalleryFallback</code>（CSS額装）。GLB個別の読込失敗も <code>safeLoadGltf</code> で握って継続。</p>
+<p><strong>ライティング</strong>: <code>getSunLighting</code> が sky-background の太陽状態（<code>getSkySunState</code>）から光源色・方向を作り、空と3Dシーンの光を一致させる。</p>
+<h2 id="7.-%E3%82%A2%E3%82%BB%E3%83%83%E3%83%88%E3%83%BB%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3%E7%AE%A1%E7%90%86%E3%81%A8%E9%85%8D%E4%BF%A1">7. アセット・バージョン管理と配信</h2>
+<pre><code>node scripts/sync-models.mjs
+  ├ models/ の最新GLBを検出 → data/plants.json の stageModelPaths 更新
+  ├ app.js の fallbackPlants を plants.json と同期（二重管理の自動解消）
+  ├ ASSET_VERSION を YYYYMMDD-NN でインクリメント
+  └ index.html / app.js / sw.js の全 ?v= と CACHE_NAME を一括更新</code></pre>
+<ul>
+<li><strong>キャッシュ戦略（sw.js）</strong>: navigate・<code>.json</code>・document/style/script/worker は<strong>ネットワーク優先</strong>（成功時キャッシュ更新、失敗時キャッシュ）。画像・GLBは<strong>キャッシュ優先</strong>。<code>.json</code> をキャッシュ優先へ戻すのは禁止（CLAUDE.md 鉄則6の再発防止策）。</li>
+<li><strong>運用順序</strong>: 「内容の生成が終わってから版数を上げる」（鉄則6）。新規ファイルは sw.js の APP_SHELL への追加を忘れない（鉄則4）。</li>
+</ul>
+<h2 id="8.-%E8%AA%B2%E9%A1%8C%E3%81%A8%E6%94%B9%E5%96%84%E6%8F%90%E6%A1%88">8. 課題と改善提案</h2>
+<h3 id="8.1-%E4%BB%8A%E3%81%99%E3%81%90%E7%9B%B4%E3%81%99%E3%81%B9%E3%81%8D%E3%82%82%E3%81%AE">8.1 今すぐ直すべきもの</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>課題</th><th>提案</th></tr></thead>
+<tbody>
+<tr><td>A-1</td><td><strong>バージョン定数の drift</strong>: <code>app.js:60</code> の <code>ASSET_VERSION = &quot;20260709-91&quot;</code> に対し、実際の <code>?v=</code> は <code>20260709-99</code>。plants.json / model-settings.json のfetchと「本番で確認」ボタンが古い版数キーを使っている。sw.js の <code>.json</code> ネットワーク優先が実害を吸収しているが、<strong>版数管理が2系統に割れている状態</strong>。sedによる一括更新が <code>?v=</code> 文字列しか書き換えなかったことが原因（鉄則4と同根）</td><td>即時: <code>ASSET_VERSION</code> を現行版へ手動同期。恒久: <code>?v=</code> の一括更新時に <code>ASSET_VERSION</code> も対象に含める（sync-models.mjs 経由の更新に一本化するのが最善） → <strong>対応済み（2026-07-10）</strong>: <code>ASSET_VERSION</code> を <code>20260709-99</code> に同期。恒久策（sync-models.mjs への一本化）は運用ルールとして testing.md に記載</td></tr>
+<tr><td>A-2</td><td><strong>到達不能コード</strong>: grow-view（G-1）と install-notice 描画（G-2）が本番導線から切れたまま残存</td><td>要件判断（M-1）とセットで、廃止なら削除、採用なら導線実装</td></tr>
+<tr><td>A-3</td><td><strong><code>bindEvents()</code> の一枚岩</strong>（約330行）: 全画面のイベントが1関数に集中し、機能追加のたびに肥大化</td><td>§8.2 の分割と同時に、ビュー単位のbind関数へ分離</td></tr>
+</tbody></table></div>
+<h3 id="8.2-%E6%AE%B5%E9%9A%8E%E7%9A%84%E3%81%AB%E9%80%B2%E3%82%81%E3%82%8B%E3%82%82%E3%81%AE%EF%BC%88%E3%82%B9%E3%83%9E%E3%83%9B%E3%82%A2%E3%83%97%E3%83%AA%E5%8C%96-%3D-s-4-%E3%81%B8%E3%81%AE%E5%B8%83%E7%9F%B3%EF%BC%89">8.2 段階的に進めるもの（スマホアプリ化 = S-4 への布石）</h3>
+<p><strong>app.js の分割</strong>。3,915行の単一ファイルは、RN移行時に「何がUI依存で何がロジックか」の切り分けコストがそのまま移植コストになる。ビルド工程を増やさずES Modulesのまま、§4の既存区画に沿って切り出す:</p>
+<pre><code>app.js（エントリ・結線のみに縮小）
+├ core/state.js        … state定義・saveProgress/loadProgress・localStorage抽象
+├ core/growth.js       … 歩数→pt変換・ステージ判定（純関数群。最初に切り出す価値が最大）
+├ core/steps.js        … ブリッジ・DeviceMotion・日付リセット
+├ views/…              … renderHome/renderGallery/renderSettings ほか
+├ scene/…              … createPlantScene/createGalleryScene・マテリアル群
+└ demo/tuning-panel.js … ?demo=1 専用（本番バンドルから概念的に隔離）</code></pre>
+<p>移行手順の推奨: ①純関数（growth・日付・フォーマッタ）→ ②storage層（localStorage を <code>storage.get/set</code> 抽象に包む = AsyncStorage差し替え口）→ ③ビュー → ④3Dシーン、の順で依存の少ない側から。各段階で <code>sync-models.mjs</code> の <code>fallbackPlants</code> 置換と <code>?v=</code> 更新の対象パスを追随させること（スクリプトが app.js 単一ファイル前提になっている点に注意）。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>課題</th><th>提案</th></tr></thead>
+<tbody>
+<tr><td>A-4</td><td><strong>テスト不在</strong>: 成長計算・日付リセット・端数繰越などの純ロジックにも自動テストがない。現状の検証はスクリーンショット目視と scratchpad のスクリプト</td><td>core/growth.js 切り出しと同時に <code>node --test</code> で単体テスト追加（ビルド不要のまま導入できる）。特に「日付跨ぎ」「端数繰越」「ステージ境界」「21日履歴の刈り込み」</td></tr>
+<tr><td>A-5</td><td><strong>localStorage 直書きの散在</strong>: 読み書きが11キーに分散</td><td>storage抽象（上記②）に集約。AsyncStorage移行（NFR-5）の必須前提</td></tr>
+<tr><td>A-6</td><td><strong>fallbackPlants の二重管理</strong>: plants.json とapp.js内配列の重複。sync-models.mjs が同期するが、手編集すると乖離しうる</td><td>当面は「plants.json を手で編集したら必ず sync-models.mjs を通す」を運用ルール化。分割後は fetch失敗時のみ動的importする別ファイルへ</td></tr>
+</tbody></table></div>
+<h3 id="8.3-%E5%B0%86%E6%9D%A5%EF%BC%88%E3%82%A2%E3%83%97%E3%83%AA%E5%8C%96%E4%BB%A5%E9%99%8D%EF%BC%89">8.3 将来（アプリ化以降）</h3>
+<ul>
+<li><strong>クラウド保存（C-3）</strong>: 保存データが「進行パラメータのみ・画像なし」という現設計はそのままサーバー同期に向く。<code>artarium-mvp-state</code> のスキーマに <code>schemaVersion</code> を今のうちに入れておくと移行が楽。</li>
+<li><strong>3D層の移植</strong>: plant-effects / water-surface のDIパターンは維持。sky-background（WebGL2生API）はRNで動かないため、expo-gl 用の書き直しかネイティブスカイの再設計が必要 — 移植コストが最も高いのはここ。</li>
+<li><strong>通知（C-2）</strong>: Web Push を挟まず、アプリ化時にネイティブ通知で実装する方が「控えめな美術館の文体」の制御がしやすい。</li>
+</ul>
+<h2 id="9.-%E4%B8%8D%E5%A4%89%E6%9D%A1%E4%BB%B6%EF%BC%88%E5%A4%89%E6%9B%B4%E3%81%97%E3%81%A6%E3%81%AF%E3%81%84%E3%81%91%E3%81%AA%E3%81%84%E3%82%82%E3%81%AE%EF%BC%89">9. 不変条件（変更してはいけないもの）</h2>
+<ol>
+<li><code>.json</code> のSWネットワーク優先（鉄則6）</li>
+<li>持続キャンバス除外セレクタ <code>canvas:not(.sky-canvas):not(.sky-fx-canvas):not(.water-surface-canvas)</code>（鉄則5）</li>
+<li><code>applyBakedModelSettings</code> のキー単位マージ（鉄則1）</li>
+<li>モジュールへのTHREE依存注入（直接importをapp.jsに集約）</li>
+<li>すべての外部要因へのフォールバック連鎖（NFR-1）— 新機能も「失敗したら静かに退化する」を守る</li>
+</ol>
+      </main>
+    </div>
+  </body>
+</html>
