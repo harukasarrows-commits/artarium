@@ -60,6 +60,9 @@ const THREE_CDN_VERSION = "0.164.1";
 const ASSET_VERSION = "20260709-91";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
+const MODEL_STAGE_KEYS = Object.freeze(
+  Array.from({ length: MODEL_STAGE_COUNT }, (_, index) => String(index + 1))
+);
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
 const WATER_SURFACE_REFERENCE_PLANT_ID = "water-lily-bloom";
 const DEFAULT_MODEL_SETTINGS = {
@@ -708,7 +711,7 @@ function applyBakedModelSettings(baked) {
 }
 
 function loadSavedState() {
-  return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  return loadJsonObject(STORAGE_KEY, "Saved state");
 }
 
 function loadUserName() {
@@ -724,47 +727,49 @@ function saveUserName(name) {
 }
 
 function loadDemoModelSettings() {
-  try {
-    return normalizeModelSettings(JSON.parse(localStorage.getItem(DEMO_MODEL_STORAGE_KEY) || "{}"));
-  } catch (error) {
-    console.warn("Demo model settings could not be loaded:", error);
-    return createModelSettings();
-  }
+  return loadStoredModelSettings(DEMO_MODEL_STORAGE_KEY, "Demo model settings");
 }
 
 function saveDemoModelSettings() {
-  localStorage.setItem(DEMO_MODEL_STORAGE_KEY, JSON.stringify(state.demoModelSettings));
+  saveJson(DEMO_MODEL_STORAGE_KEY, state.demoModelSettings);
 }
 
 function loadProductionModelSettings() {
-  try {
-    return normalizeModelSettings(JSON.parse(localStorage.getItem(PRODUCTION_MODEL_STORAGE_KEY) || "{}"));
-  } catch (error) {
-    console.warn("Production model settings could not be loaded:", error);
-    return createModelSettings();
-  }
+  return loadStoredModelSettings(PRODUCTION_MODEL_STORAGE_KEY, "Production model settings");
 }
 
 function saveProductionModelSettings() {
-  localStorage.setItem(PRODUCTION_MODEL_STORAGE_KEY, JSON.stringify(state.productionModelSettings));
+  saveJson(PRODUCTION_MODEL_STORAGE_KEY, state.productionModelSettings);
 }
 
 function loadSoilAssignments(storageKey) {
+  return loadJsonObject(storageKey, "Soil assignments");
+}
+
+function saveDemoSoilAssignments() {
+  saveJson(DEMO_SOIL_STORAGE_KEY, state.demoSoilAssignments);
+}
+
+function saveProductionSoilAssignments() {
+  saveJson(PRODUCTION_SOIL_STORAGE_KEY, state.productionSoilAssignments);
+}
+
+function loadJsonObject(storageKey, label) {
   try {
-    const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
-    return saved && typeof saved === "object" ? saved : {};
+    const value = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
   } catch (error) {
-    console.warn("Soil assignments could not be loaded:", error);
+    console.warn(`${label} could not be loaded:`, error);
     return {};
   }
 }
 
-function saveDemoSoilAssignments() {
-  localStorage.setItem(DEMO_SOIL_STORAGE_KEY, JSON.stringify(state.demoSoilAssignments));
+function saveJson(storageKey, value) {
+  localStorage.setItem(storageKey, JSON.stringify(value));
 }
 
-function saveProductionSoilAssignments() {
-  localStorage.setItem(PRODUCTION_SOIL_STORAGE_KEY, JSON.stringify(state.productionSoilAssignments));
+function loadStoredModelSettings(storageKey, label) {
+  return normalizeModelSettings(loadJsonObject(storageKey, label));
 }
 
 function migrateWaterSurfaceAssignments() {
@@ -786,8 +791,8 @@ function migrateWaterSurfaceAssignments() {
 }
 
 function createStageModelSettings(seed = DEFAULT_MODEL_SETTINGS) {
-  return Array.from({ length: MODEL_STAGE_COUNT }, (_, index) => index + 1).reduce((settings, stage) => {
-    settings[String(stage)] = { ...DEFAULT_MODEL_SETTINGS, ...seed };
+  return MODEL_STAGE_KEYS.reduce((settings, stage) => {
+    settings[stage] = { ...DEFAULT_MODEL_SETTINGS, ...seed };
     return settings;
   }, {});
 }
@@ -820,7 +825,7 @@ function normalizeModelSettings(saved) {
 
 function normalizeStageModelSettings(saved) {
   const stageSettings = createStageModelSettings();
-  const hasStageSettings = saved?.stages || Array.from({ length: MODEL_STAGE_COUNT }, (_, index) => String(index + 1)).some((stage) => saved?.[stage]);
+  const hasStageSettings = saved?.stages || MODEL_STAGE_KEYS.some((stage) => saved?.[stage]);
   const flatSettings = Object.keys(DEFAULT_MODEL_SETTINGS).some((key) => saved?.[key] !== undefined)
     ? Object.keys(DEFAULT_MODEL_SETTINGS).reduce((settings, key) => {
         settings[key] = saved[key] === undefined ? DEFAULT_MODEL_SETTINGS[key] : Number(saved[key]);
@@ -885,7 +890,7 @@ function isolateLegacySharedModelSettings(settings) {
 }
 
 function areStageSettingsEqual(left, right) {
-  return Array.from({ length: MODEL_STAGE_COUNT }, (_, index) => String(index + 1)).every((stage) => {
+  return MODEL_STAGE_KEYS.every((stage) => {
     const leftStage = getModelSettingsForStage(left, stage);
     const rightStage = getModelSettingsForStage(right, stage);
     return Object.keys(DEFAULT_MODEL_SETTINGS).every((key) => Math.abs(leftStage[key] - rightStage[key]) < 0.0001);
@@ -902,8 +907,8 @@ function getModelSettings(settings, plantId, stage) {
 }
 
 function createPlantModelSettings(settings, plantId) {
-  return Array.from({ length: MODEL_STAGE_COUNT }, (_, index) => index + 1).reduce((stages, stage) => {
-    stages[String(stage)] = plantId && plantId !== LEGACY_MODEL_SETTINGS_PLANT_ID
+  return MODEL_STAGE_KEYS.reduce((stages, stage) => {
+    stages[stage] = plantId && plantId !== LEGACY_MODEL_SETTINGS_PLANT_ID
       ? getDefaultModelSettingsForStage(settings, stage, plantId)
       : getModelSettingsForStage(settings?.__default || settings, stage);
     return stages;
@@ -948,7 +953,7 @@ function loadStepState(saved) {
 }
 
 function saveProgress() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+  saveJson(STORAGE_KEY, {
     ...state.progress,
     __activePlantId: state.selectedPlantId,
     __steps: {
@@ -957,7 +962,7 @@ function saveProgress() {
       date: state.steps.date,
       sourceStatus: state.steps.sourceStatus
     }
-  }));
+  });
 }
 
 function getStage(points) {
@@ -1384,12 +1389,12 @@ function alignProductionStageWithDemo() {
 }
 
 function notifyProductionSync() {
-  localStorage.setItem(PRODUCTION_SYNC_STORAGE_KEY, JSON.stringify({
+  saveJson(PRODUCTION_SYNC_STORAGE_KEY, {
     version: ASSET_VERSION,
     plantId: state.selectedPlantId,
     stage: state.demoModelStage,
     syncedAt: Date.now()
-  }));
+  });
 }
 
 function stepDemoModelSetting(button) {
