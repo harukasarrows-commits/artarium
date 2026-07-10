@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Artarium">
     <title>Artarium - 名画の庭</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260710-06">
-    <link rel="icon" href="./icon.svg?v=20260710-06" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="./icon.svg?v=20260710-06">
-    <link rel="stylesheet" href="./styles.css?v=20260710-06">
+    <link rel="manifest" href="./manifest.webmanifest?v=20260710-16">
+    <link rel="icon" href="./icon.svg?v=20260710-16" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon.svg?v=20260710-16">
+    <link rel="stylesheet" href="./styles.css?v=20260710-16">
   </head>
   <body>
     <div class="app-shell">
@@ -37,8 +37,15 @@
                 <p id="home-active-caption"></p>
               </div>
               <div class="daily-artwork" id="home-active-artwork"></div>
-              <div class="daily-progress-line" id="daily-progress-line" hidden role="button" tabindex="0">
-                <span id="daily-progress-fill"></span>
+              <div class="daily-progress-line" id="daily-progress-line" hidden role="button" tabindex="0" aria-expanded="false">
+                <div class="growth-progress-heading">
+                  <span id="growth-progress-label">次の変化まで</span>
+                  <strong id="growth-progress-percent">0%</strong>
+                </div>
+                <div class="growth-progress-track" aria-hidden="true">
+                  <span id="daily-progress-fill"></span>
+                </div>
+                <div class="growth-progress-detail" id="growth-progress-detail" hidden></div>
               </div>
               <div class="completion-plaque" id="completion-plaque" hidden>
                 <button class="plaque-close" data-plaque-close type="button" aria-label="プレートを閉じる">×</button>
@@ -46,7 +53,6 @@
                 <h3 id="completion-title"></h3>
                 <p id="completion-subtitle"></p>
                 <button class="secondary-action" data-completion-action type="button">額装を選ぶ</button>
-                <button class="plaque-save" data-save-artwork type="button">画像を保存</button>
               </div>
             </section>
             <section class="settings-group demo-settings home-demo-settings" id="demo-model-settings" hidden></section>
@@ -121,6 +127,10 @@
                   <span>環境音（波・雨・雷）</span>
                   <strong id="settings-sound-state">オフ</strong>
                 </button>
+                <button class="settings-row" id="settings-effects-button" type="button">
+                  <span>植物のエフェクト（ゆれ・花びら）</span>
+                  <strong id="settings-effects-state">オン</strong>
+                </button>
                 <div class="settings-row">
                   <span>テーマ</span>
                   <strong>黒と真鍮</strong>
@@ -183,6 +193,6 @@
       </form>
     </div>
 
-    <script src="./app.js?v=20260710-06" type="module"></script>
+    <script src="./app.js?v=20260710-16" type="module"></script>
   </body>
 </html>

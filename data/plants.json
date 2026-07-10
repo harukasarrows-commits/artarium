@@ -15,8 +15,8 @@
     "copy": {
       "seedLabel": "夕暮れの感情を宿す種",
       "homeCaption": "渦巻く空と静かな叫びを、花の輪郭に育てます。",
-      "completionNote": "感情の波が、ひとつの花として額装されました。",
-      "collectionTitle": "夕焼けの記憶",
+      "completionNote": "渦巻いていた空が、一輪の花にしずまりました。",
+      "collectionTitle": "渦まく夕空",
       "collectionLabel": "夕焼けの色とゆれる感情をイメージした植物作品"
     },
     "modelPath": "./models/plants/scream-bloom/stage-01-seed/seed+pod+3d+model+1k.glb",
@@ -59,9 +59,9 @@
     "temperament": "厚い筆あとみたいに、明るさを何層にも重ねる花。",
     "copy": {
       "seedLabel": "陽だまりを重ねる種",
-      "homeCaption": "歩みの粒が、厚い筆あとを思わせる光の花になります。",
-      "completionNote": "黄色い記憶が、静かな開花を迎えました。額装して、あなたのコレクションへ。",
-      "collectionTitle": "ひまわりの記憶",
+      "homeCaption": "歩くほど、厚い筆あとの黄色が濃くなっていきます。",
+      "completionNote": "厚い筆あとの黄色が、まぶしく咲きました。",
+      "collectionTitle": "太陽の筆あと",
       "collectionLabel": "明るい黄色と筆あとをイメージした植物作品"
     },
     "modelPath": "./models/plants/sunflower-bloom/stage-01-seed/seed+pod+3d+model+1k.glb",
@@ -90,9 +90,9 @@
     ]
   },
   {
-    "id": "water-lily-bloom",
-    "name": "Water Lily Bloom",
-    "motif": "Water Lilies",
+    "id": "wave-crest-bloom",
+    "name": "Wave Crest Bloom",
+    "motif": "Ocean Wave",
     "artist": "Artarium Archive",
     "year": "1899",
     "palette": [
@@ -103,20 +103,20 @@
     ],
     "temperament": "水面の光を吸って、静かにひらく浮遊する花。",
     "copy": {
-      "seedLabel": "水面に浮かぶ光の種",
-      "homeCaption": "柔らかな歩みが、水面の光を少しずつ開かせます。",
-      "completionNote": "揺れる水面の記憶が、ひとつの作品になりました。",
-      "collectionTitle": "睡蓮の記憶",
-      "collectionLabel": "水面の光とやわらかな花をイメージした植物作品"
+      "seedLabel": "波の力を宿す種",
+      "homeCaption": "歩みを重ねると、波がしらが少しずつ立ち上がります。",
+      "completionNote": "打ち寄せる波が、ひとつの花のかたちで留まりました。",
+      "collectionTitle": "波がしらの花",
+      "collectionLabel": "うねる波と白い飛沫をイメージした植物作品"
     },
-    "modelPath": "./models/plants/water-lily-bloom/stage-01-seed/wave+leaf+ornament+3d+model+1k.glb",
+    "modelPath": "./models/plants/wave-crest-bloom/stage-01-seed/wave+leaf+ornament+3d+model+1k.glb",
     "stageModelPaths": {
-      "1": "./models/plants/water-lily-bloom/stage-01-seed/wave+leaf+ornament+3d+model+1k.glb",
-      "2": "./models/plants/water-lily-bloom/stage-02-sprout/stylized+plant+3d+model+1k.glb",
-      "3": "./models/plants/water-lily-bloom/stage-03-leaves/plant+3d+model+1k.glb",
-      "4": "./models/plants/water-lily-bloom/stage-04-bud/stylized+flower+3d+model+1k.glb",
-      "5": "./models/plants/water-lily-bloom/stage-05-pre-bloom/ornamental+flower+3d+model+1k.glb",
-      "6": "./models/plants/water-lily-bloom/stage-06-bloom/decorative+flower+3d+model+1k.glb"
+      "1": "./models/plants/wave-crest-bloom/stage-01-seed/wave+leaf+ornament+3d+model+1k.glb",
+      "2": "./models/plants/wave-crest-bloom/stage-02-sprout/stylized+plant+3d+model+1k.glb",
+      "3": "./models/plants/wave-crest-bloom/stage-03-leaves/plant+3d+model+1k.glb",
+      "4": "./models/plants/wave-crest-bloom/stage-04-bud/stylized+flower+3d+model+1k.glb",
+      "5": "./models/plants/wave-crest-bloom/stage-05-pre-bloom/ornamental+flower+3d+model+1k.glb",
+      "6": "./models/plants/wave-crest-bloom/stage-06-bloom/decorative+flower+3d+model+1k.glb"
     },
     "environmentType": "water",
     "soilType": "water-surface",
@@ -129,9 +129,9 @@
     "stageNames": [
       "Seed",
       "Ripple",
-      "Pad",
-      "Bud",
-      "Float",
+      "Swell",
+      "Curl",
+      "Crest",
       "Bloom"
     ]
   },
@@ -150,9 +150,9 @@
     "temperament": "水面の光と淡い色彩をまとい、静かに浮かぶ花。",
     "copy": {
       "seedLabel": "水面の光を宿す種",
-      "homeCaption": "歩みの粒が、水面に浮かぶ淡い花へと育ちます。",
-      "completionNote": "水面のきらめきが、ひとつの植物作品になりました。",
-      "collectionTitle": "水庭の記憶",
+      "homeCaption": "歩いたぶんだけ、水面の花がふくらみます。",
+      "completionNote": "水のゆらぎが、淡い花に結ばれました。",
+      "collectionTitle": "水鏡の庭",
       "collectionLabel": "水面の光と淡い花をイメージした植物作品"
     },
     "modelPath": "./models/plants/aquatic-bloom/stage-01-seed/iridescent+mosaic+egg+3d+model+1k.glb",
@@ -197,8 +197,8 @@
     "copy": {
       "seedLabel": "静かな微笑みを宿す種",
       "homeCaption": "穏やかな表情と深い色合いを、植物の輪郭に育てます。",
-      "completionNote": "静かな微笑みの記憶が、ひとつの植物作品になりました。",
-      "collectionTitle": "微笑みの記憶",
+      "completionNote": "深い陰影の中に、微笑がひらきました。",
+      "collectionTitle": "静かな微笑",
       "collectionLabel": "やわらかな表情と深い陰影をイメージした植物作品"
     },
     "modelPath": "./models/plants/renaissance-smile-bloom/stage-01-seed/seed+pod+3d+model+1k.glb",
@@ -241,9 +241,9 @@
     "temperament": "夜空の渦と星の光をまとった、静かに輝く植物。",
     "copy": {
       "seedLabel": "夜空の光を宿す種",
-      "homeCaption": "歩みの粒が、夜空に渦巻く星の花へと育ちます。",
-      "completionNote": "星の光と深い青の記憶が、ひとつの植物作品になりました。",
-      "collectionTitle": "星夜の記憶",
+      "homeCaption": "歩くほど、夜空の星がまたたきを増します。",
+      "completionNote": "夜空の星が、花のかたちで瞬いています。",
+      "collectionTitle": "星のめぐる夜",
       "collectionLabel": "深い青と星のきらめきをイメージした植物作品"
     },
     "modelPath": "./models/plants/nocturne-sky-bloom/stage-01-seed/starry+night+egg+3d+model+1k.glb",
@@ -286,8 +286,8 @@
     "temperament": "金色の装飾とやわらかな抱擁をまとった、モザイクのような植物。",
     "copy": {
       "seedLabel": "金色の抱擁を宿す種",
-      "homeCaption": "歩みの粒が、金の文様をまとった植物へと育ちます。",
-      "completionNote": "金色の余韻が、ひとつの植物作品になりました。",
+      "homeCaption": "歩みを重ねると、金の文様が広がっていきます。",
+      "completionNote": "金の文様が、抱きしめるように咲きそろいました。",
       "collectionTitle": "金色の抱擁",
       "collectionLabel": "金の装飾とやわらかな抱擁をイメージした植物作品"
     },
@@ -331,8 +331,8 @@
     "temperament": "モノクロームの断片と鋭い構成をまとった、静かな緊張感の植物。",
     "copy": {
       "seedLabel": "断片の光を宿す種",
-      "homeCaption": "歩みの粒が、白と黒の断片をまとった植物へと育ちます。",
-      "completionNote": "静かな緊張感が、ひとつの植物作品になりました。",
+      "homeCaption": "歩くたび、白と黒の断片が組み上がっていきます。",
+      "completionNote": "白と黒の断片が、静かな均衡にたどりつきました。",
       "collectionTitle": "白黒の断片",
       "collectionLabel": "モノクロームと断片的な形をイメージした植物作品"
     },
@@ -377,8 +377,8 @@
     "copy": {
       "seedLabel": "真珠の光を宿す種",
       "homeCaption": "静かな光が、青と金の余韻を持つ植物へと育ちます。",
-      "completionNote": "真珠のような光が、ひとつの植物作品になりました。",
-      "collectionTitle": "真珠光の記憶",
+      "completionNote": "真珠のひかりが、ほのかに実を結びました。",
+      "collectionTitle": "真珠のあかり",
       "collectionLabel": "真珠の光と静かな色合いをイメージした植物作品"
     },
     "modelPath": "./models/plants/pearl-light-bloom/stage-01-seed/ornamental+sphere+3d+model+1k.glb",

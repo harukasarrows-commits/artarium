@@ -288,6 +288,21 @@ h3 {
   line-height: 1.6;
 }
 
+.growth-stage-label,
+.growth-next-label {
+  display: block;
+}
+
+.growth-stage-label {
+  color: var(--primary);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+}
+
+.growth-next-label {
+  margin-top: 4px;
+}
+
 .daily-artwork {
   display: grid;
   place-items: center;
@@ -367,19 +382,29 @@ h3 {
   right: 14px;
   bottom: 14px;
   z-index: 6;
-  font-family: inherit;
-  font-size: 12px;
-  letter-spacing: 0.2em;
-  text-indent: 0.2em;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  font-size: 0;
   color: #edeae0;
   background: rgba(13, 12, 11, 0.66);
   border: 1px solid rgba(237, 234, 224, 0.22);
   border-radius: 999px;
   min-height: 44px;
-  padding: 10px 20px;
+  padding: 0;
   cursor: pointer;
   backdrop-filter: blur(8px);
   transition: background 0.25s, color 0.25s;
+}
+
+.viewing-mode-button::before {
+  content: "";
+  width: 19px;
+  height: 19px;
+  background: currentColor;
+  -webkit-mask: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="black" d="M12 5c5.2 0 8.9 4.5 9.7 5.6a2.3 2.3 0 0 1 0 2.8C20.9 14.5 17.2 19 12 19S3.1 14.5 2.3 13.4a2.3 2.3 0 0 1 0-2.8C3.1 9.5 6.8 5 12 5Zm0 2c-4.1 0-7.2 3.5-8 5 .8 1.5 3.9 5 8 5s7.2-3.5 8-5c-.8-1.5-3.9-5-8-5Zm0 1.8A3.2 3.2 0 1 1 12 15a3.2 3.2 0 0 1 0-6.4Zm0 2a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Z"/></svg>') center / contain no-repeat;
+  mask: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="black" d="M12 5c5.2 0 8.9 4.5 9.7 5.6a2.3 2.3 0 0 1 0 2.8C20.9 14.5 17.2 19 12 19S3.1 14.5 2.3 13.4a2.3 2.3 0 0 1 0-2.8C3.1 9.5 6.8 5 12 5Zm0 2c-4.1 0-7.2 3.5-8 5 .8 1.5 3.9 5 8 5s7.2-3.5 8-5c-.8-1.5-3.9-5-8-5Zm0 1.8A3.2 3.2 0 1 1 12 15a3.2 3.2 0 0 1 0-6.4Zm0 2a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Z"/></svg>') center / contain no-repeat;
 }
 
 .viewing-mode-button:active {
@@ -395,6 +420,36 @@ h3 {
   min-height: 100dvh;
   border-radius: 0;
   border: none;
+}
+
+.daily-artwork.is-viewing > .viewing-mode-button {
+  display: none;
+}
+
+.viewing-exit-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+  z-index: 7;
+  width: max-content;
+  max-width: calc(100% - 40px);
+  padding: 9px 16px;
+  border: 1px solid rgba(237, 234, 224, 0.2);
+  border-radius: 999px;
+  color: #edeae0;
+  background: rgba(12, 18, 14, 0.62);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  transform: translateX(-50%);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  animation: viewing-exit-hint 3.4s ease both;
+}
+
+@keyframes viewing-exit-hint {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  18%, 72% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -4px); }
 }
 
 body.is-viewing-mode {
@@ -1863,16 +1918,23 @@ body::after {
   pointer-events: none;
 }
 
+/* 完成プレート: 眺めるボタンと同じガラスレシピ（白グラデ＋内側ハイライト＋強めのぼかし）。
+   透過が強いぶん文字はアイボリー＋薄い影で読ませる */
 .completion-plaque {
   width: min(92%, 340px);
   margin: 0 auto;
   padding: 20px;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.68);
   border-radius: 12px;
   text-align: left;
-  color: #edeae0;
-  background: linear-gradient(180deg, #35563f, var(--accent-green));
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+  color: #f4f1e8;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(237, 234, 224, 0.12));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.16),
+    0 14px 40px rgba(17, 24, 19, 0.28);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  backdrop-filter: blur(22px) saturate(1.35);
 }
 
 .completion-plaque[hidden] {
@@ -1885,28 +1947,35 @@ body::after {
 }
 
 .completion-plaque h3 {
-  color: #edeae0;
+  color: #f4f1e8;
   font-size: 1.08rem;
   letter-spacing: 0.06em;
+  text-shadow: 0 1px 10px rgba(10, 14, 11, 0.4);
 }
 
 .completion-plaque .eyebrow {
-  color: rgba(255, 255, 255, 0.75);
+  color: #d8bc78;
+  text-shadow: 0 1px 8px rgba(10, 14, 11, 0.35);
 }
 
 .completion-plaque p:not(.eyebrow) {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(244, 241, 232, 0.88);
   font-size: 0.8rem;
   line-height: 1.45;
+  text-shadow: 0 1px 8px rgba(10, 14, 11, 0.35);
 }
 
-/* 緑の上のCTAはアイボリーの反転ボタン */
+/* アイボリーの上のCTAは金（金はCTA限定のブランドルールどおり） */
 .completion-plaque .secondary-action {
   width: 100%;
   margin-top: 10px;
   color: #111813;
   border-color: transparent;
-  background: #edeae0;
+  background: var(--primary);
+}
+
+.completion-plaque .secondary-action:active {
+  background: #d8bc78;
 }
 
 .frame-choice-modal {
@@ -2109,6 +2178,11 @@ body::after {
 
 .daily-hero.is-seed-choice {
   grid-template-rows: auto minmax(360px, 1fr);
+}
+
+/* 種選択画面では「Today's artwork」の眉ラベルを出さない（まだ育てていないため意味がずれる） */
+.daily-hero.is-seed-choice .daily-copy .eyebrow {
+  display: none;
 }
 
 .daily-hero.is-seed-preview {
@@ -2950,6 +3024,20 @@ body.is-demo-mode .demo-control {
   box-shadow: none;
 }
 
+/* 育成中はシーンと操作UIの間に細いキャプション帯を確保する。 */
+.daily-hero.has-growth-progress {
+  background: var(--canvas);
+}
+
+.daily-hero.has-growth-progress .daily-artwork:not(.is-viewing) {
+  bottom: 0;
+}
+
+/* 進捗は作品情報と同じ上部へまとめ、下部の展示面を空ける。 */
+.daily-hero.has-growth-progress::before {
+  content: none;
+}
+
 /* 上部スクリム: 明るい空の上でも文字が沈まないように */
 .daily-hero::after {
   content: "";
@@ -2986,6 +3074,19 @@ body.is-demo-mode .demo-control {
   text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.28);
 }
 
+.daily-hero:not(.is-seed-choice):not(.is-seed-preview) .daily-copy {
+  top: calc(env(safe-area-inset-top, 0px) + 18px);
+}
+
+.daily-hero:not(.is-seed-choice):not(.is-seed-preview) .daily-copy .eyebrow {
+  display: none;
+}
+
+.daily-hero:not(.is-seed-choice):not(.is-seed-preview) .daily-copy h2 {
+  margin-bottom: 5px;
+  font-size: clamp(1.08rem, 5vw, 1.3rem);
+}
+
 /* 完成プレートと鑑賞ボタンはタブバーより上に浮かぶ */
 .daily-hero .completion-plaque {
   position: absolute;
@@ -2999,6 +3100,38 @@ body.is-demo-mode .demo-control {
 .daily-hero .viewing-mode-button {
   right: 18px;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+}
+
+.daily-hero.has-growth-progress .viewing-mode-button {
+  position: fixed;
+  top: auto;
+  right: max(10px, calc((100vw - 430px) / 2 + 10px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 124px);
+  align-items: center;
+  justify-items: center;
+  overflow: hidden;
+  color: #20382b;
+  border-color: rgba(255, 255, 255, 0.68);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.42), rgba(237, 234, 224, 0.16));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.16),
+    0 8px 26px rgba(17, 24, 19, 0.16);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  backdrop-filter: blur(18px) saturate(1.35);
+}
+
+.daily-hero.has-growth-progress .viewing-mode-button::before {
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  transform: none;
+}
+
+.daily-hero.has-growth-progress .daily-copy {
+  right: 20px;
 }
 
 /* 種選択のときは通常のスクロール画面に戻す */
@@ -3056,24 +3189,72 @@ body.is-demo-mode .demo-control {
 
 /* ===== UXレビュー実装: 状態表示・進捗ライン・ヒント・確認バー・保存 ===== */
 
-/* タブバー直上の目標達成ライン（金 → 水面のティール） */
+/* タブバー直上: 次の成長段階までを示す、美術館の細いキャプション。 */
 .daily-progress-line {
   position: absolute;
-  left: 24px;
-  right: 24px;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
-  height: 2px;
-  z-index: 2;
-  border-radius: 999px;
-  background: rgba(237, 234, 224, 0.16);
+  left: 20px;
+  right: 20px;
+  top: calc(env(safe-area-inset-top, 0px) + 76px);
+  bottom: auto;
+  z-index: 3;
+  display: grid;
+  gap: 7px;
+  padding: 8px 0 7px;
+  border: 0;
+  border-radius: 0;
+  color: rgba(237, 234, 224, 0.9);
+  background: transparent;
   cursor: pointer;
+  transition: background 220ms ease, border-color 220ms ease;
 }
 
-/* 2pxの線のままではタップできないので、不可視のヒット領域を上下に広げる */
-.daily-progress-line::after {
-  content: "";
-  position: absolute;
-  inset: -21px 0;
+.daily-progress-line[aria-expanded="true"] {
+  padding-inline: 10px;
+  color: #23362b;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 8px;
+  background: rgba(237, 234, 224, 0.9);
+  box-shadow: 0 10px 30px rgba(17, 24, 19, 0.14);
+  backdrop-filter: blur(12px) saturate(0.8);
+}
+
+.daily-progress-line[aria-expanded="true"] .growth-progress-heading,
+.daily-progress-line[aria-expanded="true"] .growth-progress-detail {
+  color: rgba(35, 54, 43, 0.72);
+}
+
+.daily-progress-line[aria-expanded="true"] .growth-progress-heading strong {
+  color: #765f2b;
+}
+
+.daily-progress-line[aria-expanded="true"] .growth-progress-track {
+  background: rgba(35, 54, 43, 0.14);
+}
+
+.growth-progress-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(237, 234, 224, 0.7);
+  font-size: 0.64rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.growth-progress-heading strong {
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+.growth-progress-track {
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(237, 234, 224, 0.12);
 }
 
 .daily-progress-line:focus-visible {
@@ -3081,16 +3262,25 @@ body.is-demo-mode .demo-control {
   outline-offset: 6px;
 }
 
-.daily-progress-line span {
+.growth-progress-track span {
   display: block;
   height: 100%;
   width: 0;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent-teal), var(--primary));
+  background: var(--accent-teal);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-teal), transparent 34%);
   transition: width 0.8s ease;
 }
 
-.daily-progress-line.is-syncing span {
+.growth-progress-detail {
+  padding-top: 2px;
+  color: rgba(237, 234, 224, 0.64);
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
+  line-height: 1.5;
+}
+
+.daily-progress-line.is-syncing .growth-progress-track span {
   animation: progress-sync-pulse 0.9s ease;
 }
 
@@ -3212,21 +3402,6 @@ body.is-demo-mode .demo-control {
 @keyframes plaque-in {
   from { opacity: 0; transform: translate(-50%, 18px); }
   to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-/* プレートの「画像を保存」テキストボタン */
-.plaque-save {
-  margin-top: 2px;
-  padding: 10px;
-  min-height: 44px;
-  border: none;
-  background: transparent;
-  color: rgba(237, 234, 224, 0.8);
-  font-size: 0.8rem;
-  letter-spacing: 0.1em;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  cursor: pointer;
 }
 
 /* コレクション空状態: スポットライトとプレート */
@@ -3431,7 +3606,7 @@ body.is-demo-mode .demo-control {
   height: 44px;
   border: none;
   border-radius: 50%;
-  color: rgba(237, 234, 224, 0.75);
+  color: rgba(244, 241, 232, 0.72);
   background: transparent;
   font-size: 1.15rem;
   cursor: pointer;
@@ -3519,6 +3694,12 @@ body.is-demo-mode .demo-control {
 .daily-artwork.is-hush canvas {
   filter: brightness(0.12) saturate(0.7);
   transition: filter 0.45s ease;
+}
+
+/* 暗転中は読み込みインジケーターとCSSフォールバック植物も見せない（新しい姿はスポットライトで初披露） */
+.daily-artwork.is-hush .model-loading,
+.daily-artwork.is-hush .plant-visual {
+  opacity: 0;
 }
 
 .daily-artwork.is-lit canvas:not(.sky-canvas):not(.sky-fx-canvas):not(.water-surface-canvas) {

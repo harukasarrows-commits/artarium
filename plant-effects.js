@@ -44,12 +44,12 @@ const PLANT_EFFECTS = {
     particles: { type: "pollen", color: 0xffd77a, count: 34, size: 0.05 },
     shed: { kind: "rise", shape: "mote", colors: [0xffd77a, 0xffe9ad, 0xf0c435], additive: true }
   },
-  // 睡蓮(神奈川沖浪裏): 波のしぶきの雫が滴り、水面に波紋が立つ
-  "water-lily-bloom": {
+  // 波がしら(神奈川沖浪裏): 波のしぶきの雫が滴り、水面に波紋が立つ
+  "wave-crest-bloom": {
     bob: 1,
     sway: 0.35,
-    petal: 0xa8bfe0, // 青い睡蓮（白い縁どり）の淡い青
-    particles: { type: "glimmer", color: 0xbfe6ec, count: 24, size: 0.044 },
+    petal: 0xa8bfe0, // 波の青（白い縁どり）の淡い青
+    particles: { type: "glimmer", color: 0xbfe6ec, count: 32, size: 0.044, motion: "wave" },
     shed: { kind: "droplet", shape: "droplet", colors: [0xd8edf6, 0xaacfe0, 0xeef8fb] }
   },
   // 水の庭: 浮き沈み + 虹色の光の粒がゆっくり立ちのぼる
@@ -57,7 +57,7 @@ const PLANT_EFFECTS = {
     bob: 1,
     sway: 0.45,
     petal: 0xb9a7dd, // 藤色の花
-    particles: { type: "glimmer", color: 0xe8c8dc, count: 24, size: 0.044 },
+    particles: { type: "glimmer", color: 0xe8c8dc, count: 32, size: 0.044 },
     shed: { kind: "rise", shape: "mote", colors: [0xe8c8dc, 0xbfe6ec, 0xd9c7f0], additive: true, slow: true }
   },
   // ルネサンス肖像: 木漏れ日のような光斑がふわりと降りて溶ける
@@ -99,23 +99,66 @@ const PLANT_EFFECTS = {
   }
 };
 
-function createParticles(THREE, config, stage) {
+// 粒子を四角いドットではなく、中心から柔らかく減衰する丸い光点として描くためのテクスチャ（共有）
+let particleGlowTexture = null;
+function getParticleGlowTexture(THREE) {
+  if (particleGlowTexture) return particleGlowTexture;
+  const size = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
+  gradient.addColorStop(0.35, "rgba(255, 255, 255, 0.65)");
+  gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  particleGlowTexture = new THREE.CanvasTexture(canvas);
+  return particleGlowTexture;
+}
+
+function createParticles(THREE, config, stage, waterLocalY = null, getSpawnArea = null) {
   const count = config.count;
   const positions = new Float32Array(count * 3);
+  // glimmer（水面のきらめき）は粒ごとに明るさを変える。
+  // 加算合成では黒=不可視なので、頂点色の強度で個別の点滅を表現できる
+  const isWaterTwinkle = config.type === "glimmer";
+  const colors = isWaterTwinkle ? new Float32Array(count * 3) : null;
+  const baseColor = new THREE.Color(config.color);
+  const respawn = (s) => {
+    // 画面手前の水面は下部ナビに隠れるので、見える範囲（植物の両脇〜奥）に広く散らす
+    s.px = (Math.random() * 2 - 1) * 1.35;
+    s.pz = 0.25 - Math.random() * 1.15;
+  };
   const seeds = [];
   for (let i = 0; i < count; i++) {
-    seeds.push({
+    const s = {
       phase: Math.random() * Math.PI * 2,
       radius: 0.25 + Math.random() * 0.55,
       speed: 0.6 + Math.random() * 0.8,
-      y0: Math.random()
-    });
+      y0: Math.random(),
+      // 水面のきらめき用: 2/3は「波間で瞬く閃光」、1/3は奥行きを出す「漂う淡い粒」
+      kind: i % 3 === 2 ? "drift" : "flash",
+      period: 2.6 + Math.random() * 3.4,
+      offset: Math.random() * 10,
+      wasLit: false,
+      prevCycle: 0,
+      px: 0,
+      pz: 0
+    };
+    respawn(s);
+    seeds.push(s);
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  if (colors) geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   const material = new THREE.PointsMaterial({
-    color: new THREE.Color(config.color),
-    size: config.size,
+    color: isWaterTwinkle ? 0xffffff : new THREE.Color(config.color),
+    vertexColors: isWaterTwinkle,
+    // 柔らかい光点テクスチャはエッジが減衰するぶん小さく見えるので、少し大きめに
+    size: config.size * 1.6,
+    map: getParticleGlowTexture(THREE),
     transparent: true,
     opacity: 0.85,
     depthWrite: false,
@@ -136,10 +179,72 @@ function createParticles(THREE, config, stage) {
         x = Math.cos(s.phase) * s.radius * 0.7 + Math.sin(t * 0.7 + s.phase) * 0.08;
         z = Math.sin(s.phase) * s.radius * 0.5 + Math.cos(t * 0.5 + s.phase) * 0.08;
       } else if (config.type === "glimmer") {
-        // 水面近くで上下にきらめく
-        x = Math.cos(s.phase) * s.radius;
-        z = Math.sin(s.phase) * s.radius * 0.7;
-        y = -0.45 + Math.abs(Math.sin(t * 1.2 * s.speed + s.phase)) * 0.14;
+        // 波間のきらめき: 水面のランダムな場所で光がキラッと瞬いては消え、
+        // 別の場所でまた瞬く（さざ波が太陽を反射するイメージ）
+        const surfaceY = waterLocalY ?? -0.45;
+        // 植物で表情を変える:
+        // 波がしら（motion: "wave"）= 波しぶきのように、花から光が吹き上がり弧を描いて水面へ落ちる
+        // 水鏡の庭（既定）= 水面のきらめき＋立ちのぼる名残（散り光ものぼる植物なので上向きで揃える）
+        let intensity = 1;
+        if (s.kind === "flash" && config.motion === "wave") {
+          const cycle = ((t + s.offset) % s.period) / s.period;
+          if (cycle < s.prevCycle) respawn(s);
+          s.prevCycle = cycle;
+          const area = getSpawnArea ? getSpawnArea() : { top: 0.8, half: 0.6 };
+          // 花冠のあたりから吹き上がり、外側へ弧を描いて水面へ
+          const originX = s.px * 0.22;
+          const originZ = s.pz * 0.3;
+          const originY = area.top * (0.72 + s.y0 * 0.22);
+          x = originX + (s.px - originX) * cycle;
+          z = originZ + (s.pz - originZ) * cycle;
+          const drop = Math.max(0.2, originY - surfaceY);
+          const launch = 0.9 + s.y0 * 0.9; // 打ち上げの初速（少し上がってから落ちる）
+          y = originY + launch * cycle - (launch + drop) * cycle * cycle;
+          if (cycle < 0.08) {
+            intensity = (cycle / 0.08) * 0.9; // 花から弾けるように現れる
+          } else if (cycle > 0.88) {
+            intensity = 1.25 * (1 - (cycle - 0.88) / 0.12); // 着水の瞬間にひときわ光って消える
+          } else {
+            intensity = 0.75;
+          }
+        } else if (s.kind === "flash") {
+          const cycle = ((t + s.offset) % s.period) / s.period;
+          const window = 0.3;
+          const riseWindow = 0.3; // 閃光のあと、光の名残が立ちのぼって溶ける区間
+          let rise = 0;
+          if (cycle < window) {
+            // 加算合成なので1を超える値でひときわ強い閃光になる
+            intensity = Math.sin((cycle / window) * Math.PI) ** 2 * 1.3;
+            s.wasLit = true;
+          } else if (cycle < window + riseWindow) {
+            // きらめきがほどけて、すっとのぼりながら消えていく
+            const k = (cycle - window) / riseWindow;
+            intensity = 0.4 * (1 - k);
+            rise = k * 0.5;
+          } else {
+            intensity = 0;
+            // 消えている間に次の出現場所へ移る（見えないので瞬間移動してよい）
+            if (s.wasLit) {
+              respawn(s);
+              s.wasLit = false;
+            }
+          }
+          x = s.px;
+          z = s.pz;
+          y = surfaceY + 0.02 + rise;
+        } else {
+          // 奥行き用の淡い粒: 水面近くをごくゆっくり漂う
+          const angle = s.phase + t * 0.05 * s.speed;
+          x = Math.cos(angle) * s.radius;
+          z = Math.sin(angle) * s.radius * 0.7;
+          y = surfaceY + 0.07 + s.y0 * 0.05 + Math.sin(t * 0.7 * s.speed + s.phase) * 0.045;
+          intensity = 0.22 + 0.14 * Math.abs(Math.sin(t * 0.5 + s.phase));
+        }
+        const colorAttr = geometry.getAttribute("color");
+        if (colorAttr) {
+          colorAttr.setXYZ(i, baseColor.r * intensity, baseColor.g * intensity, baseColor.b * intensity);
+          colorAttr.needsUpdate = true;
+        }
       } else if (config.type === "orbit") {
         // 渦を巻いて周回（星月夜）
         const angle = s.phase + t * 0.35 * s.speed;
@@ -161,10 +266,15 @@ function createParticles(THREE, config, stage) {
       attr.setXYZ(i, x, y, z);
     }
     attr.needsUpdate = true;
-    // またたき（種類によって速さを変える）
-    const flickerSpeed = config.type === "sparkle" ? 2.6 : 0.9;
+    // またたき（種類によって速さを変える）。
+    // 水面のきらめきは粒ごとに明滅させるので、全体の明滅はかけない
     const stageRatio = Math.min(1, stage / 6);
-    material.opacity = (0.45 + 0.35 * Math.abs(Math.sin(t * flickerSpeed))) * stageRatio * dim;
+    if (isWaterTwinkle) {
+      material.opacity = 0.95 * stageRatio * dim;
+    } else {
+      const flickerSpeed = config.type === "sparkle" ? 2.6 : 0.9;
+      material.opacity = (0.45 + 0.35 * Math.abs(Math.sin(t * flickerSpeed))) * stageRatio * dim;
+    }
   };
 
   const dispose = () => {
@@ -890,19 +1000,13 @@ export function createPlantEffects(THREE, plantDefinition, plantRoot, anchor = {
   const reflectionRoot = anchor.reflection || null;
   const reflectionBaseY = reflectionRoot ? reflectionRoot.position.y : 0;
 
-  // 粒子（成長後半のみ・種の段階では出さない）
-  let particleSystem = null;
-  if (config.particles && stage >= 4) {
-    particleSystem = createParticles(THREE, config.particles, stage);
-    group.add(particleSystem.points);
-  }
-
-  // 散り・露に共通の空間情報:
+  // 散り・露・粒子に共通の空間情報:
   // 水面のワールド高さ（anchor.waterY）をグループ座標に直す。
   // 陸（水面なし）の場合はカメラ側＝土の山の下り斜面側に落ちるので、
   // 植物の根元よりだいぶ下（斜面の裾のあたり）まで落としてから消す
   const onWater = Number.isFinite(anchor.waterY);
   const floorLocalY = onWater ? anchor.waterY - group.position.y + 0.01 : -1.0;
+
   // 花冠の上端と植物の横幅（グループ座標）。初回の使用時に実測して覚える
   // （根元からの相対値で測るので、シーン側の配置ずれに影響されない）
   let spawnArea = null;
@@ -928,6 +1032,14 @@ export function createPlantEffects(THREE, plantDefinition, plantRoot, anchor = {
       anchor.onPetalLand(group.position.x + localX, group.position.z + localZ);
     }
   };
+
+  // 粒子（成長後半のみ・種の段階では出さない）。
+  // 水面植物は実際の水面高さに合わせ、wave型は花冠の実測位置から吹き上がる
+  let particleSystem = null;
+  if (config.particles && stage >= 4) {
+    particleSystem = createParticles(THREE, config.particles, stage, onWater ? floorLocalY : null, getSpawnArea);
+    group.add(particleSystem.points);
+  }
 
   // 花びらの舞い散り（開花済みのみ・色はその植物の花に合わせた指定色）
   let petalSystem = null;

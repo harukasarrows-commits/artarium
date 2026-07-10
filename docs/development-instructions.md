@@ -116,7 +116,7 @@ models/plants/{plant-id}/stage-06-bloom/
 例:
 
 - `sunflower-bloom`
-- `water-lily-bloom`
+- `wave-crest-bloom`（旧 water-lily-bloom）
 - `aquatic-bloom`
 - `renaissance-smile-bloom`
 
@@ -158,7 +158,7 @@ models/shared/bases/water-surface/water+dish+3d+model+1k.glb
 反射は植物モデルの反転コピーを水面上に薄く表示する方式。
 デモ版では「反射を自動調整」ボタンを使える。
 
-水面タイプのデフォルト設定は `water-lily-bloom` の設定を基準にする。
+水面タイプのデフォルト設定は `wave-crest-bloom`（旧 water-lily-bloom）の設定を基準にする。
 
 ## 額縁モデル
 

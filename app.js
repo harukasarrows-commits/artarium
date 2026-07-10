@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-06";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-06";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-06";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-06";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-06";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-16";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-16";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-16";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-16";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-16";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -16,7 +16,7 @@ const CODEX_NOTES = {
     source: "フィンセント・ファン・ゴッホ《ひまわり》1888",
     note: "南仏アルルの光を集めて描かれた連作。ゴッホにとってひまわりは「感謝」の象徴でした。歩くたびに深まる黄金の花弁は、画家が塗り重ねた厚いインパストの筆致に倣っています。"
   },
-  "water-lily-bloom": {
+  "wave-crest-bloom": {
     source: "葛飾北斎《神奈川沖浪裏》1831頃",
     note: "『富嶽三十六景』の一枚。爪を立てるような大波が船を呑み、遠くに小さな富士が座る——北斎が70歳を過ぎて到達した一瞬の構図は、海を渡ってモネやゴッホをも驚かせました。波頭の白い飛沫をまとって水面に咲くこの花は、あの止まった波の永遠を育てます。"
   },
@@ -58,15 +58,34 @@ const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const INSTALL_HINT_KEY = "artarium-install-hinted";
 const MOTION_AUTO_KEY = "artarium-motion-auto";
+const PLANT_EFFECTS_STORAGE_KEY = "artarium-plant-effects";
+
+function arePlantEffectsEnabled() {
+  return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
+}
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-06";
+const ASSET_VERSION = "20260710-16";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
   Array.from({ length: MODEL_STAGE_COUNT }, (_, index) => String(index + 1))
 );
 const LEGACY_MODEL_SETTINGS_PLANT_ID = "sunflower-bloom";
-const WATER_SURFACE_REFERENCE_PLANT_ID = "water-lily-bloom";
+const WATER_SURFACE_REFERENCE_PLANT_ID = "wave-crest-bloom";
+// 改名した植物の旧ID → 新ID（保存データ移行用。2026-07-10: 波の植物の名前取り違えを解消）
+const RENAMED_PLANT_IDS = { "water-lily-bloom": "wave-crest-bloom" };
+
+function migratePlantIdKeys(saved) {
+  if (!saved || typeof saved !== "object") return saved;
+  for (const [oldId, newId] of Object.entries(RENAMED_PLANT_IDS)) {
+    if (saved[oldId] !== undefined && saved[newId] === undefined) {
+      saved[newId] = saved[oldId];
+      delete saved[oldId];
+    }
+    if (saved.__activePlantId === oldId) saved.__activePlantId = newId;
+  }
+  return saved;
+}
 const DEFAULT_MODEL_SETTINGS = {
   plantScale: 0.82,
   plantX: -0.04,
@@ -243,8 +262,8 @@ const fallbackPlants = [
     copy: {
       seedLabel: "夕暮れの感情を宿す種",
       homeCaption: "渦巻く空と静かな叫びを、花の輪郭に育てます。",
-      completionNote: "感情の波が、ひとつの花として額装されました。",
-      collectionTitle: "夕焼けの記憶",
+      completionNote: "渦巻いていた空が、一輪の花にしずまりました。",
+      collectionTitle: "渦まく夕空",
       collectionLabel: "夕焼けの色とゆれる感情をイメージした植物作品"
     },
     modelPath: "./models/plants/scream-bloom/stage-01-seed/seed+pod+3d+model+1k.glb",
@@ -287,9 +306,9 @@ const fallbackPlants = [
     temperament: "厚い筆あとみたいに、明るさを何層にも重ねる花。",
     copy: {
       seedLabel: "陽だまりを重ねる種",
-      homeCaption: "歩みの粒が、厚い筆あとを思わせる光の花になります。",
-      completionNote: "黄色い記憶が、静かな開花を迎えました。額装して、あなたのコレクションへ。",
-      collectionTitle: "ひまわりの記憶",
+      homeCaption: "歩くほど、厚い筆あとの黄色が濃くなっていきます。",
+      completionNote: "厚い筆あとの黄色が、まぶしく咲きました。",
+      collectionTitle: "太陽の筆あと",
       collectionLabel: "明るい黄色と筆あとをイメージした植物作品"
     },
     modelPath: "./models/plants/sunflower-bloom/stage-01-seed/seed+pod+3d+model+1k.glb",
@@ -318,9 +337,9 @@ const fallbackPlants = [
     ]
   },
   {
-    id: "water-lily-bloom",
-    name: "Water Lily Bloom",
-    motif: "Water Lilies",
+    id: "wave-crest-bloom",
+    name: "Wave Crest Bloom",
+    motif: "Ocean Wave",
     artist: "Artarium Archive",
     year: "1899",
     palette: [
@@ -331,20 +350,20 @@ const fallbackPlants = [
     ],
     temperament: "水面の光を吸って、静かにひらく浮遊する花。",
     copy: {
-      seedLabel: "水面に浮かぶ光の種",
-      homeCaption: "柔らかな歩みが、水面の光を少しずつ開かせます。",
-      completionNote: "揺れる水面の記憶が、ひとつの作品になりました。",
-      collectionTitle: "睡蓮の記憶",
-      collectionLabel: "水面の光とやわらかな花をイメージした植物作品"
+      seedLabel: "波の力を宿す種",
+      homeCaption: "歩みを重ねると、波がしらが少しずつ立ち上がります。",
+      completionNote: "打ち寄せる波が、ひとつの花のかたちで留まりました。",
+      collectionTitle: "波がしらの花",
+      collectionLabel: "うねる波と白い飛沫をイメージした植物作品"
     },
-    modelPath: "./models/plants/water-lily-bloom/stage-01-seed/wave+leaf+ornament+3d+model+1k.glb",
+    modelPath: "./models/plants/wave-crest-bloom/stage-01-seed/wave+leaf+ornament+3d+model+1k.glb",
     stageModelPaths: {
-      1: "./models/plants/water-lily-bloom/stage-01-seed/wave+leaf+ornament+3d+model+1k.glb",
-      2: "./models/plants/water-lily-bloom/stage-02-sprout/stylized+plant+3d+model+1k.glb",
-      3: "./models/plants/water-lily-bloom/stage-03-leaves/plant+3d+model+1k.glb",
-      4: "./models/plants/water-lily-bloom/stage-04-bud/stylized+flower+3d+model+1k.glb",
-      5: "./models/plants/water-lily-bloom/stage-05-pre-bloom/ornamental+flower+3d+model+1k.glb",
-      6: "./models/plants/water-lily-bloom/stage-06-bloom/decorative+flower+3d+model+1k.glb"
+      1: "./models/plants/wave-crest-bloom/stage-01-seed/wave+leaf+ornament+3d+model+1k.glb",
+      2: "./models/plants/wave-crest-bloom/stage-02-sprout/stylized+plant+3d+model+1k.glb",
+      3: "./models/plants/wave-crest-bloom/stage-03-leaves/plant+3d+model+1k.glb",
+      4: "./models/plants/wave-crest-bloom/stage-04-bud/stylized+flower+3d+model+1k.glb",
+      5: "./models/plants/wave-crest-bloom/stage-05-pre-bloom/ornamental+flower+3d+model+1k.glb",
+      6: "./models/plants/wave-crest-bloom/stage-06-bloom/decorative+flower+3d+model+1k.glb"
     },
     environmentType: "water",
     soilType: "water-surface",
@@ -357,9 +376,9 @@ const fallbackPlants = [
     stageNames: [
       "Seed",
       "Ripple",
-      "Pad",
-      "Bud",
-      "Float",
+      "Swell",
+      "Curl",
+      "Crest",
       "Bloom"
     ]
   },
@@ -378,9 +397,9 @@ const fallbackPlants = [
     temperament: "水面の光と淡い色彩をまとい、静かに浮かぶ花。",
     copy: {
       seedLabel: "水面の光を宿す種",
-      homeCaption: "歩みの粒が、水面に浮かぶ淡い花へと育ちます。",
-      completionNote: "水面のきらめきが、ひとつの植物作品になりました。",
-      collectionTitle: "水庭の記憶",
+      homeCaption: "歩いたぶんだけ、水面の花がふくらみます。",
+      completionNote: "水のゆらぎが、淡い花に結ばれました。",
+      collectionTitle: "水鏡の庭",
       collectionLabel: "水面の光と淡い花をイメージした植物作品"
     },
     modelPath: "./models/plants/aquatic-bloom/stage-01-seed/iridescent+mosaic+egg+3d+model+1k.glb",
@@ -425,8 +444,8 @@ const fallbackPlants = [
     copy: {
       seedLabel: "静かな微笑みを宿す種",
       homeCaption: "穏やかな表情と深い色合いを、植物の輪郭に育てます。",
-      completionNote: "静かな微笑みの記憶が、ひとつの植物作品になりました。",
-      collectionTitle: "微笑みの記憶",
+      completionNote: "深い陰影の中に、微笑がひらきました。",
+      collectionTitle: "静かな微笑",
       collectionLabel: "やわらかな表情と深い陰影をイメージした植物作品"
     },
     modelPath: "./models/plants/renaissance-smile-bloom/stage-01-seed/seed+pod+3d+model+1k.glb",
@@ -469,9 +488,9 @@ const fallbackPlants = [
     temperament: "夜空の渦と星の光をまとった、静かに輝く植物。",
     copy: {
       seedLabel: "夜空の光を宿す種",
-      homeCaption: "歩みの粒が、夜空に渦巻く星の花へと育ちます。",
-      completionNote: "星の光と深い青の記憶が、ひとつの植物作品になりました。",
-      collectionTitle: "星夜の記憶",
+      homeCaption: "歩くほど、夜空の星がまたたきを増します。",
+      completionNote: "夜空の星が、花のかたちで瞬いています。",
+      collectionTitle: "星のめぐる夜",
       collectionLabel: "深い青と星のきらめきをイメージした植物作品"
     },
     modelPath: "./models/plants/nocturne-sky-bloom/stage-01-seed/starry+night+egg+3d+model+1k.glb",
@@ -514,8 +533,8 @@ const fallbackPlants = [
     temperament: "金色の装飾とやわらかな抱擁をまとった、モザイクのような植物。",
     copy: {
       seedLabel: "金色の抱擁を宿す種",
-      homeCaption: "歩みの粒が、金の文様をまとった植物へと育ちます。",
-      completionNote: "金色の余韻が、ひとつの植物作品になりました。",
+      homeCaption: "歩みを重ねると、金の文様が広がっていきます。",
+      completionNote: "金の文様が、抱きしめるように咲きそろいました。",
       collectionTitle: "金色の抱擁",
       collectionLabel: "金の装飾とやわらかな抱擁をイメージした植物作品"
     },
@@ -559,8 +578,8 @@ const fallbackPlants = [
     temperament: "モノクロームの断片と鋭い構成をまとった、静かな緊張感の植物。",
     copy: {
       seedLabel: "断片の光を宿す種",
-      homeCaption: "歩みの粒が、白と黒の断片をまとった植物へと育ちます。",
-      completionNote: "静かな緊張感が、ひとつの植物作品になりました。",
+      homeCaption: "歩くたび、白と黒の断片が組み上がっていきます。",
+      completionNote: "白と黒の断片が、静かな均衡にたどりつきました。",
       collectionTitle: "白黒の断片",
       collectionLabel: "モノクロームと断片的な形をイメージした植物作品"
     },
@@ -605,8 +624,8 @@ const fallbackPlants = [
     copy: {
       seedLabel: "真珠の光を宿す種",
       homeCaption: "静かな光が、青と金の余韻を持つ植物へと育ちます。",
-      completionNote: "真珠のような光が、ひとつの植物作品になりました。",
-      collectionTitle: "真珠光の記憶",
+      completionNote: "真珠のひかりが、ほのかに実を結びました。",
+      collectionTitle: "真珠のあかり",
       collectionLabel: "真珠の光と静かな色合いをイメージした植物作品"
     },
     modelPath: "./models/plants/pearl-light-bloom/stage-01-seed/ornamental+sphere+3d+model+1k.glb",
@@ -718,7 +737,7 @@ function applyBakedModelSettings(baked) {
 }
 
 function loadSavedState() {
-  return loadJsonObject(STORAGE_KEY, "Saved state");
+  return migratePlantIdKeys(loadJsonObject(STORAGE_KEY, "Saved state"));
 }
 
 function loadUserName() {
@@ -750,7 +769,7 @@ function saveProductionModelSettings() {
 }
 
 function loadSoilAssignments(storageKey) {
-  return loadJsonObject(storageKey, "Soil assignments");
+  return migratePlantIdKeys(loadJsonObject(storageKey, "Soil assignments"));
 }
 
 function saveDemoSoilAssignments() {
@@ -776,7 +795,7 @@ function saveJson(storageKey, value) {
 }
 
 function loadStoredModelSettings(storageKey, label) {
-  return normalizeModelSettings(loadJsonObject(storageKey, label));
+  return normalizeModelSettings(migratePlantIdKeys(loadJsonObject(storageKey, label)));
 }
 
 function migrateWaterSurfaceAssignments() {
@@ -1020,10 +1039,6 @@ function bindEvents() {
   });
 
 
-  document.querySelector("[data-save-artwork]")?.addEventListener("click", () => {
-    saveArtworkImage();
-  });
-
   document.querySelector("[data-plaque-close]")?.addEventListener("click", () => {
     completionPlaqueCollapsed = true;
     render();
@@ -1043,19 +1058,17 @@ function bindEvents() {
   });
 
   const progressLine = document.getElementById("daily-progress-line");
-  const syncStepsFromHome = () => {
+  const toggleProgressDetails = () => {
     if (!progressLine || progressLine.hidden) return;
-    progressLine.classList.remove("is-syncing");
-    void progressLine.offsetWidth;
-    progressLine.classList.add("is-syncing");
-    if (!state.steps.motionEnabled) startMotionStepCounter();
-    if (window.ArtariumStepBridge?.getTodaySteps) syncSmartphoneSteps();
+    const expanded = progressLine.getAttribute("aria-expanded") !== "true";
+    progressLine.setAttribute("aria-expanded", String(expanded));
+    progressLine.querySelector(".growth-progress-detail")?.toggleAttribute("hidden", !expanded);
   };
-  progressLine?.addEventListener("click", syncStepsFromHome);
+  progressLine?.addEventListener("click", toggleProgressDetails);
   progressLine?.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
-    syncStepsFromHome();
+    toggleProgressDetails();
   });
 
   document.addEventListener("keydown", (event) => {
@@ -1077,6 +1090,19 @@ function bindEvents() {
     localStorage.setItem(AMBIENT_SOUND_STORAGE_KEY, next ? "on" : "off");
     syncSoundLabel();
     if (next) playRipplePlop(0.3);
+  });
+
+  const effectsButton = document.getElementById("settings-effects-button");
+  const effectsState = document.getElementById("settings-effects-state");
+  const syncEffectsLabel = () => {
+    if (effectsState) effectsState.textContent = arePlantEffectsEnabled() ? "オン" : "オフ";
+  };
+  syncEffectsLabel();
+  effectsButton?.addEventListener("click", () => {
+    localStorage.setItem(PLANT_EFFECTS_STORAGE_KEY, arePlantEffectsEnabled() ? "off" : "on");
+    syncEffectsLabel();
+    // シーンを作り直して、エフェクトの有無を即時反映する
+    render();
   });
 
   document.getElementById("frame-choice-modal")?.addEventListener("click", (event) => {
@@ -1637,8 +1663,11 @@ function renderHome() {
   homeArtwork.classList.toggle("is-water-environment", getEnvironmentTypeForPlant(selectedPlant, { preferDemo: DEMO_MODE }) === "water");
   homeArtwork.classList.toggle("is-pearl-material", selectedPlant.id === "pearl-light-bloom");
   const awaitingFrameChoice = selectedComplete && !selectedProgress.displayed;
+  hero.classList.toggle("has-growth-progress", !selectedComplete && !selectedProgress.displayed);
   homeArtwork.classList.toggle("is-bloom-complete", selectedComplete);
   homeArtwork.classList.toggle("is-newly-complete", awaitingFrameChoice);
+  // 点灯式の予約中は暗転のまま読み込み、新しい姿はスポットライトで初めて見せる
+  homeArtwork.classList.toggle("is-hush", state.pendingBloomCelebration === selectedPlant.id);
   // 3Dモデルを読み込む場合、つなぎのCSS水面は出さない（読み込み完了時のチラつき防止）
   const homePlantModelPath = getPlantModelPath(selectedPlant, visualStage);
   homeArtwork.innerHTML = homePlantModelPath
@@ -1647,22 +1676,47 @@ function renderHome() {
   mountSkyBackground(homeArtwork, { waterTint: skyWaterTint(selectedPlant) });
   mountViewingButton(homeArtwork);
   hero.classList.remove("is-seed-preview");
-  // 動的な状態表示: 植物名・ステージ・今日の歩数・開花まで
-  const STAGE_NAMES = ["", "種", "芽生え", "つぼみ", "ふくらむ蕾", "ほころび", "開花"];
+  // 状態表示は「総距離」ではなく、次に起きる変化へ視線を向ける。
+  const STAGE_NAMES = ["", "種", "芽生え", "若葉", "つぼみ", "ほころび", "開花"];
+  const STAGE_CODES = ["", "SEED", "SPROUT", "LEAF", "BUD", "PRE-BLOOM", "BLOOM"];
+  const NEXT_GROWTH_LABELS = ["", "芽吹きまで", "葉がひらくまで", "枝が伸びるまで", "つぼみまで", "開花まで", "完成まで"];
+  const GROWTH_PROGRESS_TITLES = ["", "芽吹きへの歩み", "葉ひらきへの歩み", "枝伸びへの歩み", "つぼみへの歩み", "開花への歩み", "完成への歩み"];
   const todaySteps = state.steps?.todaySteps || 0;
+  const currentStageStart = STAGE_THRESHOLDS[selectedStage - 1] ?? 0;
+  const nextStageThreshold = getNextThreshold(selectedStage);
+  const pointsInStage = Math.max(0, selectedProgress.points - currentStageStart);
+  const stagePointSpan = Math.max(1, nextStageThreshold - currentStageStart);
+  const stageProgress = Math.min(1, pointsInStage / stagePointSpan);
+  const nextStepCount = Math.max(0, nextStageThreshold - selectedProgress.points) * STEPS_PER_POINT;
+  const totalStepsRemaining = Math.max(0, COMPLETION_THRESHOLD - selectedProgress.points) * STEPS_PER_POINT;
+  const nextGrowthLabel = NEXT_GROWTH_LABELS[selectedStage] ?? "次の変化まで";
+  const growthProgressTitle = GROWTH_PROGRESS_TITLES[selectedStage] ?? "次の変化への歩み";
   document.getElementById("home-title").textContent = selectedPlant.name;
-  document.getElementById("home-active-caption").textContent = selectedProgress.displayed
-    ? "あなたの作品として、コレクションに収蔵されています。"
-    : selectedComplete
-      ? "作品が完成しました。額装してコレクションへ。"
-    : `${STAGE_NAMES[selectedStage] ?? ""} ・ 今日 ${todaySteps.toLocaleString()}歩 ・ 開花まで あと${(Math.max(0, COMPLETION_THRESHOLD - selectedProgress.points) * STEPS_PER_POINT).toLocaleString()}歩`;
-  // タブバー直上の目標達成ライン（1日の目標に対する今日の歩数）
+  const activeCaption = document.getElementById("home-active-caption");
+  if (selectedProgress.displayed) {
+    activeCaption.textContent = "あなたの作品として、コレクションに収蔵されています。";
+  } else if (selectedComplete) {
+    activeCaption.textContent = "作品が完成しました。額装してコレクションへ。";
+  } else {
+    activeCaption.innerHTML = `
+      <span class="growth-stage-label">${STAGE_CODES[selectedStage]} — ${STAGE_NAMES[selectedStage]}</span>
+    `;
+  }
+  // タブバー直上は、次の成長段階までの進み具合だけを静かに示す。
   const progressLine = document.getElementById("daily-progress-line");
   if (progressLine) {
     progressLine.hidden = false;
-    progressLine.setAttribute("aria-label", `今日の目標 ${DAILY_STEP_GOAL.toLocaleString()}歩 のうち ${todaySteps.toLocaleString()}歩。タップで歩数を同期します`);
+    progressLine.setAttribute("aria-expanded", "false");
+    progressLine.setAttribute("aria-label", `${nextGrowthLabel} ${Math.round(stageProgress * 100)}%。タップで歩数の詳細を表示します`);
+    document.getElementById("growth-progress-label").textContent = growthProgressTitle;
+    document.getElementById("growth-progress-percent").textContent = `${Math.round(stageProgress * 100)}%`;
+    const detail = document.getElementById("growth-progress-detail");
+    if (detail) {
+      detail.hidden = true;
+      detail.textContent = `今日 ${todaySteps.toLocaleString()}歩　・　開花まで ${totalStepsRemaining.toLocaleString()}歩`;
+    }
     const fill = document.getElementById("daily-progress-fill");
-    if (fill) fill.style.width = `${Math.round(Math.min(1, todaySteps / DAILY_STEP_GOAL) * 100)}%`;
+    if (fill) fill.style.width = `${Math.round(stageProgress * 100)}%`;
   }
   renderCompletionPlaque(selectedPlant, awaitingFrameChoice);
   if (selectedProgress.displayed) mountNextArtworkButton(hero);
@@ -1802,62 +1856,20 @@ function maybeShowWeatherGreeting(weather) {
   }, 6000);
 }
 
-// 空・水面・植物のキャンバスを1枚に合成し、美術館プレート付きで保存する
-function saveArtworkImage() {
-  const container = document.getElementById("home-active-artwork");
-  const plant = getSelectedPlant();
-  if (!container || !plant) return;
-  const rect = container.getBoundingClientRect();
-  if (!rect.width || !rect.height) return;
-  const scale = 2;
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(rect.width * scale);
-  canvas.height = Math.round(rect.height * scale);
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#111813";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  container.querySelectorAll("canvas").forEach((layer) => {
-    const r = layer.getBoundingClientRect();
-    try {
-      ctx.drawImage(layer, (r.left - rect.left) * scale, (r.top - rect.top) * scale, r.width * scale, r.height * scale);
-    } catch (error) { /* 描けないレイヤーは飛ばす */ }
-  });
-  const serif = '"Hiragino Mincho ProN", "Yu Mincho", Georgia, serif';
-  const pw = canvas.width * 0.66;
-  const ph = Math.max(90, canvas.width * 0.16);
-  const px = (canvas.width - pw) / 2;
-  const py = canvas.height - ph - canvas.width * 0.05;
-  ctx.fillStyle = "rgba(12, 18, 14, 0.82)";
-  ctx.fillRect(px, py, pw, ph);
-  ctx.strokeStyle = "rgba(194, 164, 94, 0.9)";
-  ctx.lineWidth = Math.max(2, canvas.width * 0.003);
-  ctx.strokeRect(px, py, pw, ph);
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#edeae0";
-  ctx.font = `${Math.round(ph * 0.28)}px ${serif}`;
-  ctx.fillText(plant.name, canvas.width / 2, py + ph * 0.42);
-  ctx.fillStyle = "#a8b0a4";
-  ctx.font = `${Math.round(ph * 0.16)}px ${serif}`;
-  const totalSteps = (state.progress[plant.id]?.points ?? 0) * STEPS_PER_POINT;
-  ctx.fillText(
-    `${state.userName || "artarium"} ・ ${new Date().toLocaleDateString("ja-JP")} ・ ${totalSteps.toLocaleString()}歩の記録`,
-    canvas.width / 2,
-    py + ph * 0.72
-  );
-  const link = document.createElement("a");
-  link.download = `artarium-${plant.id}.png`;
-  link.href = canvas.toDataURL("image/png");
-  link.click();
-}
-
 let completionPlaqueCollapsed = false;
 let completionPlaqueInstant = false;
+let bloomCelebrationActive = false;
 
 function renderCompletionPlaque(plant, shouldShow) {
   const plaque = document.getElementById("completion-plaque");
   if (!plaque) return;
   const hero = document.querySelector(".daily-hero");
   hero?.querySelector(".plaque-reopen")?.remove();
+  // 点灯式の最中はプレートを出さない（終演後に reveal で表示する）
+  if (bloomCelebrationActive) {
+    plaque.hidden = true;
+    return;
+  }
   if (!plant || !shouldShow) {
     plaque.hidden = true;
     completionPlaqueCollapsed = false;
@@ -2079,6 +2091,11 @@ function playBloomCelebration(container) {
   calmPlantEffects(6500);
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // 演出中は完成プレートを出さない。終演後に revealCompletionPlaqueAfterCelebration で出す
+  bloomCelebrationActive = true;
+  const plaqueEl = document.getElementById("completion-plaque");
+  if (plaqueEl) plaqueEl.hidden = true;
+
   container.classList.remove("is-lit");
   container.classList.add("is-hush");
   const veil = document.createElement("i");
@@ -2113,8 +2130,20 @@ function playBloomCelebration(container) {
     window.setTimeout(() => {
       veil.remove();
       glow.remove();
+      revealCompletionPlaqueAfterCelebration();
     }, 1200);
   }, 4000);
+}
+
+function revealCompletionPlaqueAfterCelebration() {
+  bloomCelebrationActive = false;
+  const plant = getSelectedPlant();
+  if (!plant) return;
+  const progress = state.progress[plant.id];
+  const awaiting = progress && isPlantComplete(progress) && !progress.displayed;
+  if (!awaiting) return;
+  completionPlaqueInstant = true;
+  renderCompletionPlaque(plant, true);
 }
 
 function maybePlayBloomCelebration(container) {
@@ -2131,17 +2160,34 @@ function mountViewingButton(container) {
   button.type = "button";
   button.className = "viewing-mode-button";
   button.textContent = "眺める";
-  button.addEventListener("click", () => {
-    const active = container.classList.toggle("is-viewing");
+  button.setAttribute("aria-label", "作品を全画面で眺める");
+  const setViewingMode = (active) => {
+    container.classList.toggle("is-viewing", active);
     document.body.classList.toggle("is-viewing-mode", active);
-    button.textContent = active ? "もどる" : "眺める";
+    container.querySelector(":scope > .viewing-exit-hint")?.remove();
+    if (active) {
+      const hint = document.createElement("div");
+      hint.className = "viewing-exit-hint";
+      hint.setAttribute("role", "status");
+      hint.textContent = "画面をタップすると戻ります";
+      container.appendChild(hint);
+      window.setTimeout(() => hint.remove(), 3600);
+    }
+  };
+  container.__artariumSetViewingMode = setViewingMode;
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setViewingMode(true);
+  });
+  container.addEventListener("click", () => {
+    if (container.classList.contains("is-viewing")) setViewingMode(false);
   });
   container.appendChild(button);
 }
 
 function exitViewingMode() {
   const viewing = document.querySelector(".daily-artwork.is-viewing");
-  if (viewing) viewing.querySelector(".viewing-mode-button")?.click();
+  viewing?.__artariumSetViewingMode?.(false);
 }
 
 // 傾き視差: スマホを傾けると空と植物がわずかにずれて奥行きが出る
@@ -2336,7 +2382,7 @@ function renderCodex() {
     grid.innerHTML = "";
     return;
   }
-  summary.textContent = `収蔵 ${collectedPlants.length} / ${state.plants.length}`;
+  summary.textContent = `収蔵 ${collectedPlants.length}点`;
   grid.innerHTML = collectedPlants.map((plant) => {
     const codex = CODEX_NOTES[plant.id];
     return `
@@ -2831,9 +2877,10 @@ function renderGallery() {
   galleryWall.dataset.artworkCount = String(displayedPlants.length);
   const newlyCollectedPlant = state.plants.find((plant) => plant.id === state.newlyCollectedPlantId);
   const gallerySummary = document.getElementById("gallery-summary");
+  // 全体の作品数は明かさない（コレクションの終わりを予感させないため）
   gallerySummary.textContent = newlyCollectedPlant
-    ? `「${getCollectionTitle(newlyCollectedPlant)}」を収蔵しました · 作品 ${displayedPlants.length} / ${state.plants.length}`
-    : `作品 ${displayedPlants.length} / ${state.plants.length}`;
+    ? `「${getCollectionTitle(newlyCollectedPlant)}」を収蔵しました`
+    : displayedPlants.length ? `作品 ${displayedPlants.length}点` : "";
   gallerySummary.setAttribute("role", "status");
 
   if (!displayedPlants.length) {
@@ -3159,7 +3206,7 @@ async function createGalleryScene(container, runtime, token) {
     artworkGroup.add(reflectionGroup);
   }
   artworkGroup.add(plantGroup);
-  const plantEffects = createPlantEffects(THREE, plantDefinition, plantGroup, {
+  const plantEffects = !arePlantEffectsEnabled() ? null : createPlantEffects(THREE, plantDefinition, plantGroup, {
     x: modelSettings.plantX,
     y: modelSettings.plantY,
     z: modelSettings.plantZ,
@@ -3605,7 +3652,7 @@ async function createPlantScene(container, runtime, token) {
     artworkGroup.add(frameGroup);
     container.classList.add("has-procedural-frame");
   }
-  const plantEffects = createPlantEffects(THREE, plantDefinition, plantGroup, {
+  const plantEffects = !arePlantEffectsEnabled() ? null : createPlantEffects(THREE, plantDefinition, plantGroup, {
     x: modelSettings.plantX,
     y: modelSettings.plantY,
     z: modelSettings.plantZ,
@@ -4165,9 +4212,20 @@ function modelLoadingMarkup() {
   `;
 }
 
-init();
+// キャッシュ復旧用の非常口: ?nosw=1 で旧Service Workerと全キャッシュを消去して開き直す。
+// 古いSWが居座って更新が届かないとき用（URLにクエリが付くため旧SWのキャッシュには当たらない）
+if (new URLSearchParams(window.location.search).has("nosw")) {
+  Promise.resolve()
+    .then(() => (navigator.serviceWorker?.getRegistrations?.() ?? []))
+    .then((registrations) => Promise.all([...registrations].map((reg) => reg.unregister())))
+    .then(() => (window.caches ? caches.keys() : []))
+    .then((keys) => Promise.all([...keys].map((key) => caches.delete(key))))
+    .finally(() => window.location.replace("./"));
+} else {
+  init();
+}
 
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && !new URLSearchParams(window.location.search).has("nosw")) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("./sw.js", { updateViaCache: "none" })
