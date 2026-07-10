@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-05";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-05";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-05";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-05";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-05";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-06";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-06";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-06";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-06";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-06";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -58,10 +58,8 @@ const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const INSTALL_HINT_KEY = "artarium-install-hinted";
 const MOTION_AUTO_KEY = "artarium-motion-auto";
-const STUDIES_KEY = "artarium-studies-v1";
-const MAX_STUDIES_PER_PLANT = 30;
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-05";
+const ASSET_VERSION = "20260710-06";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
@@ -658,7 +656,8 @@ async function init() {
   render();
   if (window.ArtariumStepBridge?.getTodaySteps) syncSmartphoneSteps();
   resumeMotionCounterIfEnabled();
-  scheduleDailyStudyCapture();
+  // 試作「今日の習作」（2026-07-10 不採用）の保存データを掃除する
+  localStorage.removeItem("artarium-studies-v1");
   observeWaterSurfaces();
   initWeatherSync((weather) => {
     lastRealWeather = weather;
@@ -1270,11 +1269,6 @@ function bindEvents() {
       }
       return;
     }
-    const captureStudyButton = event.target.closest("[data-demo-capture-study]");
-    if (captureStudyButton) {
-      captureDailyStudy({ force: true });
-      return;
-    }
     const completePlantButton = event.target.closest("[data-demo-complete-plant]");
     if (completePlantButton) {
       const progress = state.progress[state.selectedPlantId];
@@ -1523,7 +1517,6 @@ function render() {
   initSeedChoiceThumbnail();
   renderGallery();
   renderCodex();
-  renderStudies();
   renderSettings();
   renderFrameChoiceModal();
   renderGalleryFocusModal();
@@ -1855,170 +1848,6 @@ function saveArtworkImage() {
   link.download = `artarium-${plant.id}.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
-}
-
-// ── 今日の習作（プロトタイプ 2026-07-10）──
-// 育成中の植物を、その日の天気と光のまま小さな1枚に写し取り「習作帳」に集める。
-// 開花までの中日にも「今日開く理由」を作る試作。画像はlocalStorage保存のため件数上限あり
-
-let studyCaptureTimer = 0;
-
-function loadStudies() {
-  return loadJsonObject(STUDIES_KEY, "studies");
-}
-
-function saveStudies(studies) {
-  try {
-    saveJson(STUDIES_KEY, studies);
-    return true;
-  } catch (error) {
-    console.warn("習作を保存できませんでした（容量超過の可能性）", error);
-    return false;
-  }
-}
-
-function currentWeatherForStudy() {
-  if (debugWeatherKey && WEATHER_PRESETS[debugWeatherKey]) return WEATHER_PRESETS[debugWeatherKey];
-  return lastRealWeather;
-}
-
-function weatherWordFor(weather) {
-  if (!weather) return "晴";
-  if (weather.thunder) return "雷雨";
-  if (weather.snow > 0.3) return "雪";
-  if (weather.rain >= 0.6) return "雨";
-  if (weather.rain > 0) return "小雨";
-  if (weather.fog > 0.5) return "霧";
-  if (weather.cloud >= 0.85) return "曇";
-  if (weather.cloud >= 0.5) return "薄曇";
-  return "晴";
-}
-
-function composeStudyImage(container) {
-  const rect = container.getBoundingClientRect();
-  if (!rect.width || !rect.height) return "";
-  const width = 420;
-  const height = Math.round(width * 1.25);
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#111813";
-  ctx.fillRect(0, 0, width, height);
-  // シーンを中央クロップで写し取る
-  const scale = Math.max(width / rect.width, height / rect.height);
-  const offsetX = (width - rect.width * scale) / 2;
-  const offsetY = (height - rect.height * scale) / 2;
-  let drew = false;
-  container.querySelectorAll("canvas").forEach((layer) => {
-    const r = layer.getBoundingClientRect();
-    try {
-      ctx.drawImage(
-        layer,
-        offsetX + (r.left - rect.left) * scale,
-        offsetY + (r.top - rect.top) * scale,
-        r.width * scale,
-        r.height * scale
-      );
-      drew = true;
-    } catch (error) { /* 描けないレイヤーは飛ばす */ }
-  });
-  if (!drew) return "";
-  // 紙のような温かい被膜と周辺減光で「習作」の気配にする
-  ctx.fillStyle = "rgba(237, 231, 214, 0.05)";
-  ctx.fillRect(0, 0, width, height);
-  const vignette = ctx.createRadialGradient(width / 2, height / 2, height * 0.3, width / 2, height / 2, height * 0.78);
-  vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
-  vignette.addColorStop(1, "rgba(10, 12, 10, 0.34)");
-  ctx.fillStyle = vignette;
-  ctx.fillRect(0, 0, width, height);
-  return canvas.toDataURL("image/jpeg", 0.72);
-}
-
-function captureDailyStudy({ force = false } = {}) {
-  const plant = getSelectedPlant();
-  if (!plant) return false;
-  const progress = state.progress[plant.id];
-  if (!progress || progress.displayed) return false;
-  const today = getTodayKey();
-  const studies = loadStudies();
-  const saved = Array.isArray(studies[plant.id]) ? studies[plant.id] : [];
-  if (!force && saved.some((entry) => entry.date === today)) return false;
-  const container = document.getElementById("home-active-artwork");
-  if (!container || container.dataset.ready !== "true") return false;
-  const image = composeStudyImage(container);
-  if (!image) return false;
-  const entries = force ? saved.filter((entry) => entry.date !== today) : saved.slice();
-  entries.push({
-    date: today,
-    at: new Date().toISOString(),
-    stage: getStage(progress.points),
-    todaySteps: state.steps?.todaySteps || 0,
-    weather: weatherWordFor(currentWeatherForStudy()),
-    image
-  });
-  while (entries.length > MAX_STUDIES_PER_PLANT) entries.shift();
-  studies[plant.id] = entries;
-  if (!saveStudies(studies)) return false;
-  renderStudies();
-  showStudyToast();
-  return true;
-}
-
-// 起動後、シーンの読み込みとエフェクトが落ち着いてから当日分を1枚だけ採取する
-function scheduleDailyStudyCapture() {
-  if (DEMO_MODE) return;
-  window.clearTimeout(studyCaptureTimer);
-  let attempts = 0;
-  const tick = () => {
-    attempts += 1;
-    if (captureDailyStudy()) return;
-    if (attempts < 20) studyCaptureTimer = window.setTimeout(tick, 1500);
-  };
-  studyCaptureTimer = window.setTimeout(tick, 3500);
-}
-
-function showStudyToast() {
-  const container = document.getElementById("home-active-artwork");
-  if (!container || document.querySelector(".study-toast")) return;
-  const toast = document.createElement("div");
-  toast.className = "tap-hint study-toast";
-  toast.textContent = "今日の習作を描きました ─ コレクションの習作帳へ";
-  container.appendChild(toast);
-  window.setTimeout(() => {
-    toast.classList.add("is-done");
-    window.setTimeout(() => toast.remove(), 700);
-  }, 5200);
-}
-
-function formatStudyDate(dateKey) {
-  const parts = String(dateKey).split("-").map(Number);
-  if (!parts[1] || !parts[2]) return dateKey;
-  return `${parts[1]}月${parts[2]}日`;
-}
-
-function renderStudies() {
-  const head = document.getElementById("studies-head");
-  const grid = document.getElementById("studies-grid");
-  if (!head || !grid) return;
-  const studies = loadStudies();
-  const entries = state.plants.flatMap((plant) => {
-    const list = Array.isArray(studies[plant.id]) ? studies[plant.id] : [];
-    return list.map((entry) => ({ ...entry, plantName: plant.name }));
-  }).sort((a, b) => (a.at < b.at ? 1 : -1));
-  head.hidden = entries.length === 0;
-  grid.hidden = entries.length === 0;
-  const summary = document.getElementById("studies-summary");
-  if (summary) summary.textContent = entries.length ? `歩いた日ごとの小さな記録 ・ ${entries.length}枚` : "";
-  grid.innerHTML = entries.map((entry) => `
-    <figure class="study-card">
-      <img src="${entry.image}" alt="${entry.plantName} の習作（${entry.date}）" loading="lazy">
-      <figcaption>
-        <strong>${formatStudyDate(entry.date)} ・ ${entry.weather}</strong>
-        <span>${entry.plantName} ・ Stage ${entry.stage} ・ ${formatNumber(entry.todaySteps)}歩</span>
-      </figcaption>
-    </figure>
-  `).join("");
 }
 
 let completionPlaqueCollapsed = false;
@@ -2695,7 +2524,6 @@ function renderDemoModelSettings() {
             : "この植物を完成させる"}
         </button>
         <button class="secondary-action" data-demo-parallax type="button">視差プレビュー: ${demoMouseParallax ? "オン" : "オフ"}</button>
-        <button class="secondary-action" data-demo-capture-study type="button" ${!selectedPlant ? "disabled" : ""}>今日の習作を描く</button>
       </div>
       ${controls.map((control) => {
         const value = stageSettings[control.key];
@@ -2736,7 +2564,6 @@ function resetArtariumProgress() {
   if (!confirm("Artariumの進行状況を初期化しますか？")) return;
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(MOTION_AUTO_KEY);
-  localStorage.removeItem(STUDIES_KEY);
   state.progress = loadProgress(state.plants, {});
   state.steps = loadStepState({});
   state.selectedPlantId = "";
