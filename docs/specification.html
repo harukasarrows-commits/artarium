@@ -174,10 +174,10 @@
 <p>仕様:</p>
 <ul>
 <li>60,000歩到達による開花完了後に表示</li>
-<li>額縁候補を表示</li>
-<li>プレビューには仮画像ではなく開花した植物モデルを表示</li>
+<li>額縁候補は「額の角の見本」スウォッチ＋日本語名で表示し、選択中の額縁には「素材の物語」の一文を添える（2026-07-10）</li>
+<li>プレビューには開花した植物モデルと、収蔵後の姿を先に見せる真鍮プレート（作品名・作者名）を表示</li>
 <li>背景選択は現在無効</li>
-<li>確定後、コレクションに収蔵</li>
+<li>確定時は「収蔵の儀式」演出（照明が落ち、金の光が額縁をなぞる約2秒。reduced-motion時は省略）を経てコレクションに収蔵</li>
 </ul>
 <h3 id="%E3%83%87%E3%83%A2%E7%89%88-3d%E8%AA%BF%E6%95%B4">デモ版 3D調整</h3>
 <p>アクセス:</p>
@@ -463,18 +463,25 @@
 <h2 id="%E9%A1%8D%E7%B8%81%E4%BB%95%E6%A7%98">額縁仕様</h2>
 <p>現在の額縁タイプ:</p>
 <div class="table-wrap"><table>
-<thead><tr><th>frameType</th><th>表示名</th></tr></thead>
+<thead><tr><th>frameType</th><th>日本語名</th><th>英語名</th><th>素材の物語</th></tr></thead>
 <tbody>
-<tr><td><code>walnut</code></td><td>Walnut Shadow Box</td></tr>
-<tr><td><code>museum-black</code></td><td>Museum Black</td></tr>
-<tr><td><code>floating-maple</code></td><td>Floating Maple</td></tr>
+<tr><td><code>walnut</code></td><td>胡桃の深箱</td><td>Walnut Shadow Box</td><td>深く艶めく木目が、花をしずかに抱く。</td></tr>
+<tr><td><code>museum-black</code></td><td>美術館の黒</td><td>Museum Black</td><td>光を呑む漆黒が、色彩だけを浮かび上がらせる。</td></tr>
+<tr><td><code>floating-maple</code></td><td>浮かぶ楓</td><td>Floating Maple</td><td>額と作品のあいだに光の隙間。花が宙に浮いて見える。</td></tr>
 </tbody></table></div>
 <p>GLB配置状況（2026-07-10時点）:</p>
 <ul>
 <li><code>museum-black</code>: 配置済み（<code>models/frames/museum-black/</code>）</li>
 <li><code>walnut</code> / <code>floating-maple</code>: 未配置。CSSの額縁フォールバックで表示</li>
 </ul>
-<p>GLBがない場合はCSSの額縁フォールバックを使う。</p>
+<p>GLB未配置の額は、手続き生成の3D箱額で表示する（2026-07-10 品質改善）:</p>
+<ul>
+<li>額縁は手続き生成の木目テクスチャ（横木は横目・縦木は縦目）。<code>museum-black</code> のみ艶のあるラッカー仕上げ</li>
+<li>開口の内側に金のフィレット、その奥にマット紙（アイボリーの台紙）。<code>floating-maple</code> は「光の隙間」が個性のためマット紙なし</li>
+<li>箱の内壁は暗色に沈める（立体感を抑え、絵画として見せる。2026-07-10 ユーザー決定）</li>
+<li>背板には植物のパレット4色から生成した「絵の具の背景」を描く（作品ごとに異なる。配置固定・カンヴァス質感・周辺減光つき）</li>
+</ul>
+<p>Three.js自体が使えない場合はCSSの額縁フォールバックを使う（こちらにもマット紙表現あり）。</p>
 <h2 id="%E3%83%87%E3%82%B6%E3%82%A4%E3%83%B3%E4%BB%95%E6%A7%98">デザイン仕様</h2>
 <p>方向性:</p>
 <ul>

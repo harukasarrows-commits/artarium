@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Artarium">
     <title>Artarium - 名画の庭</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260710-16">
-    <link rel="icon" href="./icon.svg?v=20260710-16" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="./icon.svg?v=20260710-16">
-    <link rel="stylesheet" href="./styles.css?v=20260710-16">
+    <link rel="manifest" href="./manifest.webmanifest?v=20260710-20">
+    <link rel="icon" href="./icon.svg?v=20260710-20" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon.svg?v=20260710-20">
+    <link rel="stylesheet" href="./styles.css?v=20260710-20">
   </head>
   <body>
     <div class="app-shell">
@@ -153,12 +153,13 @@
     <div class="frame-choice-modal" id="frame-choice-modal" hidden>
       <div class="frame-choice-panel" role="dialog" aria-modal="true" aria-labelledby="frame-choice-title">
         <button class="frame-choice-close" data-frame-choice-close type="button" aria-label="閉じる">×</button>
-        <p class="eyebrow">Final curation</p>
+        <p class="eyebrow">Final curation — 額装</p>
         <h2 id="frame-choice-title">額装を選ぶ</h2>
         <p id="frame-choice-copy"></p>
         <div class="frame-choice-preview" id="frame-choice-preview"></div>
         <section>
           <h3>額縁</h3>
+          <p class="frame-choice-story" id="frame-choice-story"></p>
           <div class="choice-grid" id="frame-choice-options"></div>
         </section>
         <button class="primary-action frame-choice-confirm" data-frame-choice-confirm type="button">この額装で飾る</button>
@@ -193,6 +194,6 @@
       </form>
     </div>
 
-    <script src="./app.js?v=20260710-16" type="module"></script>
+    <script src="./app.js?v=20260710-20" type="module"></script>
   </body>
 </html>

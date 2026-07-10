@@ -2088,7 +2088,7 @@ body::after {
 }
 
 .choice-preview-art {
-  width: min(82%, 250px);
+  width: min(88%, 292px);
   aspect-ratio: 4 / 5;
 }
 
@@ -3801,4 +3801,189 @@ body.is-demo-mode .demo-control {
 .artwork-plaque small,
 .completion-plaque h3 {
   overflow-wrap: anywhere;
+}
+
+/* ===== 額装体験の底上げ（2026-07-10）===== */
+
+/* プレビュー: 展示室のスポットライトの下に置かれた額 */
+.frame-choice-preview {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  padding: 14px 0 4px;
+}
+
+.frame-choice-preview::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 82%;
+  height: 88%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse 62% 54% at 50% 36%, rgba(214, 186, 120, 0.15), transparent 72%);
+  pointer-events: none;
+}
+
+.choice-preview-art {
+  position: relative;
+  filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.45));
+}
+
+/* 額の下の真鍮プレート: 収蔵後の姿を先に見せる */
+.curation-plate {
+  width: fit-content;
+  max-width: 88%;
+  margin: 12px auto 0;
+  padding: 7px 18px 8px;
+  text-align: center;
+  border-radius: 3px;
+  color: #e8dcc0;
+  background: linear-gradient(160deg, #3d3524, #262013);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 180, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.curation-plate strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+}
+
+.curation-plate span {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  color: rgba(232, 220, 192, 0.72);
+}
+
+/* 額縁の選択肢: 色チップではなく「額の角の見本」として見せる */
+.frame-swatch {
+  width: 56px;
+  height: 46px;
+  border: none;
+  border-radius: 4px;
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--frame, #5a3b25), white 22%),
+    var(--frame, #5a3b25) 42%,
+    var(--frame-deep, #241505)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 4px 10px rgba(0, 0, 0, 0.38);
+}
+
+.frame-swatch::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 2px;
+  background: linear-gradient(160deg, #22301f, #0b100c);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(216, 188, 120, 0.25);
+}
+
+.choice-option {
+  gap: 6px;
+  padding: 12px 8px 10px;
+  background: rgba(24, 33, 27, 0.5);
+}
+
+/* 最下段が固定の確定ボタンに隠れないよう、スクロール余白を確保 */
+.frame-choice-panel .choice-grid {
+  margin-bottom: 58px;
+}
+
+.choice-option strong {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.choice-option.is-active {
+  box-shadow: 0 0 0 1px rgba(194, 164, 94, 0.4), 0 0 18px rgba(194, 164, 94, 0.12);
+}
+
+/* 選択中の額縁の「素材の物語」。作品名（明朝）と競合しないよう、細身ゴシック＋広字間のキャプション体裁 */
+.frame-choice-story {
+  min-height: 1.7em;
+  margin: 2px 2px 12px;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 0.76rem;
+  font-weight: 300;
+  letter-spacing: 0.09em;
+  line-height: 1.7;
+}
+
+/* 収蔵の儀式: 照明が落ち、金の光が額縁をなぞる */
+.frame-choice-panel.is-consecrating {
+  pointer-events: none;
+}
+
+.frame-choice-panel.is-consecrating .choice-preview-art {
+  animation: consecrate-dim 2s ease forwards;
+}
+
+.frame-choice-panel.is-consecrating .choice-preview-art::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 8px;
+  border: 1px solid rgba(216, 188, 120, 0);
+  pointer-events: none;
+  animation: consecrate-ring 2s ease forwards;
+}
+
+@keyframes consecrate-dim {
+  0% { filter: brightness(1); }
+  30% { filter: brightness(0.4) saturate(0.85); }
+  70% { filter: brightness(1.12); }
+  100% { filter: brightness(1); }
+}
+
+@keyframes consecrate-ring {
+  0% { border-color: rgba(216, 188, 120, 0); }
+  45% {
+    border-color: rgba(216, 188, 120, 0.95);
+    box-shadow: 0 0 26px rgba(216, 188, 120, 0.4), inset 0 0 20px rgba(216, 188, 120, 0.2);
+  }
+  100% { border-color: rgba(216, 188, 120, 0); }
+}
+
+/* CSS疑似額縁（GLB未配置の額）の質感底上げ: 木目風グラデ＋マット紙＋金のフィレット線＋深い影 */
+.fallback-frame {
+  border-color: transparent;
+  border-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--frame, #2a1c13), white 26%),
+    var(--frame, #2a1c13) 40%,
+    color-mix(in srgb, var(--frame, #2a1c13), black 48%)
+  ) 1;
+  box-shadow:
+    inset 0 24px 40px rgba(0, 0, 0, 0.34),
+    0 14px 34px rgba(0, 0, 0, 0.5);
+}
+
+/* マット紙: 本物の額装に必ずある、額と作品のあいだのアイボリーの台紙（窓の内側に斜めの彫り込み影） */
+.fallback-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border: clamp(9px, 3.2vw, 15px) solid rgba(238, 232, 218, 0.97);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 1px rgba(120, 108, 84, 0.35),
+    inset 0 0 0 2px rgba(216, 188, 120, 0.4);
+  pointer-events: none;
 }

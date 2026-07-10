@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-16";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-16";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-16";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-16";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-16";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-20";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-20";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-20";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-20";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-20";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -64,7 +64,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-16";
+const ASSET_VERSION = "20260710-20";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
@@ -178,18 +178,33 @@ function setDebugWeather(key) {
 const FRAME_TYPES = {
   walnut: {
     label: "Walnut Shadow Box",
+    jp: "胡桃の深箱",
+    story: "深く艶めく木目が、花をしずかに抱く。",
     modelPath: "./models/frames/walnut-shadow-box/frame.glb",
-    material: "#5a3b25"
+    material: "#5a3b25",
+    materialDeep: "#31200f",
+    finish: "wood",
+    matBoard: true
   },
   "museum-black": {
     label: "Museum Black",
+    jp: "美術館の黒",
+    story: "光を呑む漆黒が、色彩だけを浮かび上がらせる。",
     modelPath: "./models/frames/museum-black/picture+frame+3d+model+1k.glb",
-    material: "#171716"
+    material: "#171716",
+    materialDeep: "#050505",
+    finish: "lacquer",
+    matBoard: true
   },
   "floating-maple": {
     label: "Floating Maple",
+    jp: "浮かぶ楓",
+    story: "額と作品のあいだに光の隙間。花が宙に浮いて見える。",
     modelPath: "./models/frames/floating-maple/frame.glb",
-    material: "#b98248"
+    material: "#b98248",
+    materialDeep: "#7d5227",
+    finish: "wood",
+    matBoard: false
   }
 };
 const BACKDROP_TYPES = {
@@ -2633,10 +2648,29 @@ function openFrameChoice(plantId) {
   renderFrameChoiceModal();
 }
 
+let frameConsecrationRunning = false;
+
 function confirmFrameChoice() {
   const plantId = state.frameChoicePlantId;
   const progress = state.progress[plantId];
-  if (!progress) return;
+  if (!progress || frameConsecrationRunning) return;
+  const panel = document.querySelector("#frame-choice-modal .frame-choice-panel");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduceMotion || !panel) {
+    finalizeFrameChoice(plantId, progress);
+    return;
+  }
+  // 収蔵の儀式: 照明が落ち、金の光が額縁をなぞってから壁へ掛かる
+  frameConsecrationRunning = true;
+  panel.classList.add("is-consecrating");
+  window.setTimeout(() => {
+    panel.classList.remove("is-consecrating");
+    frameConsecrationRunning = false;
+    finalizeFrameChoice(plantId, progress);
+  }, 2000);
+}
+
+function finalizeFrameChoice(plantId, progress) {
   progress.displayed = true;
   progress.collectedAt = new Date().toISOString();
   markPlantCompleted(progress);
@@ -2772,6 +2806,10 @@ function renderFrameChoiceModal() {
         ${galleryViewerMarkup(plant)}
       </div>
     </div>
+    <div class="curation-plate">
+      <strong>${getCollectionTitle(plant)}</strong>
+      <span>${state.userName || "Artarium Artist"}</span>
+    </div>
   `;
   document.getElementById("frame-choice-options").innerHTML = getFrameOptions(plant).map((type) => `
     <button
@@ -2780,13 +2818,14 @@ function renderFrameChoiceModal() {
       type="button"
       aria-pressed="${type === frameType}"
     >
-      <span class="frame-swatch" style="--frame:${FRAME_TYPES[type]?.material ?? "#5a3b25"}"></span>
-      <strong>${FRAME_TYPES[type]?.label ?? type}</strong>
-      ${type === frameType ? '<span class="choice-state">選択中</span>' : ""}
+      <span class="frame-swatch" style="--frame:${FRAME_TYPES[type]?.material ?? "#5a3b25"};--frame-deep:${FRAME_TYPES[type]?.materialDeep ?? "#241505"}"></span>
+      <strong>${FRAME_TYPES[type]?.jp ?? FRAME_TYPES[type]?.label ?? type}</strong>
     </button>
   `).join("");
+  const storyEl = document.getElementById("frame-choice-story");
+  if (storyEl) storyEl.textContent = FRAME_TYPES[frameType]?.story ?? "";
   const confirmButton = modal.querySelector("[data-frame-choice-confirm]");
-  if (confirmButton) confirmButton.textContent = `「${FRAME_TYPES[frameType]?.label ?? frameType}」で収蔵する`;
+  if (confirmButton) confirmButton.textContent = `「${FRAME_TYPES[frameType]?.jp ?? frameType}」で収蔵する`;
   initGalleryModelViewers();
 }
 
@@ -3340,7 +3379,8 @@ async function createGalleryScene(container, runtime, token) {
       centerX: 0,
       bottomY: dims.bottomY,
       frontZ: dims.frontZ,
-      boxDepth: dims.frontZ - dims.waterBackZ + 0.25
+      boxDepth: dims.frontZ - dims.waterBackZ + 0.25,
+      backTexture: getPaintedBackdropTexture(THREE, plantDefinition)
     });
     displayGroup.add(frameGroup);
     container.classList.add("has-procedural-frame");
@@ -3489,7 +3529,93 @@ function mountSeedSpecimenMotion(container, token, renderer, scene, camera, plan
 
 // 額縁: GLBを使わず、カメラ可視範囲に合わせてコードで組み立てるシャドーボックス。
 // 見付け（前面の枠板）は開口の外から画面端の先まで覆い、外側の水面などを隠す。
-function buildShadowBoxFrame(THREE, frameType, { innerW, innerH, centerX, bottomY, frontZ, faceW, faceH, boxDepth }) {
+// 額の中の「絵の具の背景」: 植物のパレットを淡い光の靄として重ね、
+// 一枚一枚を絵画として見せる（波の花なら藍の夜、ひまわりなら暖色の靄）
+const paintedBackdropCache = new Map();
+
+function getPaintedBackdropTexture(THREE, plant) {
+  const key = plant?.id ?? "default";
+  if (paintedBackdropCache.has(key)) return paintedBackdropCache.get(key);
+  const palette = Array.isArray(plant?.palette) && plant.palette.length >= 4
+    ? plant.palette
+    : ["#22303a", "#31424e", "#1a2530", "#101820"];
+  const size = 512;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  const deepBase = new THREE.Color(palette[3]).lerp(new THREE.Color("#0a0d0d"), 0.45);
+  ctx.fillStyle = `#${deepBase.getHexString()}`;
+  ctx.fillRect(0, 0, size, size);
+  // 色の置き場所は固定（開くたびに絵が変わらないように）
+  const washes = [
+    { c: palette[0], x: 0.3, y: 0.26, r: 0.55, a: 0.32 },
+    { c: palette[1], x: 0.74, y: 0.42, r: 0.48, a: 0.24 },
+    { c: palette[2], x: 0.44, y: 0.78, r: 0.6, a: 0.2 },
+    { c: palette[0], x: 0.64, y: 0.1, r: 0.34, a: 0.14 }
+  ];
+  for (const wash of washes) {
+    const color = new THREE.Color(wash.c);
+    const gradient = ctx.createRadialGradient(wash.x * size, wash.y * size, 0, wash.x * size, wash.y * size, wash.r * size);
+    gradient.addColorStop(0, `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${wash.a})`);
+    gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+  }
+  // 画布の質感（ごく薄い横糸）と周辺減光
+  for (let y = 0; y < size; y += 3) {
+    ctx.fillStyle = `rgba(255, 250, 240, ${Math.random() * 0.016})`;
+    ctx.fillRect(0, y, size, 1);
+  }
+  const vignette = ctx.createRadialGradient(size / 2, size / 2, size * 0.35, size / 2, size / 2, size * 0.78);
+  vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
+  vignette.addColorStop(1, "rgba(0, 0, 0, 0.5)");
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, size, size);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  paintedBackdropCache.set(key, texture);
+  return texture;
+}
+
+// 手続き生成の木目テクスチャ（額タイプ×木目方向でキャッシュ）。
+// 単色のCG材質が安っぽさの原因だったため、濃淡の筋で無垢材の表情を作る
+const frameWoodTextureCache = new Map();
+
+function getFrameWoodTexture(THREE, frameType, vertical) {
+  const key = `${frameType}-${vertical ? "v" : "h"}`;
+  if (frameWoodTextureCache.has(key)) return frameWoodTextureCache.get(key);
+  const spec = FRAME_TYPES[frameType] ?? {};
+  const base = new THREE.Color(spec.material ?? "#5a3b25");
+  const deep = new THREE.Color(spec.materialDeep ?? "#241505");
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = `#${base.getHexString()}`;
+  ctx.fillRect(0, 0, size, size);
+  for (let i = 0; i < 46; i++) {
+    const grain = base.clone().lerp(deep, 0.25 + Math.random() * 0.75);
+    ctx.fillStyle = `rgba(${Math.round(grain.r * 255)}, ${Math.round(grain.g * 255)}, ${Math.round(grain.b * 255)}, ${0.12 + Math.random() * 0.24})`;
+    ctx.fillRect(Math.random() * size, 0, 1 + Math.random() * 5, size);
+  }
+  for (let i = 0; i < 14; i++) {
+    ctx.fillStyle = `rgba(255, 245, 225, ${0.04 + Math.random() * 0.06})`;
+    ctx.fillRect(Math.random() * size, 0, 1 + Math.random() * 2, size);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  if (!vertical) {
+    texture.center.set(0.5, 0.5);
+    texture.rotation = Math.PI / 2;
+  }
+  frameWoodTextureCache.set(key, texture);
+  return texture;
+}
+
+function buildShadowBoxFrame(THREE, frameType, { innerW, innerH, centerX, bottomY, frontZ, faceW, faceH, boxDepth, backTexture }) {
   const spec = FRAME_TYPES[frameType] ?? {};
   const frameColor = new THREE.Color(spec.material ?? "#5a3b25");
   const group = new THREE.Group();
@@ -3505,10 +3631,24 @@ function buildShadowBoxFrame(THREE, frameType, { innerW, innerH, centerX, bottom
   const outerW = innerW + barX * 2;
   const faceZ = frontZ - barDepth / 2;
 
-  const frameMat = new THREE.MeshStandardMaterial({ color: frameColor, metalness: 0.3, roughness: 0.5 });
+  // 仕上げ: 木製は木目テクスチャ＋低い金属感、漆黒（museum-black）は艶のあるラッカー
+  const isLacquer = spec.finish === "lacquer";
+  // 木の色はテクスチャ×colorの乗算で決まる。シーンの照明が強く色が飛ぶため、暗めに乗算して本来の材色に戻す
+  const woodTone = new THREE.Color("#8f867a");
+  const frameMatH = isLacquer
+    ? new THREE.MeshStandardMaterial({ color: frameColor, metalness: 0.42, roughness: 0.3 })
+    : new THREE.MeshStandardMaterial({ map: getFrameWoodTexture(THREE, frameType, false), color: woodTone, metalness: 0.1, roughness: 0.58 });
+  const frameMatV = isLacquer
+    ? frameMatH
+    : new THREE.MeshStandardMaterial({ map: getFrameWoodTexture(THREE, frameType, true), color: woodTone, metalness: 0.1, roughness: 0.58 });
   const lipMat = new THREE.MeshStandardMaterial({ color: new THREE.Color("#c2a45e"), metalness: 0.75, roughness: 0.35 });
-  const wallMat = new THREE.MeshStandardMaterial({ color: frameColor.clone().multiplyScalar(0.4), metalness: 0.1, roughness: 0.9 });
-  const backMat = new THREE.MeshStandardMaterial({ color: new THREE.Color("#0d1410"), roughness: 1 });
+  // 内壁は暗く沈める: 明るい内壁は箱の奥行きを強調しすぎる（実際の標本箱の内側も暗色）
+  const wallMat = new THREE.MeshStandardMaterial({ color: frameColor.clone().multiplyScalar(0.13), metalness: 0.05, roughness: 0.95 });
+  // 背板: 絵の具の背景があれば「描かれたカンヴァス」として照明の影響を受けない材質で貼る
+  const backMat = backTexture
+    ? new THREE.MeshBasicMaterial({ map: backTexture })
+    : new THREE.MeshStandardMaterial({ color: new THREE.Color("#0d1410"), roughness: 1 });
+  const matBoardMat = new THREE.MeshStandardMaterial({ color: new THREE.Color("#ece5d3"), metalness: 0, roughness: 0.95 });
 
   const addBox = (w, h, d, x, y, z, material) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
@@ -3516,11 +3656,11 @@ function buildShadowBoxFrame(THREE, frameType, { innerW, innerH, centerX, bottom
     group.add(mesh);
   };
 
-  // 額の4辺（開口の外側を画面端まで覆う）
-  addBox(outerW, barY, barDepth, cx, cy + innerH / 2 + barY / 2, faceZ, frameMat);
-  addBox(outerW, barY, barDepth, cx, cy - innerH / 2 - barY / 2, faceZ, frameMat);
-  addBox(barX, innerH, barDepth, cx - innerW / 2 - barX / 2, cy, faceZ, frameMat);
-  addBox(barX, innerH, barDepth, cx + innerW / 2 + barX / 2, cy, faceZ, frameMat);
+  // 額の4辺（開口の外側を画面端まで覆う）。横木は横目・縦木は縦目
+  addBox(outerW, barY, barDepth, cx, cy + innerH / 2 + barY / 2, faceZ, frameMatH);
+  addBox(outerW, barY, barDepth, cx, cy - innerH / 2 - barY / 2, faceZ, frameMatH);
+  addBox(barX, innerH, barDepth, cx - innerW / 2 - barX / 2, cy, faceZ, frameMatV);
+  addBox(barX, innerH, barDepth, cx + innerW / 2 + barX / 2, cy, faceZ, frameMatV);
   // 開口の内側に走る金の細縁
   const lip = Math.max(0.045, innerW * 0.025);
   const lipZ = frontZ - barDepth - lip / 2;
@@ -3528,6 +3668,15 @@ function buildShadowBoxFrame(THREE, frameType, { innerW, innerH, centerX, bottom
   addBox(innerW, lip, lip, cx, cy - innerH / 2 + lip / 2, lipZ, lipMat);
   addBox(lip, innerH, lip, cx - innerW / 2 + lip / 2, cy, lipZ, lipMat);
   addBox(lip, innerH, lip, cx + innerW / 2 - lip / 2, cy, lipZ, lipMat);
+  // マット紙: 金縁のすぐ奥に沈むアイボリーの台紙（浮かぶ楓は「光の隙間」が売りなので入れない）
+  if (spec.matBoard) {
+    const matB = Math.max(0.09, innerW * 0.085);
+    const matZ = frontZ - barDepth - lip - 0.012;
+    addBox(innerW, matB, 0.024, cx, cy + innerH / 2 - matB / 2, matZ, matBoardMat);
+    addBox(innerW, matB, 0.024, cx, cy - innerH / 2 + matB / 2, matZ, matBoardMat);
+    addBox(matB, innerH - matB * 2, 0.024, cx - innerW / 2 + matB / 2, cy, matZ, matBoardMat);
+    addBox(matB, innerH - matB * 2, 0.024, cx + innerW / 2 - matB / 2, cy, matZ, matBoardMat);
+  }
   // 箱の側壁と背板（回転したときに立体標本らしく見える）
   const wallT = 0.06;
   const wallLen = depth - barDepth;
