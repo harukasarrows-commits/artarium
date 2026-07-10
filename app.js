@@ -1520,6 +1520,7 @@ function render() {
   renderTabs();
   renderNetworkStatus();
   renderHome();
+  initSeedChoiceThumbnail();
   renderGallery();
   renderCodex();
   renderStudies();
@@ -1590,7 +1591,14 @@ function renderHome() {
       <div class="seed-choice-list">
         ${availablePlants.map((plant) => `
           <button class="seed-choice" type="button" data-seed="${plant.id}" style="${paletteVars(plant)}">
-            <span class="seed-art">${plantMarkup(1)}</span>
+            <span
+              class="seed-art seed-model-thumbnail"
+              data-seed-thumbnail="true"
+              data-stage="1"
+              data-plant-id="${plant.id}"
+              data-plant-model="${getPlantModelPath(plant, 1)}"
+              data-environment="${getEnvironmentTypeForPlant(plant, { preferDemo: DEMO_MODE })}"
+            >${modelLoadingMarkup()}</span>
             <span class="seed-copy">
               <strong>${plant.name}</strong>
               <small>${plant.copy?.seedLabel ?? `${plant.motif} / ${plant.artist}`}</small>
@@ -3196,6 +3204,26 @@ async function initHomeModelViewer() {
   });
 }
 
+async function initSeedChoiceThumbnail() {
+  const viewers = Array.from(document.querySelectorAll("[data-seed-thumbnail]:not([data-ready])"));
+  if (!viewers.length) return;
+
+  const runtime = await loadThreeRuntime();
+  viewers.forEach((viewer) => {
+    viewer.dataset.ready = "true";
+    const token = String(++modelRenderSerial);
+    viewer.dataset.modelRenderToken = token;
+    if (!runtime || !viewer.dataset.plantModel) {
+      viewer.innerHTML = plantMarkup(1);
+      return;
+    }
+    createPlantScene(viewer, runtime, token).catch((error) => {
+      console.warn("Seed thumbnail fallback:", error);
+      viewer.innerHTML = plantMarkup(1);
+    });
+  });
+}
+
 async function loadThreeRuntime() {
   if ("artariumThreeRuntime" in window) return window.artariumThreeRuntime;
 
@@ -3641,12 +3669,13 @@ function buildShadowBoxFrame(THREE, frameType, { innerW, innerH, centerX, bottom
 async function createPlantScene(container, runtime, token) {
   const { THREE, GLTFLoader } = runtime;
   const loader = new GLTFLoader();
-  const isSeedPreview = container.dataset.seedPreview === "true";
+  const isSeedThumbnail = container.dataset.seedThumbnail === "true";
+  const isSeedPreview = container.dataset.seedPreview === "true" || isSeedThumbnail;
   const baseModelSettings = getSceneModelSettings(container.dataset.stage, container.dataset.plantId);
   const modelSettings = isSeedPreview
     ? {
         ...baseModelSettings,
-        plantScale: baseModelSettings.plantScale * 2.4,
+        plantScale: baseModelSettings.plantScale * (isSeedThumbnail ? 5.2 : 2.4),
         plantY: baseModelSettings.plantY + 0.9
       }
     : baseModelSettings;
@@ -3721,7 +3750,7 @@ async function createPlantScene(container, runtime, token) {
     roll: modelSettings.plantRotZ
   });
   artworkGroup.add(plantGroup);
-  if (isSeedPreview) {
+  if (isSeedPreview && !isSeedThumbnail) {
     mountSeedSpecimenMotion(container, token, renderer, scene, camera, plantGroup, {
       previewY: modelSettings.plantY,
       plantedY: baseModelSettings.plantY,
