@@ -2202,6 +2202,164 @@ body::after {
   transform: translateY(18px);
 }
 
+.seed-landing-fx {
+  position: absolute;
+  left: 50%;
+  bottom: max(21%, calc(env(safe-area-inset-bottom, 0px) + 118px));
+  z-index: 3;
+  width: min(48vw, 210px);
+  height: 72px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.seed-landing-bed,
+.seed-landing-ring {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  border-radius: 50%;
+  opacity: 0;
+  transform: translateX(-50%) scale(0.72);
+}
+
+.seed-landing-bed {
+  width: 82%;
+  height: 28px;
+  background: radial-gradient(ellipse, rgba(72, 58, 38, 0.86), rgba(31, 35, 27, 0.72) 58%, transparent 74%);
+  box-shadow: inset 0 7px 12px rgba(0, 0, 0, 0.42), 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.is-water-environment .seed-landing-bed {
+  background: radial-gradient(ellipse, rgba(127, 160, 144, 0.42), rgba(18, 48, 48, 0.5) 58%, transparent 74%);
+}
+
+.seed-landing-ring {
+  width: 56%;
+  height: 20px;
+  border: 1px solid rgba(216, 188, 120, 0.82);
+  box-shadow: 0 0 18px rgba(194, 164, 94, 0.38);
+}
+
+.seed-landing-fx i {
+  --dx: 0px;
+  --dy: -30px;
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  opacity: 0;
+  background: #d8bc78;
+  box-shadow: 0 0 8px rgba(216, 188, 120, 0.9);
+}
+
+.seed-landing-fx i:nth-of-type(1) { --dx: -76px; --dy: -18px; }
+.seed-landing-fx i:nth-of-type(2) { --dx: -58px; --dy: -42px; }
+.seed-landing-fx i:nth-of-type(3) { --dx: -38px; --dy: -28px; }
+.seed-landing-fx i:nth-of-type(4) { --dx: -18px; --dy: -52px; }
+.seed-landing-fx i:nth-of-type(5) { --dx: -6px; --dy: -34px; }
+.seed-landing-fx i:nth-of-type(6) { --dx: 10px; --dy: -48px; }
+.seed-landing-fx i:nth-of-type(7) { --dx: 28px; --dy: -30px; }
+.seed-landing-fx i:nth-of-type(8) { --dx: 45px; --dy: -50px; }
+.seed-landing-fx i:nth-of-type(9) { --dx: 62px; --dy: -26px; }
+.seed-landing-fx i:nth-of-type(10) { --dx: 78px; --dy: -38px; }
+
+.daily-hero.is-seed-landed .seed-landing-bed {
+  animation: seed-bed-settle 820ms cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+
+.daily-hero.is-seed-landed .seed-landing-ring {
+  animation: seed-ring-spread 760ms ease-out both;
+}
+
+.daily-hero.is-seed-landed .seed-landing-fx i {
+  animation: seed-light-rise 780ms ease-out calc(var(--particle-index) * 18ms) both;
+}
+
+.seed-started-message {
+  position: absolute;
+  left: 50%;
+  bottom: max(34%, calc(env(safe-area-inset-bottom, 0px) + 210px));
+  z-index: 4;
+  display: grid;
+  gap: 5px;
+  width: max-content;
+  max-width: calc(100% - 40px);
+  padding: 12px 20px;
+  color: var(--ink);
+  text-align: center;
+  background: rgba(12, 18, 14, 0.72);
+  border: 1px solid rgba(194, 164, 94, 0.24);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transform: translate(-50%, 10px);
+  pointer-events: none;
+}
+
+.seed-started-message span {
+  color: var(--primary);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.seed-started-message strong {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+
+.daily-hero.is-seed-landed .seed-started-message {
+  animation: seed-message-in 1080ms ease both;
+}
+
+@keyframes seed-bed-settle {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.68, 1.18); }
+  38% { opacity: 1; transform: translateX(-50%) scale(1.04, 0.72); }
+  100% { opacity: 0.72; transform: translateX(-50%) scale(1, 0.88); }
+}
+
+@keyframes seed-ring-spread {
+  0% { opacity: 0.82; transform: translateX(-50%) scale(0.35); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1.65); }
+}
+
+@keyframes seed-light-rise {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+  22% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.25); }
+}
+
+@keyframes seed-message-in {
+  0% { opacity: 0; transform: translate(-50%, 10px); }
+  25%, 76% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .daily-hero.is-seed-landed .seed-landing-bed {
+    animation: none;
+    opacity: 0.72;
+    transform: translateX(-50%) scale(1, 0.88);
+  }
+
+  .daily-hero.is-seed-landed .seed-landing-ring,
+  .daily-hero.is-seed-landed .seed-landing-fx i {
+    animation: none;
+    opacity: 0;
+  }
+
+  .daily-hero.is-seed-landed .seed-started-message {
+    animation: none;
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
 .daily-hero.is-seed-choice .daily-progress-card,
 .daily-hero.is-seed-choice .daily-meter,
 .daily-hero.is-seed-choice .daily-actions {

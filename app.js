@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-03";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-03";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-03";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-03";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-03";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-04";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-04";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-04";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-04";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-04";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -59,7 +59,7 @@ const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const INSTALL_HINT_KEY = "artarium-install-hinted";
 const MOTION_AUTO_KEY = "artarium-motion-auto";
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-03";
+const ASSET_VERSION = "20260710-04";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
@@ -942,7 +942,8 @@ function loadProgress(plants, saved) {
       stepRemainder: saved[plant.id]?.stepRemainder ?? 0,
       completedAt: saved[plant.id]?.completedAt ?? "",
       collectedAt: saved[plant.id]?.collectedAt ?? "",
-      completionSteps: saved[plant.id]?.completionSteps ?? 0
+      completionSteps: saved[plant.id]?.completionSteps ?? 0,
+      stageReachedAt: saved[plant.id]?.stageReachedAt ?? {}
     };
     return progress;
   }, {});
@@ -1166,6 +1167,10 @@ function bindEvents() {
     resetArtariumProgress();
   });
 
+  document.getElementById("settings-author-button")?.addEventListener("click", () => {
+    openNameEntryModal();
+  });
+
   document.getElementById("settings-motion-button").addEventListener("click", () => {
     startMotionStepCounter();
   });
@@ -1274,6 +1279,7 @@ function bindEvents() {
       if (progress && !isPlantComplete(progress)) {
         progress.points = COMPLETION_THRESHOLD;
         progress.stepRemainder = 0;
+        recordStageArrival(progress, 1, MODEL_STAGE_COUNT);
         markPlantCompleted(progress);
         state.demoModelStage = MODEL_STAGE_COUNT;
         state.pendingBloomCelebration = state.selectedPlantId;
@@ -1688,6 +1694,15 @@ function renderSeedPreview(hero, plant) {
   homeArtwork.innerHTML = getPlantModelPath(plant, 1)
     ? modelLoadingMarkup()
     : `${environmentLayerMarkup(plant, { preferDemo: DEMO_MODE })}${plantMarkup(1)}`;
+  const landingFx = document.createElement("div");
+  landingFx.className = "seed-landing-fx";
+  landingFx.setAttribute("aria-hidden", "true");
+  landingFx.innerHTML = `
+    <span class="seed-landing-bed"></span>
+    <span class="seed-landing-ring"></span>
+    ${Array.from({ length: 10 }, (_, index) => `<i style="--particle-index:${index}"></i>`).join("")}
+  `;
+  homeArtwork.appendChild(landingFx);
   mountSkyBackground(homeArtwork, { waterTint: skyWaterTint(plant) });
   renderCompletionPlaque(null, false);
   document.getElementById("daily-progress-line")?.setAttribute("hidden", "");
@@ -1706,19 +1721,30 @@ function renderSeedPreview(hero, plant) {
     <button class="secondary-action" type="button" data-seed-back>ほかの種を見る</button>
   `;
   hero.appendChild(bar);
+  const startedMessage = document.createElement("div");
+  startedMessage.className = "seed-started-message";
+  startedMessage.setAttribute("role", "status");
+  startedMessage.setAttribute("aria-live", "polite");
+  startedMessage.innerHTML = `<span>Growth begins</span><strong>育成が始まりました</strong>`;
+  hero.appendChild(startedMessage);
   bar.querySelector("[data-seed-confirm]").addEventListener("click", async () => {
     bar.querySelectorAll("button").forEach((button) => { button.disabled = true; });
     hero.classList.add("is-planting-seed");
     // 操作UIを先に退場させてから、種だけに視線を集めて植え付ける。
     await new Promise((resolve) => window.setTimeout(resolve, 240));
+    const showLanding = () => {
+      hero.classList.add("is-seed-landed");
+    };
     if (homeArtwork.__artariumSeedPreview?.plant) {
-      await homeArtwork.__artariumSeedPreview.plant();
+      await homeArtwork.__artariumSeedPreview.plant(showLanding);
     } else {
       await new Promise((resolve) => window.setTimeout(resolve, 1200));
+      showLanding();
     }
-    await new Promise((resolve) => window.setTimeout(resolve, 220));
+    await new Promise((resolve) => window.setTimeout(resolve, 760));
     state.selectedPlantId = plant.id;
     seedPreviewId = null;
+    recordStageArrival(state.progress[plant.id], 1, 1);
     saveProgress();
     render();
   });
@@ -1933,7 +1959,9 @@ function addGrowthFromSteps(steps) {
   progress.stepRemainder = availableSteps % STEPS_PER_POINT;
   if (!pointsToAdd) return;
   progress.points = Math.min(progress.points + pointsToAdd, COMPLETION_THRESHOLD);
-  if (getStage(progress.points) > stageBefore) {
+  const stageAfter = getStage(progress.points);
+  if (stageAfter > stageBefore) {
+    recordStageArrival(progress, stageBefore + 1, stageAfter);
     // ステージが上がった: 次の3D描画完了時に開花演出を再生する
     state.pendingBloomCelebration = state.selectedPlantId;
   }
@@ -1946,6 +1974,15 @@ function addGrowthFromSteps(steps) {
 function markPlantCompleted(progress) {
   if (!progress.completedAt) progress.completedAt = new Date().toISOString();
   if (!progress.completionSteps) progress.completionSteps = progress.points * STEPS_PER_POINT;
+}
+
+// Stage到達日を記録する（将来の成長履歴表示用）。既に記録済みの段は上書きしない。
+// 記録開始（2026-07-10）以前に通過した段は空のまま = 遡って埋めない
+function recordStageArrival(progress, fromStage, toStage) {
+  if (!progress.stageReachedAt) progress.stageReachedAt = {};
+  for (let stage = fromStage; stage <= toStage; stage++) {
+    if (!progress.stageReachedAt[stage]) progress.stageReachedAt[stage] = new Date().toISOString();
+  }
 }
 
 // スポットライトの中心を花頭の画面位置（%）に合わせる。計測がなければ null（CSSの既定値に任せる）
@@ -2323,9 +2360,17 @@ function renderSettings() {
 }
 
 function requestUserNameIfNeeded() {
+  if (state.userName) return;
+  openNameEntryModal();
+}
+
+function openNameEntryModal() {
   const modal = document.getElementById("name-entry-modal");
   const input = document.getElementById("name-entry-input");
-  if (!modal || state.userName) return;
+  if (!modal) return;
+  if (input) input.value = state.userName || "";
+  const confirmButton = modal.querySelector(".frame-choice-confirm");
+  if (confirmButton) confirmButton.textContent = pendingFrameChoiceAfterName ? "この名前で額装へ" : "この名前にする";
   modal.hidden = false;
   window.setTimeout(() => input?.focus(), 80);
 }
@@ -3296,11 +3341,12 @@ function mountSeedSpecimenMotion(container, token, renderer, scene, camera, plan
   let plantingResolve = null;
 
   container.__artariumSeedPreview = {
-    plant: () => {
+    plant: (onLand) => {
       if (reduceMotion) {
-        plantGroup.position.y = settings.plantedY;
-        plantGroup.scale.setScalar(settings.plantedScale);
+        plantGroup.position.y = settings.plantedY - 0.18;
+        plantGroup.scale.setScalar(settings.plantedScale * 0.45);
         renderer.render(scene, camera);
+        onLand?.();
         return Promise.resolve();
       }
       if (!plantingStart) {
@@ -3311,6 +3357,8 @@ function mountSeedSpecimenMotion(container, token, renderer, scene, camera, plan
           rotationY: plantGroup.rotation.y,
           rotationZ: plantGroup.rotation.z
         };
+        plantingOrigin.onLand = onLand;
+        plantingOrigin.hasLanded = false;
       }
       return new Promise((resolve) => { plantingResolve = resolve; });
     }
@@ -3319,17 +3367,27 @@ function mountSeedSpecimenMotion(container, token, renderer, scene, camera, plan
   const frame = (now) => {
     if (!isCurrentModelRender(container, token) || container.dataset.seedPreview !== "true") return;
     if (plantingStart) {
-      const progress = Math.min(1, (now - plantingStart) / 1200);
-      const eased = progress < 0.5
-        ? 4 * progress * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-      plantGroup.position.y = plantingOrigin.y + (settings.plantedY - plantingOrigin.y) * eased;
-      const scale = 1 + (settings.plantedScale - 1) * eased;
+      const elapsed = now - plantingStart;
+      const descentProgress = Math.min(1, elapsed / 1200);
+      const eased = descentProgress < 0.5
+        ? 4 * descentProgress * descentProgress * descentProgress
+        : 1 - Math.pow(-2 * descentProgress + 2, 3) / 2;
+      const sinkProgress = Math.min(1, Math.max(0, elapsed - 1200) / 420);
+      const sinkEased = 1 - Math.pow(1 - sinkProgress, 3);
+      plantGroup.position.y = plantingOrigin.y
+        + (settings.plantedY - plantingOrigin.y) * eased
+        - 0.18 * sinkEased;
+      const landedScale = 1 + (settings.plantedScale - 1) * eased;
+      const scale = landedScale * (1 - 0.55 * sinkEased);
       plantGroup.scale.setScalar(scale);
       plantGroup.rotation.x = plantingOrigin.rotationX + (restingRotation.x - plantingOrigin.rotationX) * eased;
       plantGroup.rotation.y = plantingOrigin.rotationY + (restingRotation.y - plantingOrigin.rotationY) * eased;
       plantGroup.rotation.z = plantingOrigin.rotationZ + (restingRotation.z - plantingOrigin.rotationZ) * eased;
-      if (progress >= 1) {
+      if (descentProgress >= 1 && !plantingOrigin.hasLanded) {
+        plantingOrigin.hasLanded = true;
+        plantingOrigin.onLand?.();
+      }
+      if (sinkProgress >= 1) {
         renderer.render(scene, camera);
         plantingResolve?.();
         plantingResolve = null;

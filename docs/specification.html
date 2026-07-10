@@ -126,7 +126,7 @@
 <li>DeviceMotionによる簡易歩数検知</li>
 <li>開発用歩数加算（デモモードのみ表示）</li>
 <li>リセット</li>
-<li>ユーザー名関連</li>
+<li>作者名の表示と変更（タップで名前入力モーダルを開く。2026-07-10）</li>
 <li>環境音のオン/オフ</li>
 <li>週間振り返りの表示</li>
 </ul>
@@ -314,7 +314,7 @@
 <div class="table-wrap"><table>
 <thead><tr><th>キー</th><th>内容</th></tr></thead>
 <tbody>
-<tr><td><code>artarium-mvp-state</code></td><td>進行状況、選択中植物、歩数、完成日、収蔵日、完成歩数</td></tr>
+<tr><td><code>artarium-mvp-state</code></td><td>進行状況、選択中植物、歩数、完成日、収蔵日、完成歩数、Stage到達日（<code>stageReachedAt</code>、2026-07-10から記録開始。それ以前に通過した段は遡って埋めない）</td></tr>
 <tr><td><code>artarium-user-name</code></td><td>ユーザー名</td></tr>
 <tr><td><code>artarium-demo-model-settings-v2</code></td><td>デモ用3D調整値</td></tr>
 <tr><td><code>artarium-production-model-settings</code></td><td>本番用3D調整値</td></tr>
@@ -562,7 +562,7 @@
 <li>実機のHealthKit / Health Connect連携</li>
 <li>額縁GLB残り2種（walnut / floating-maple）の本番投入</li>
 <li>背景選択機能</li>
-<li>ユーザー名の設定画面からの変更（作者欄への反映は実装済み）</li>
+<li>成長履歴の表示UI（Stage到達日の記録自体は2026-07-10から開始済み）</li>
 <li>コレクション画面の展示演出強化</li>
 <li>スマホアプリ版への移行</li>
 <li>クラウド保存、端末間同期</li>

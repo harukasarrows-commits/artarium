@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Artarium">
     <title>Artarium - 名画の庭</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260710-03">
-    <link rel="icon" href="./icon.svg?v=20260710-03" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="./icon.svg?v=20260710-03">
-    <link rel="stylesheet" href="./styles.css?v=20260710-03">
+    <link rel="manifest" href="./manifest.webmanifest?v=20260710-04">
+    <link rel="icon" href="./icon.svg?v=20260710-04" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon.svg?v=20260710-04">
+    <link rel="stylesheet" href="./styles.css?v=20260710-04">
   </head>
   <body>
     <div class="app-shell">
@@ -113,10 +113,10 @@
             <section class="settings-group">
               <p class="settings-label">Artariumについて</p>
               <div class="settings-list">
-                <div class="settings-row">
+                <button class="settings-row" id="settings-author-button" type="button">
                   <span>作者名</span>
                   <strong id="settings-author-name">未設定</strong>
-                </div>
+                </button>
                 <button class="settings-row" id="settings-sound-button" type="button">
                   <span>環境音（波・雨・雷）</span>
                   <strong id="settings-sound-state">オフ</strong>
@@ -183,6 +183,6 @@
       </form>
     </div>
 
-    <script src="./app.js?v=20260710-03" type="module"></script>
+    <script src="./app.js?v=20260710-04" type="module"></script>
   </body>
 </html>
