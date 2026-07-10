@@ -1542,9 +1542,10 @@ let seedPreviewId = null;
 function renderHome() {
   const selectedPlant = getSelectedPlant();
   const hero = document.querySelector(".daily-hero");
-  hero.classList.remove("is-planting-seed");
+  hero.classList.remove("is-planting-seed", "is-seed-landed");
   hero.querySelector(".seed-confirm-bar")?.remove();
   hero.querySelector(".seed-specimen-label")?.remove();
+  hero.querySelectorAll(".seed-started-message").forEach((message) => message.remove());
   hero.querySelector(".next-artwork-button")?.remove();
   if (!selectedPlant && seedPreviewId) {
     const previewPlant = state.plants.find((plant) => plant.id === seedPreviewId);
@@ -1589,11 +1590,12 @@ function renderHome() {
         `).join("") || '<button class="secondary-action" type="button" data-view-complete-gallery>コレクションを見る</button>'}
       </div>
     `;
-    document.querySelectorAll("[data-seed]").forEach((button) => {
-      button.addEventListener("click", () => {
-        seedPreviewId = button.dataset.seed;
-        render();
-      });
+    const seedChoiceList = homeArtwork.querySelector(".seed-choice-list");
+    seedChoiceList?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-seed]");
+      if (!button || !seedChoiceList.contains(button)) return;
+      seedPreviewId = button.dataset.seed;
+      render();
     });
     homeArtwork.querySelector("[data-view-complete-gallery]")?.addEventListener("click", () => {
       state.currentView = "gallery";
@@ -3380,9 +3382,11 @@ function mountSeedSpecimenMotion(container, token, renderer, scene, camera, plan
       const landedScale = 1 + (settings.plantedScale - 1) * eased;
       const scale = landedScale * (1 - 0.55 * sinkEased);
       plantGroup.scale.setScalar(scale);
-      plantGroup.rotation.x = plantingOrigin.rotationX + (restingRotation.x - plantingOrigin.rotationX) * eased;
-      plantGroup.rotation.y = plantingOrigin.rotationY + (restingRotation.y - plantingOrigin.rotationY) * eased;
-      plantGroup.rotation.z = plantingOrigin.rotationZ + (restingRotation.z - plantingOrigin.rotationZ) * eased;
+      // 落下中に正面角へ巻き戻すと、開始角によって高速逆回転になる。
+      // 押した瞬間の向きを保ち、種が静かに沈むことだけを見せる。
+      plantGroup.rotation.x = plantingOrigin.rotationX;
+      plantGroup.rotation.y = plantingOrigin.rotationY;
+      plantGroup.rotation.z = plantingOrigin.rotationZ;
       if (descentProgress >= 1 && !plantingOrigin.hasLanded) {
         plantingOrigin.hasLanded = true;
         plantingOrigin.onLand?.();
