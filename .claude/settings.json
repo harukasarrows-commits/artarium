@@ -15,6 +15,25 @@
       "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --headless *)",
       "Bash(pkill -f \"chrome-profile\")",
       "Bash(bash -c 'exec 3<>/dev/tcp/127.0.0.1/3025')"
+    ],
+    "deny": [
+      "Bash(sed -i*)",
+      "Bash(perl -i*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-js.mjs",
+            "timeout": 15,
+            "statusMessage": "JSの構文を検証しています…"
+          }
+        ]
+      }
     ]
   }
 }
