@@ -31,6 +31,7 @@ uniform float uBoltSeed;
 uniform float uBoltX;
 uniform float uCloudScale;
 uniform float uGlint;
+uniform float uMoonPhase;
 
 float hash21(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
@@ -71,14 +72,24 @@ void main() {
   vec2 p = vec2(uv.x * ar, skyT);
   vec2 sp = vec2(uSunPos.x * ar, uSunPos.y);
 
+  // 対岸の丘なみ: 遠景の陸地のシルエット。湖を「遠くの湖」にし、
+  // 土の丘の庭が「水に浮く島」に見えないようにする（霧の日は霞に呑まれる）
+  // 稜線は二重スケール: なだらかな丘なみ + 木立の細かい起伏
+  float shoreRidge = 0.012
+    + 0.05 * fbm(vec2(p.x * 0.9 + 11.0, 2.0))
+    + 0.012 * fbm(vec2(p.x * 7.0 + 3.0, 8.0));
+  vec3 shoreCol = mix(uZenith, uHorizon, 0.35) * 0.42;
+  float shoreVisibility = 1.0 - uFog * 0.75;
+
   vec3 col;
   if (uv.y >= HORIZON) {
     // --- 地平線から上: 空 ---
     col = mix(uHorizon, uZenith, pow(skyT, 1.15));
 
-    // 太陽 / 月（小さな光源 + ほのかな暈）
+    // 太陽（夜は月に置き換わるため暈をフェードアウト）
     float sd = length(p - sp);
-    col += uSunCol * (exp(-sd * sd * 900.0) * 0.6 + exp(-sd * 5.0) * 0.12);
+    float nightMix = smoothstep(0.25, 0.75, uStars);
+    col += uSunCol * (exp(-sd * sd * 900.0) * 0.6 + exp(-sd * 5.0) * 0.12) * (1.0 - nightMix);
 
     // 星（夜のみ・地平線近くは薄く）。
     // セル内のランダム位置に丸い光点を置く（セルごと光る四角い星を避ける）
@@ -112,6 +123,30 @@ void main() {
       col += vec3(0.72, 0.8, 0.95) * band * fbm(p * 6.0 + 3.0) * 0.05 * uStars * horizonFade;
     }
 
+    // 月: 夜、今日の実際の月齢の形で昇る（影の円をずらして欠けを作る古典手法）
+    // skyT座標は縦に伸びて円がつぶれるため、等方（画面高さ基準）の座標で描く
+    if (nightMix > 0.01) {
+      vec2 mpos = vec2(sp.x, HORIZON + sp.y * (1.0 - HORIZON));
+      vec2 mq = vec2(p.x, uv.y);
+      float md = length(mq - mpos);
+      float moonR = 0.04;
+      float illum = (1.0 - cos(uMoonPhase * 6.2831853)) * 0.5;
+      float disc = 1.0 - smoothstep(moonR * 0.88, moonR, md);
+      // 球面の法線と光の向きから明暗を出す（半月の欠け際がまっすぐになる正攻法）
+      vec2 nxy = (mq - mpos) / moonR;
+      float nz = sqrt(max(0.0, 1.0 - dot(nxy, nxy)));
+      float phaseAngle = uMoonPhase * 6.2831853;
+      vec3 moonLight = vec3(sin(phaseAngle), 0.0, -cos(phaseAngle));
+      float litF = smoothstep(-0.02, 0.16, dot(vec3(nxy, nz), moonLight));
+      // 月の海: 表面のまだら
+      float maria = fbm((mq - mpos) * 70.0 + 7.0);
+      vec3 moonCol = vec3(0.93, 0.92, 0.86) * (0.76 + 0.24 * maria);
+      col = mix(col, moonCol, disc * litF * nightMix);
+      // 地球照: 影の側もごくかすかに丸みが見える
+      col = mix(col, moonCol * 0.32, disc * (1.0 - litF) * 0.14 * nightMix);
+      col += vec3(0.85, 0.88, 0.95) * exp(-md * 7.0) * (0.04 + 0.16 * illum) * nightMix;
+    }
+
     // 雲（2層をゆっくり流す・地平線近くほど平たく密に見える）
     // uCloudAmount（実際の雲量）が多いほどしきい値が下がり、空を覆っていく
     float t = uTime * 0.012;
@@ -140,6 +175,29 @@ void main() {
     }
     // 稲光（空全体が明滅する）
     col += vec3(0.85, 0.9, 1.0) * uFlash * (0.3 + 0.4 * skyT);
+
+    // 対岸の丘なみ（太陽・星・雲より手前のシルエット）。麓ほど霞に溶ける
+    float shoreH = uv.y - HORIZON;
+    float shoreMask = (1.0 - smoothstep(shoreRidge - 0.01, shoreRidge, shoreH)) * shoreVisibility;
+    vec3 hazyShore = mix(shoreCol, uHorizon * 0.85, smoothstep(0.03, 0.0, shoreH));
+    col = mix(col, hazyShore, shoreMask * 0.85);
+
+    // 対岸の灯り: 夜、丘の麓に遠い家々の灯がぽつぽつとともる
+    // （p.x と uv.y はどちらも「画面高さ」単位なので、そのまま等方の距離が取れる）
+    float lightsOn = smoothstep(0.25, 0.7, uStars) * shoreVisibility;
+    if (lightsOn > 0.01 && shoreH < shoreRidge) {
+      float cellX = floor(p.x * 46.0);
+      float lh = hash21(vec2(cellX, 4.7));
+      if (lh > 0.76) {
+        float lx = (cellX + 0.25 + 0.5 * hash21(vec2(cellX, 9.1))) / 46.0;
+        float ly = shoreRidge * (0.12 + 0.35 * hash21(vec2(cellX, 6.3)));
+        vec2 dl = vec2(p.x - lx, shoreH - ly);
+        float g2 = dot(dl, dl);
+        float flicker = 0.75 + 0.25 * sin(uTime * (0.6 + lh) + lh * 30.0);
+        float bri = 0.45 + 0.55 * hash21(vec2(cellX, 12.9));
+        col += vec3(1.0, 0.72, 0.4) * (exp(-g2 * 90000.0) + exp(-g2 * 11000.0) * 0.3) * flicker * bri * lightsOn;
+      }
+    }
   } else {
     // --- 地平線から下: 一続きの湖 ---
     // 遠くは空を映した色、手前に近づくほど手前の池と同じ色になり、境目なく繋がる
@@ -155,6 +213,23 @@ void main() {
     float shimmer = 0.7 + 0.3 * valueNoise(vec2(p.x * 40.0, uv.y * 90.0 - uTime * 0.9));
     col += uSunCol * glint * shimmer * (0.08 + 0.65 * uGlint);
 
+    // 対岸の映り込み（水際にうっすら滲む）
+    col = mix(col, shoreCol, exp(-g * 26.0) * 0.4 * shoreVisibility);
+
+    // 対岸の灯りの映り込み（夜・水際に縦ににじむ）
+    float lightsOnW = smoothstep(0.25, 0.7, uStars) * shoreVisibility;
+    if (lightsOnW > 0.01) {
+      float cellXW = floor(p.x * 46.0);
+      float lhW = hash21(vec2(cellXW, 4.7));
+      if (lhW > 0.76) {
+        float lxW = (cellXW + 0.25 + 0.5 * hash21(vec2(cellXW, 9.1))) / 46.0;
+        float dxW = p.x - lxW;
+        float flickerW = 0.75 + 0.25 * sin(uTime * (0.6 + lhW) + lhW * 30.0);
+        float briW = 0.45 + 0.55 * hash21(vec2(cellXW, 12.9));
+        col += vec3(1.0, 0.72, 0.4) * exp(-dxW * dxW * 20000.0) * exp(-g * 34.0) * 0.32 * flickerW * briW * lightsOnW;
+      }
+    }
+
     // かすかな水平のゆらぎ
     col *= 0.965 + 0.035 * valueNoise(vec2(uv.x * ar * 36.0, uv.y * 130.0 + uTime * 0.06));
 
@@ -166,8 +241,9 @@ void main() {
     }
   }
 
-  // 地平線のもや（ごく淡く・霧の日は強く）
-  col += uHorizon * (0.07 + uFog * 0.3) * exp(-abs(uv.y - HORIZON) * (26.0 - uFog * 16.0));
+  // 地平線のもや: 大気の霞で遠くの湖を遠景に押しやる
+  // （土の丘の庭が「水に浮く島」に見えないための常時レイヤー。霧の日はさらに強く）
+  col += uHorizon * (0.16 + uFog * 0.3) * exp(-abs(uv.y - HORIZON) * (14.0 - uFog * 6.0));
 
   // 霧: 全体を地平線の色へ押し流す
   col = mix(col, uHorizon, uFog * 0.35);
@@ -177,18 +253,47 @@ void main() {
   col = mix(col, vec3(dot(col, vec3(0.333))), gloom * 0.5);
   col *= 1.0 - uDark * 0.5;
 
-  // 雨すじ / 雪（画面全体にうっすら降らせる）
-  float precip = max(uRain, uSnow);
-  if (precip > 0.001) {
-    float isSnow = step(uRain, uSnow);
-    float speed = mix(5.5, 0.9, isSnow);
-    float slant = mix(14.0, 4.0, isSnow);
-    vec2 rp = vec2(uv.x * ar * 60.0 + uv.y * slant, uv.y * 22.0 + uTime * speed);
+  // 雪（ふわりと舞う丸い粒。雨とは別の描き方）
+  if (uSnow > 0.001 && uSnow >= uRain) {
+    vec2 rp = vec2(uv.x * ar * 60.0 + uv.y * 4.0, uv.y * 22.0 + uTime * 0.9);
     float cell = hash21(vec2(floor(rp.x), floor(rp.y)));
-    float drop = step(1.0 - precip * 0.09, cell);
+    float drop = step(1.0 - uSnow * 0.09, cell);
     float shape = smoothstep(0.0, 0.25, fract(rp.y)) * (1.0 - smoothstep(0.45, 0.9, fract(rp.y)));
-    vec3 precipColor = mix(vec3(0.68, 0.74, 0.82), vec3(0.95, 0.96, 0.98), isSnow);
-    col = mix(col, precipColor, drop * shape * (0.22 + isSnow * 0.2));
+    col = mix(col, vec3(0.95, 0.96, 0.98), drop * shape * 0.42);
+  } else if (uRain > 0.001) {
+    // 雨: 奥行きの違う3層の細い筋。近い層ほど速く・長く・濃く、遠い層は細かな霧雨。
+    // 風でゆっくり斜めが揺れ、本降りほど筋が長く密になる
+    // 小雨と本降りの表情差: rainT=0 はまばらな点描がほぼ垂直に落ち、
+    // rainT=1 は長い筋が風に強く流される。量だけでなく降り方が変わる
+    float rainT = smoothstep(0.15, 0.9, uRain);
+    float gust = (0.10 + 0.05 * sin(uTime * 0.37) + 0.04 * sin(uTime * 0.11 + 2.0)) * mix(0.45, 1.7, rainT);
+    // 夜はほとんど見えないのが本物（月明かりでうっすら）
+    float nightDim = 1.0 - smoothstep(0.25, 0.75, uStars) * 0.6;
+    for (int i = 0; i < 3; i++) {
+      float t01 = float(i) * 0.5;
+      float colsN = mix(70.0, 150.0, t01);
+      float rowsN = mix(10.0, 22.0, t01) * mix(1.5, 0.85, rainT);
+      float speedN = mix(16.0, 20.0, t01) * mix(0.75, 1.15, rainT);
+      float slant = gust * mix(1.25, 0.7, t01);
+      vec2 rp = vec2((uv.x * ar + uv.y * slant + float(i) * 0.37) * colsN,
+                     uv.y * rowsN + uTime * speedN + float(i) * 9.0);
+      // 列ごとに落下の位相をずらす（筋の先端が横一列に揃う格子縞を消す）
+      float colId = floor(rp.x);
+      rp.y += hash21(vec2(colId, 51.7));
+      vec2 cellId = vec2(colId, floor(rp.y));
+      float h = hash21(cellId + float(i) * 37.1);
+      float hasDrop = step(1.0 - mix(0.035, 0.22, rainT) * mix(1.0, 1.5, t01), h);
+      if (hasDrop > 0.0) {
+        vec2 f = vec2(fract(rp.x), fract(rp.y));
+        float cx = 0.25 + 0.5 * hash21(cellId + 7.3);
+        float dx = f.x - cx;
+        float thin = exp(-dx * dx * mix(14.0, 8.0, t01) * mix(1.35, 0.9, rainT));
+        float tip = smoothstep(0.0, 0.18, f.y) * (1.0 - smoothstep(0.7, 1.0, f.y));
+        col = mix(col, vec3(0.72, 0.78, 0.88), thin * tip * mix(0.26, 0.09, t01) * mix(0.5, 1.0, rainT) * nightDim);
+      }
+    }
+    // 雨の靄: 地平線のあたりが白っぽく煙る
+    col = mix(col, uHorizon, (0.03 + 0.15 * rainT) * exp(-abs(uv.y - HORIZON) * 3.0));
   }
 
   // 文字の可読性のため、緩やかなビネット
@@ -294,8 +399,33 @@ export function getSkyStepProgress() {
   return stepProgress;
 }
 
+// 月齢（0=新月, 0.5=満月）。2000-01-06 18:14 UTC の新月を基準に平均朔望月で概算
+let moonPhaseOverride = null;
+
+export function setSkyMoonPhaseOverride(phase) {
+  moonPhaseOverride = Number.isFinite(Number(phase)) ? ((Number(phase) % 1) + 1) % 1 : null;
+}
+
+function currentMoonPhase() {
+  if (moonPhaseOverride !== null) return moonPhaseOverride;
+  const days = (Date.now() - Date.UTC(2000, 0, 6, 18, 14)) / 86400000;
+  return ((days / 29.53058867) % 1 + 1) % 1;
+}
+
+// 渡り鳥が空を渡っている間、環境音側が鳴き交わしを流せるように通知する
+let flockListener = null;
+
+export function setSkyFlockListener(fn) {
+  flockListener = typeof fn === "function" ? fn : null;
+}
+
+// 雨上がりの虹: 雨→晴れの遷移を setSkyWeather で検知し、数分だけ弧を架ける
+let rainbowStart = 0;
+let rainbowUntil = 0;
+
 export function setSkyWeather(weather) {
   if (!weather) return;
+  const prevRain = weatherState.rain;
   weatherState = {
     cloud: Number(weather.cloud) || 0,
     rain: Number(weather.rain) || 0,
@@ -304,6 +434,11 @@ export function setSkyWeather(weather) {
     dark: Number(weather.dark) || 0,
     thunder: Number(weather.thunder) || 0
   };
+  // 本降りだった雨がほぼ止み、空が明るければ虹が架かる
+  if (prevRain > 0.22 && weatherState.rain < 0.08 && weatherState.cloud < 0.8) {
+    rainbowStart = performance.now();
+    rainbowUntil = rainbowStart + 150000;
+  }
 }
 
 // デバッグ用: 時間帯を強制する（null で実時刻に戻る）。蛍・朝靄・流れ星の確認に使う
@@ -402,7 +537,8 @@ export function mountSkyBackground(container, options = {}) {
     boltSeed: gl.getUniformLocation(program, "uBoltSeed"),
     boltX: gl.getUniformLocation(program, "uBoltX"),
     cloudScale: gl.getUniformLocation(program, "uCloudScale"),
-    glint: gl.getUniformLocation(program, "uGlint")
+    glint: gl.getUniformLocation(program, "uGlint"),
+    moonPhase: gl.getUniformLocation(program, "uMoonPhase")
   };
 
   // 落雷のタイミング管理（雷雨のときだけ数秒おきに光る）
@@ -431,6 +567,8 @@ export function mountSkyBackground(container, options = {}) {
     })),
     star: null,
     lastStarId: shootingStarRequestId,
+    flock: null,
+    nextFlockAt: 0,
     // 美術館の塵: 光芒の中をゆっくり降りながらきらめく
     dust: Array.from({ length: 16 }, () => ({
       s: Math.random(),            // 光芒の幅方向の位置（0-1）
@@ -590,6 +728,80 @@ export function mountSkyBackground(container, options = {}) {
       });
     }
 
+    // 渡り鳥: 朝と夕方、ときどき数羽の鳥影がゆっくり空を渡る
+    const birdLevel = Math.max(
+      Math.max(0, 1 - Math.abs(hour - 7) / 2.2),
+      Math.max(0, 1 - Math.abs(hour - 17.5) / 2.2)
+    );
+    if (!fxState.flock && birdLevel > 0.15 && !raining) {
+      // 時間帯に入って最初の群れは早めに来る。以降は45〜105秒おき
+      if (!fxState.nextFlockAt) fxState.nextFlockAt = nowMs + 4000 + Math.random() * 6000;
+      if (nowMs >= fxState.nextFlockAt) {
+        const dir = Math.random() < 0.5 ? 1 : -1;
+        fxState.flock = {
+          dir,
+          x: dir > 0 ? -0.08 : 1.08,
+          y: 0.2 + Math.random() * 0.2,
+          speed: 0.028 + Math.random() * 0.012,
+          birds: Array.from({ length: 3 + (Math.random() * 4 | 0) }, (_, i) => ({
+            dx: -i * (0.018 + Math.random() * 0.008) * dir,
+            dy: (i % 2 ? 1 : -1) * i * 0.008 + (Math.random() - 0.5) * 0.006,
+            ph: Math.random() * Math.PI * 2,
+            flap: 2.6 + Math.random() * 1.2
+          }))
+        };
+        if (flockListener) flockListener(true);
+      }
+    } else if (birdLevel <= 0.15) {
+      fxState.nextFlockAt = 0;
+    }
+    if (fxState.flock) {
+      const flock = fxState.flock;
+      flock.x += flock.dir * flock.speed * dt;
+      if (flock.x < -0.25 || flock.x > 1.25) {
+        fxState.flock = null;
+        fxState.nextFlockAt = nowMs + 45000 + Math.random() * 60000;
+        if (flockListener) flockListener(false);
+      } else {
+        const size = Math.max(3, W * 0.011);
+        fx.strokeStyle = "rgba(28, 32, 34, 0.55)";
+        fx.lineWidth = Math.max(1, W / 500);
+        fx.lineCap = "round";
+        flock.birds.forEach((bird) => {
+          const bx = (flock.x + bird.dx) * W;
+          const by = (flock.y + bird.dy) * H + Math.sin(t * 1.1 + bird.ph) * H * 0.004;
+          const wing = Math.sin(t * bird.flap * Math.PI + bird.ph);
+          const lift = size * 0.55 * wing;
+          fx.beginPath();
+          fx.moveTo(bx - size, by - lift);
+          fx.quadraticCurveTo(bx - size * 0.3, by + size * 0.18, bx, by);
+          fx.quadraticCurveTo(bx + size * 0.3, by + size * 0.18, bx + size, by - lift);
+          fx.stroke();
+        });
+      }
+    }
+
+    // 雨上がりの虹: 雨が止んだ直後の明るい空に、うっすら弧が架かる
+    if (rainbowUntil > nowMs && starLevel < 0.25 && !raining) {
+      const env = Math.min(1, (nowMs - rainbowStart) / 6000) * Math.min(1, (rainbowUntil - nowMs) / 25000);
+      if (env > 0.01) {
+        const cx = W * 0.5;
+        const cy = H * 0.7;
+        const R = H * 0.42;
+        const bw = Math.max(2, H * 0.0075);
+        const hues = [356, 25, 52, 110, 195, 230, 268];
+        fx.globalCompositeOperation = "lighter";
+        hues.forEach((hue, i) => {
+          fx.strokeStyle = `hsla(${hue}, 65%, 62%, ${(0.05 * env).toFixed(3)})`;
+          fx.lineWidth = bw;
+          fx.beginPath();
+          fx.arc(cx, cy, R - i * bw * 0.92, Math.PI, Math.PI * 2);
+          fx.stroke();
+        });
+        fx.globalCompositeOperation = "source-over";
+      }
+    }
+
     // 流れ星: 夜にまれに1本、尾を引いて流れる（デモボタンからも呼べる）
     if (fxState.lastStarId !== shootingStarRequestId) {
       fxState.lastStarId = shootingStarRequestId;
@@ -686,6 +898,7 @@ export function mountSkyBackground(container, options = {}) {
     gl.uniform1f(u.dark, weatherState.dark);
     gl.uniform1f(u.cloudScale, season.cloudScale);
     gl.uniform1f(u.glint, stepProgress);
+    gl.uniform1f(u.moonPhase, currentMoonPhase());
 
     // 落雷: 数秒おきに稲妻 + 明滅（チカチカと減衰する）
     let flash = 0;

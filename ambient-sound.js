@@ -15,6 +15,7 @@ let cricketNodes = null;
 let windNodes = null;
 let timescapeTimer = 0;
 let birdTimer = 0;
+let flockTimer = 0;
 
 function ensureContext() {
   if (!audioCtx) {
@@ -87,6 +88,43 @@ function playBirdChirp() {
     osc.start(t);
     osc.stop(t + 0.2);
   }
+}
+
+// 渡り鳥の鳴き交わし: 遠くでかすかに「キュウ」と呼び合う下降音
+function playFlockCall() {
+  const ctx = ensureContext();
+  const start = ctx.currentTime + 0.05;
+  const calls = 1 + Math.floor(Math.random() * 2);
+  for (let i = 0; i < calls; i++) {
+    const t = start + i * (0.22 + Math.random() * 0.15);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const f0 = 1500 + Math.random() * 500;
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(f0, t);
+    osc.frequency.exponentialRampToValueAtTime(f0 * 0.72, t + 0.16);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.005 + Math.random() * 0.003, t + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.26);
+  }
+}
+
+// 空を渡り鳥の群れが横切っている間だけ、まばらに鳴き交わす（sky側から通知される）
+export function setFlockCalls(active) {
+  window.clearTimeout(flockTimer);
+  flockTimer = 0;
+  if (!active) return;
+  const schedule = () => {
+    flockTimer = window.setTimeout(() => {
+      if (enabled && rainLevel < 0.4) playFlockCall();
+      schedule();
+    }, 1200 + Math.random() * 2200);
+  };
+  if (enabled && rainLevel < 0.4) playFlockCall();
+  schedule();
 }
 
 // 虫の音: 高いサイン波を矩形波で「リリリ」と刻み、ゆっくり満ち引きさせる

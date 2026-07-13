@@ -1,8 +1,11 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-27";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-27";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-27";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-27";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-27";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-43";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-43";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-43";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-43";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-43";
+
+// 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
+setSkyFlockListener(setFlockCalls);
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -64,7 +67,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-27";
+const ASSET_VERSION = "20260710-43";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
@@ -3207,7 +3210,7 @@ async function createGalleryScene(container, runtime, token) {
   const [frameModel, plantModel, soilModel] = await Promise.all([
     safeLoadGltf(loader, container.dataset.frameModel),
     loadGltf(loader, container.dataset.plantModel),
-    safeLoadGltf(loader, container.dataset.soilModel)
+    loadSoilAsset(THREE, loader, container.dataset.soilModel)
   ]);
   if (!isCurrentModelRender(container, token)) return;
 
@@ -3738,7 +3741,7 @@ async function createPlantScene(container, runtime, token) {
   const plantDefinition = state.plants.find((plant) => plant.id === container.dataset.plantId);
   const [plantModel, soilModel] = await Promise.all([
     loadGltf(loader, container.dataset.plantModel),
-    safeLoadGltf(loader, container.dataset.soilModel)
+    loadSoilAsset(THREE, loader, container.dataset.soilModel)
   ]);
   if (!isCurrentModelRender(container, token)) return;
 
@@ -3752,7 +3755,14 @@ async function createPlantScene(container, runtime, token) {
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
-  camera.position.set(0, 0.55, 5.2);
+  // 序盤はカメラを寄せ、育つにつれて引いていく（引きのドリーそのものが成長を語る）。
+  // Stage4以降は従来の距離に収束するので、焼き込み配置の見え方は変わらない
+  const camStage = (Number(container.dataset.stage) || 1) - 1 + stageGrowth;
+  const camPull = isSeedPreview ? 1 : Math.min(1, camStage / 3);
+  const cameraZ = 3.9 + (5.2 - 3.9) * camPull;
+  // 寄るほどカメラも低く構える（高さそのままでは視線が地面の上を通り、種が画面外へ沈む）
+  const cameraY = 0.18 + (0.55 - 0.18) * camPull;
+  camera.position.set(0, cameraY, cameraZ);
 
   scene.add(new THREE.AmbientLight(0xffffff, 1.7));
   const sunLighting = getSunLighting(THREE);
@@ -3982,7 +3992,7 @@ function prepareSoilModel(THREE, object, plant) {
     || (plant?.palette ? { color: plant.palette[3] || plant.palette[0], emissiveIntensity: 0.08, roughness: 0.7 } : null);
   if (!style) return object;
   object.traverse((child) => {
-    if (!child.isMesh) return;
+    if (!child.isMesh || child.userData.noSoilStyle) return;
     const materials = Array.isArray(child.material) ? child.material : [child.material];
     const tuned = materials.map((material) => {
       const clone = material?.clone ? material.clone() : new THREE.MeshStandardMaterial();
@@ -4352,6 +4362,181 @@ function loadGltf(loader, path) {
   return new Promise((resolve, reject) => {
     loader.load(path, resolve, undefined, reject);
   });
+}
+
+// 土の丘はコード生成（2026-07-13 採用: 空・水面と同じ自作路線）。
+// 低く広い花壇型 + 3スケールの起伏（うねり・土くれ・細粒）+ 擬似AO + 植え付け跡 + 裾の草株。
+// 乱数を使わない決定的生成で、毎回同じ丘になる。
+let proceduralSoilCache = null;
+
+function createProceduralSoilMound(THREE) {
+  if (proceduralSoilCache) return proceduralSoilCache.clone();
+  const hash = (x, y) => {
+    const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+    return s - Math.floor(s);
+  };
+  const noise = (x, y) => {
+    const xi = Math.floor(x); const yi = Math.floor(y);
+    const xf = x - xi; const yf = y - yi;
+    const u = xf * xf * (3 - 2 * xf); const w = yf * yf * (3 - 2 * yf);
+    return hash(xi, yi) * (1 - u) * (1 - w) + hash(xi + 1, yi) * u * (1 - w)
+      + hash(xi, yi + 1) * (1 - u) * w + hash(xi + 1, yi + 1) * u * w;
+  };
+  const geo = new THREE.SphereGeometry(1, 160, 56, 0, Math.PI * 2, 0, Math.PI / 2);
+  const pos = geo.attributes.position;
+  const shades = new Float32Array(pos.count * 3);
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const ang = Math.atan2(v.z, v.x);
+    const flare = 1 + (1 - v.y) * 0.22;
+    const und = (noise(Math.cos(ang) * 2.4 + 7, Math.sin(ang) * 2.4 + v.y * 2.2) - 0.5) * 0.12
+      + (noise(Math.cos(ang) * 7 + 31, Math.sin(ang) * 7 + v.y * 6) - 0.5) * 0.05;
+    // 土くれ: 掘り返した土の小さな塊。sin^2で角の丸いこぶにする
+    const clodNoise = noise(Math.cos(ang) * 13 + 53, Math.sin(ang) * 13 + v.y * 11);
+    const clod = clodNoise * clodNoise * 0.045;
+    const grain = (noise(ang * 26 + 11, v.y * 30 + 3) - 0.5) * 0.02;
+    const r = Math.max(0.05, flare + und + clod + grain);
+    // 植え穴: 頂点中央の小さな窪みと、そのまわりの掘り縁（育つと植物に隠れる）
+    const rho = Math.sqrt(v.x * v.x + v.z * v.z);
+    let dig = 0;
+    if (rho < 0.34) {
+      const dt = rho / 0.34;
+      dig = -0.045 * Math.pow(Math.max(0, 1 - dt / 0.62), 2)
+        + 0.016 * Math.exp(-Math.pow((dt - 0.75) / 0.18, 2));
+    }
+    pos.setXYZ(i, v.x * r, Math.max(0, v.y * 0.4 + (und + clod) * 0.3 * v.y + dig), v.z * r);
+    // 擬似AO: 土くれの谷を暗く、こぶの頂を明るく。下限を高めにして稜線が空の光を拾えるようにする
+    let shade = 0.84 + clodNoise * 0.34;
+    shade *= 0.92 + v.y * 0.12;
+    if (dig < -0.005) shade *= 0.88; // 植え穴の中は掘りたてで湿って暗い
+    // 汀: 水際に近い裾は濡れて暗い（水と土の境目を締める）
+    const wet = 1 - Math.min(1, v.y / 0.2);
+    shade *= 1 - wet * 0.35;
+    shades[i * 3] = shades[i * 3 + 1] = shades[i * 3 + 2] = Math.min(1.15, shade);
+  }
+  geo.setAttribute("color", new THREE.BufferAttribute(shades, 3));
+  geo.computeVertexNormals();
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 512;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#4a3828";
+  ctx.fillRect(0, 0, 512, 512);
+  // 大きな色むら: 乾いた土と湿った土のまだら
+  for (let i = 0; i < 40; i++) {
+    const x = hash(i, 61.3) * 512; const y = hash(i, 67.9) * 512;
+    const radius = 24 + hash(i, 71.1) * 58;
+    const dry = hash(i, 79.3) > 0.5;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    g.addColorStop(0, dry ? "rgba(112,88,60,0.1)" : "rgba(20,14,10,0.12)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  }
+  for (let i = 0; i < 15000; i++) {
+    const x = hash(i, 1.3) * 512; const y = hash(i, 7.7) * 512;
+    // 粒のむら: 中スケールのノイズが濃い所に粒が集まり、薄い所はまばらになる
+    const cluster = noise(x / 512 * 5.5 + 13, y / 512 * 5.5 + 29);
+    if (hash(i, 4.7) > cluster * 1.35) continue;
+    const l = hash(i, 3.1);
+    const size = 1.4 + hash(i, 9.2) * 3.4;
+    if (l > 0.972) ctx.fillStyle = "rgba(168,148,118,0.85)";
+    else if (l > 0.5) ctx.fillStyle = `rgba(122,96,68,${0.4 + l * 0.35})`;
+    else ctx.fillStyle = `rgba(18,12,8,${0.35 + l * 0.5})`;
+    ctx.beginPath();
+    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // 湿り気のむら（大きなにじみ）
+  for (let i = 0; i < 14; i++) {
+    const x = hash(i, 21.7) * 512; const y = hash(i, 33.1) * 512;
+    const radius = 60 + hash(i, 40.9) * 110;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    g.addColorStop(0, `rgba(18,13,9,${0.1 + hash(i, 55.3) * 0.12})`);
+    g.addColorStop(1, "rgba(18,13,9,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  }
+  // 熊手目: 植物のまわりに同心円の手入れ跡。溝の陰と土の盛りの明を対で描く
+  for (let line = 0; line < 6; line++) {
+    const baseY = 58 + line * 22;
+    for (const [offset, colr, alpha] of [[0, "18,12,8", 0.22], [2.6, "128,102,72", 0.13]]) {
+      ctx.strokeStyle = `rgba(${colr},${alpha})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = 0; x <= 512; x += 8) {
+        const y = baseY + offset + (noise(x / 60 + line * 7.3, line * 3.1) - 0.5) * 4;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+  }
+  const map = new THREE.CanvasTexture(canvas);
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.repeat.set(1.6, 0.9);
+  map.colorSpace = THREE.SRGBColorSpace;
+  const material = new THREE.MeshStandardMaterial({
+    map, bumpMap: map, bumpScale: 1.3, roughness: 0.82, metalness: 0, vertexColors: true
+  });
+  const group = new THREE.Group();
+  group.add(new THREE.Mesh(geo, material));
+  // 半分埋まった小石: 大きさの基準になる静かな脇役。植物パレットには染めない
+  for (let s = 0; s < 3; s++) {
+    const ang = hash(s, 101.3) * Math.PI * 2;
+    const rad = 0.42 + hash(s, 107.9) * 0.38;
+    const size = 0.016 + hash(s, 113.7) * 0.013;
+    const tone = 0.085 + hash(s, 127.1) * 0.05;
+    const stone = new THREE.Mesh(
+      new THREE.SphereGeometry(size, 14, 10),
+      new THREE.MeshStandardMaterial({
+        color: new THREE.Color(tone, tone * 0.94, tone * 0.85),
+        roughness: 0.9, metalness: 0
+      })
+    );
+    stone.scale.y = 0.55;
+    stone.rotation.set(hash(s, 131.3) * 0.6, hash(s, 137.9) * Math.PI, hash(s, 139.7) * 0.5);
+    const sx = Math.cos(ang) * rad;
+    const sz = Math.sin(ang) * rad;
+    stone.position.set(sx, 0.38 * Math.sqrt(Math.max(0, 1 - rad * rad * 0.62)) + size * 0.02, sz);
+    stone.userData.noSoilStyle = true;
+    group.add(stone);
+  }
+
+  // 裾の草株: 生きた庭のしるし。ごく小さく暗い緑で、主役の植物と競わせない
+  const grassMat = new THREE.MeshStandardMaterial({ color: 0x36503e, roughness: 1, metalness: 0 });
+  for (let c = 0; c < 3; c++) {
+    const ang = hash(c, 71.3) * Math.PI * 2;
+    const rad = 0.62 + hash(c, 77.7) * 0.3;
+    const cx = Math.cos(ang) * rad;
+    const cz = Math.sin(ang) * rad;
+    const baseY = 0.38 * Math.sqrt(Math.max(0, 1 - rad * rad * 0.62));
+    const blades = 3 + Math.floor(hash(c, 91.1) * 3);
+    for (let b = 0; b < blades; b++) {
+      const k = c * 10 + b;
+      const h = 0.055 + hash(k, 13.7) * 0.065;
+      const blade = new THREE.Mesh(new THREE.ConeGeometry(0.0055, h, 4), grassMat);
+      blade.userData.noSoilStyle = true; // 草は植物パレットの土染めから除外
+      blade.position.set(
+        cx + (hash(k, 23.9) - 0.5) * 0.07,
+        baseY + h * 0.5 - 0.004,
+        cz + (hash(k, 29.3) - 0.5) * 0.07
+      );
+      blade.rotation.z = (hash(k, 31.7) - 0.5) * 0.75;
+      blade.rotation.x = (hash(k, 37.1) - 0.5) * 0.75;
+      group.add(blade);
+    }
+  }
+  proceduralSoilCache = group;
+  return group.clone();
+}
+
+// 土モデルの読み込み口: 土の丘はコード生成、水面の器などは従来どおりGLB
+function loadSoilAsset(THREE, loader, path) {
+  if (path === SOIL_TYPES["gallery-loam"].modelPath) {
+    return Promise.resolve({ scene: createProceduralSoilMound(THREE) });
+  }
+  return safeLoadGltf(loader, path);
 }
 
 function safeLoadGltf(loader, path) {
