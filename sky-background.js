@@ -105,8 +105,10 @@ void main() {
         float twinkleBright = 0.55 + 0.45 * sin(uTime * (1.2 + h * 2.0) + h * 60.0);
         col += starCol * (core + spikes) * twinkleBright * 1.1 * uStars * horizonFade;
       }
-      // 天の川: 斜めに流れるごく淡い光の帯
-      float band = exp(-pow(dot(p - vec2(0.15, 0.9), normalize(vec2(0.55, 1.0))), 2.0) * 26.0);
+      // 天の川: 斜めに流れるごく淡い光の帯。
+      // pow(負値, 2.0) はGLSLで未定義（SafariでNaN化しうる）ため、乗算で二乗する
+      float bandDist = dot(p - vec2(0.15, 0.9), normalize(vec2(0.55, 1.0)));
+      float band = exp(-bandDist * bandDist * 26.0);
       col += vec3(0.72, 0.8, 0.95) * band * fbm(p * 6.0 + 3.0) * 0.05 * uStars * horizonFade;
     }
 
