@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-43";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-43";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-43";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-43";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-43";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-44";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-44";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-44";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-44";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-44";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -67,7 +67,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-43";
+const ASSET_VERSION = "20260710-44";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
@@ -159,8 +159,36 @@ let debugGlintOverride = null;
 let debugHourOverride = null;
 let demoMouseParallax = false;
 
+// 雨の日は土が湿って暗くなる。シーン再生成をまたいで効くよう、土の材質をWeakRefで追跡する
+const soilMaterialRefs = new Set();
+let currentSoilDampness = 0;
+
+function registerSoilMaterial(material) {
+  material.userData.dryColor = material.color.clone();
+  soilMaterialRefs.add(new WeakRef(material));
+  applySoilDampnessTo(material, currentSoilDampness);
+}
+
+function applySoilDampnessTo(material, damp) {
+  if (!material.userData.dryColor) return;
+  material.color.copy(material.userData.dryColor).multiplyScalar(1 - damp * 0.22);
+}
+
+function applySoilDampness(damp) {
+  currentSoilDampness = Math.max(0, Math.min(1, damp));
+  soilMaterialRefs.forEach((ref) => {
+    const material = ref.deref();
+    if (!material) {
+      soilMaterialRefs.delete(ref);
+      return;
+    }
+    applySoilDampnessTo(material, currentSoilDampness);
+  });
+}
+
 function applyWeatherToScene(weather) {
   setSkyWeather(weather);
+  applySoilDampness((weather.rain || 0) * 1.1 + (weather.fog || 0) * 0.15);
   setAmbientRain(weather.rain);
   setRainSoundLevel(weather.rain);
   // 風の強さ: 雨・嵐で強く、雲が多い日も少し揺れる（植物の揺れと風の音を同じ値で連動）
@@ -4003,6 +4031,7 @@ function prepareSoilModel(THREE, object, plant) {
       }
       if ("roughness" in clone && style.roughness !== undefined) clone.roughness = style.roughness;
       if ("metalness" in clone && style.metalness !== undefined) clone.metalness = style.metalness;
+      if (clone.color) registerSoilMaterial(clone);
       return clone;
     });
     child.material = Array.isArray(child.material) ? tuned : tuned[0];

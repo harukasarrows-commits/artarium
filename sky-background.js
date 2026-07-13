@@ -253,13 +253,28 @@ void main() {
   col = mix(col, vec3(dot(col, vec3(0.333))), gloom * 0.5);
   col *= 1.0 - uDark * 0.5;
 
-  // 雪（ふわりと舞う丸い粒。雨とは別の描き方）
+  // 雪: ふわりと横に揺れながら落ちる丸い粒。2層で奥行きをつける
   if (uSnow > 0.001 && uSnow >= uRain) {
-    vec2 rp = vec2(uv.x * ar * 60.0 + uv.y * 4.0, uv.y * 22.0 + uTime * 0.9);
-    float cell = hash21(vec2(floor(rp.x), floor(rp.y)));
-    float drop = step(1.0 - uSnow * 0.09, cell);
-    float shape = smoothstep(0.0, 0.25, fract(rp.y)) * (1.0 - smoothstep(0.45, 0.9, fract(rp.y)));
-    col = mix(col, vec3(0.95, 0.96, 0.98), drop * shape * 0.42);
+    for (int i = 0; i < 2; i++) {
+      float t01 = float(i);
+      float colsN = mix(26.0, 44.0, t01);
+      float rowsN = mix(15.0, 24.0, t01);
+      vec2 rp = vec2(uv.x * ar * colsN + float(i) * 19.0, uv.y * rowsN + uTime * mix(1.1, 0.72, t01));
+      float colId = floor(rp.x);
+      rp.y += hash21(vec2(colId, 77.3));
+      vec2 cellId = vec2(colId, floor(rp.y));
+      float h = hash21(cellId + float(i) * 41.7);
+      float hasFlake = step(1.0 - uSnow * mix(0.3, 0.45, t01), h);
+      if (hasFlake > 0.0) {
+        vec2 f = vec2(fract(rp.x), fract(rp.y));
+        // 粒はセルの中でゆっくり左右に揺れる
+        float cx = 0.3 + 0.4 * hash21(cellId + 9.1) + sin(uTime * (0.7 + h * 0.8) + h * 21.0) * 0.15;
+        vec2 fd = vec2(f.x - cx, (f.y - 0.5) * (colsN / rowsN));
+        float d2 = dot(fd, fd);
+        float flake = exp(-d2 * mix(120.0, 220.0, t01));
+        col = mix(col, vec3(0.95, 0.96, 0.98), flake * mix(0.55, 0.32, t01) * (0.5 + 0.5 * uSnow));
+      }
+    }
   } else if (uRain > 0.001) {
     // 雨: 奥行きの違う3層の細い筋。近い層ほど速く・長く・濃く、遠い層は細かな霧雨。
     // 風でゆっくり斜めが揺れ、本降りほど筋が長く密になる
