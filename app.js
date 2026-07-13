@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-24";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-24";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-24";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-24";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-24";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-27";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar } from "./sky-background.js?v=20260710-27";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-27";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-27";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop } from "./ambient-sound.js?v=20260710-27";
 
 const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
@@ -64,7 +64,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-24";
+const ASSET_VERSION = "20260710-27";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
@@ -160,8 +160,10 @@ function applyWeatherToScene(weather) {
   setSkyWeather(weather);
   setAmbientRain(weather.rain);
   setRainSoundLevel(weather.rain);
-  // 風の強さ: 雨・嵐で強く、雲が多い日も少し揺れる
-  setPlantWind(Math.min(1, 0.2 + Math.max(weather.rain || 0, (weather.dark || 0) * 1.5) + (weather.cloud || 0) * 0.2));
+  // 風の強さ: 雨・嵐で強く、雲が多い日も少し揺れる（植物の揺れと風の音を同じ値で連動）
+  const windStrength = Math.min(1, 0.2 + Math.max(weather.rain || 0, (weather.dark || 0) * 1.5) + (weather.cloud || 0) * 0.2);
+  setPlantWind(windStrength);
+  setWindSoundLevel(windStrength);
   // 雨の日は葉先に露が宿る
   setPlantRain(weather.rain || 0);
 }
@@ -253,6 +255,7 @@ const state = {
   galleryFocusPlantId: "",
   galleryFocusAngle: 0,
   demoModelStage: 1,
+  demoStageGrowth: 1,
   demoModelSettings: loadDemoModelSettings(),
   productionModelSettings: loadProductionModelSettings(),
   demoSoilAssignments: loadSoilAssignments(DEMO_SOIL_STORAGE_KEY),
@@ -1249,6 +1252,12 @@ function bindEvents() {
   });
 
   document.getElementById("demo-model-settings")?.addEventListener("change", (event) => {
+    const growthInput = event.target.closest("[data-demo-growth]");
+    if (growthInput) {
+      state.demoStageGrowth = Math.min(1, Math.max(0, Number(growthInput.value) / 100));
+      render();
+      return;
+    }
     const plantSelect = event.target.closest("[data-demo-plant-select]");
     if (plantSelect) {
       updateDemoPlantSelection(plantSelect.value);
@@ -1674,6 +1683,13 @@ function renderHome() {
 
   homeArtwork.style.cssText = paletteVars(selectedPlant);
   homeArtwork.dataset.stage = String(visualStage);
+  // 連続成長: ステージ内の進捗（0-1）をシーンへ渡す。デモは焼き込み値の検証を妨げないため常に1
+  const stageLowerT = STAGE_THRESHOLDS[selectedStage - 1] ?? 0;
+  const stageUpperT = selectedStage >= STAGE_THRESHOLDS.length ? COMPLETION_THRESHOLD : STAGE_THRESHOLDS[selectedStage];
+  const stageFill = selectedComplete
+    ? 1
+    : Math.min(1, Math.max(0, (selectedProgress.points - stageLowerT) / Math.max(1, stageUpperT - stageLowerT)));
+  homeArtwork.dataset.stageGrowth = DEMO_MODE ? String(state.demoStageGrowth ?? 1) : stageFill.toFixed(3);
   homeArtwork.dataset.homeModelViewer = "true";
   homeArtwork.dataset.plantId = selectedPlant.id;
   homeArtwork.dataset.plantModel = getPlantModelPath(selectedPlant, visualStage);
@@ -2594,6 +2610,10 @@ function renderDemoModelSettings() {
         </button>
         <button class="secondary-action" data-demo-parallax type="button">視差プレビュー: ${demoMouseParallax ? "オン" : "オフ"}</button>
       </div>
+      <label class="demo-control">
+        <span>連続成長プレビュー: ${Math.round((state.demoStageGrowth ?? 1) * 100)}%（ステージ内の育ち具合）</span>
+        <input type="range" min="0" max="100" step="5" value="${Math.round((state.demoStageGrowth ?? 1) * 100)}" data-demo-growth>
+      </label>
       ${controls.map((control) => {
         const value = stageSettings[control.key];
         return `
@@ -3710,6 +3730,10 @@ async function createPlantScene(container, runtime, token) {
         plantY: baseModelSettings.plantY + 0.9
       }
     : baseModelSettings;
+  // 連続成長: ステージ内の進捗（dataset.stageGrowth 0-1）に応じて 86%→100% に育てる。
+  // 毎日ひらくたびに、昨日より少しだけ大きい姿を見せるため（デモ・種プレビューは対象外）
+  const stageGrowth = Math.min(1, Math.max(0, Number(container.dataset.stageGrowth ?? 1)));
+  const growthScale = isSeedPreview ? 1 : 0.86 + 0.14 * stageGrowth;
   const environmentType = container.dataset.environment || "soil";
   const plantDefinition = state.plants.find((plant) => plant.id === container.dataset.plantId);
   const [plantModel, soilModel] = await Promise.all([
@@ -3737,8 +3761,15 @@ async function createPlantScene(container, runtime, token) {
   scene.add(keyLight);
   addArtworkMaterialLights(THREE, scene, plantDefinition);
 
-  const plant = normalizeModel(THREE, plantModel.scene, modelSettings.plantScale);
+  const plant = normalizeModel(THREE, plantModel.scene, modelSettings.plantScale * growthScale);
   preparePlantSurfaceModel(THREE, plant, plantDefinition, Number(container.dataset.stage) || 1);
+  // モデル原点は中心にあるため、縮小すると根元が浮く。高さの差の半分だけ下げて根元を土に留める
+  let growthYOffset = 0;
+  if (growthScale < 1) {
+    const grownBox = new THREE.Box3().setFromObject(plant);
+    const grownHeight = grownBox.max.y - grownBox.min.y;
+    if (Number.isFinite(grownHeight)) growthYOffset = -(grownHeight * (1 / growthScale - 1)) / 2;
+  }
   const reflectionPlant = environmentType === "water" && !isSeedPreview
     ? prepareReflectionModel(THREE, plant.clone(true), Number(container.dataset.stage) || 1, modelSettings)
     : null;
@@ -3774,7 +3805,7 @@ async function createPlantScene(container, runtime, token) {
   }
   const plantGroup = createTunedModelGroup(THREE, plant, {
     x: modelSettings.plantX,
-    y: modelSettings.plantY,
+    y: modelSettings.plantY + growthYOffset,
     z: modelSettings.plantZ,
     pitch: modelSettings.plantRotX,
     yaw: modelSettings.plantRotY,

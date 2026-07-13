@@ -3960,6 +3960,24 @@ body.is-demo-mode .demo-control {
   100% { border-color: rgba(216, 188, 120, 0); }
 }
 
+/* ===== デモ版: パネルをスクロールしても植物を見ながら調整できる（2026-07-13）===== */
+/* PC幅（2カラム）: 左のシーンをビューポート上部に貼り付ける */
+@media (min-width: 901px) {
+  body.is-demo-mode .daily-home.is-demo-layout .daily-hero {
+    position: sticky;
+    top: 12px;
+  }
+}
+
+/* 狭い幅（縦積み）: シーンが上へ抜けきらず、下側（植物が立つ範囲）を残して貼り付く */
+@media (max-width: 900px) {
+  body.is-demo-mode .daily-hero {
+    position: sticky;
+    top: calc(46dvh - 100dvh);
+    z-index: 6;
+  }
+}
+
 /* CSS疑似額縁（GLB未配置の額）の質感底上げ: 木目風グラデ＋マット紙＋金のフィレット線＋深い影 */
 .fallback-frame {
   border-color: transparent;

@@ -27,7 +27,7 @@ roadmap の候補や監査ID で指定されたタスクを、以下の7ステ�
 
 ## 4. 実装
 
-- `CLAUDE.md`（artarium）の鉄則1〜7に従う
+- 鉄則1〜7に従う（`.claude/rules/3d-placement.md` と `.claude/rules/sw-cache.md`。対象ファイルを触ると自動で読み込まれる）
 - 新規ファイルを追加したら `sw.js` の APP_SHELL への追加を忘れない
 - 持続キャンバスを増やしたら再描画の掃除セレクタへ除外を追加する
 
@@ -40,6 +40,7 @@ roadmap の候補や監査ID で指定されたタスクを、以下の7ステ�
 ## 6. 検証
 
 - `node --check app.js`。CSSを触ったらブレース整合も確認
+- `data/model-settings.json` や配置焼き込みを触ったら `node scripts/check-stale-settings.mjs` を実行し、**PASSを確認してから**報告する（鉄則7）
 - `docs/testing.md` の該当チェックを実施し、実機でしか確認できない項目は「未検証」として報告に明示する
 
 ## 7. 版数とコミット提案
