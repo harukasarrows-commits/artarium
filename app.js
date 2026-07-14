@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-45";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-45";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-45";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-45";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-45";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-50";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-50";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-50";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-50";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-50";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -67,7 +67,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-45";
+const ASSET_VERSION = "20260710-50";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
@@ -227,7 +227,8 @@ const FRAME_TYPES = {
     material: "#171716",
     materialDeep: "#050505",
     finish: "lacquer",
-    matBoard: true
+    matBoard: false,
+    lip: false
   },
   "floating-maple": {
     label: "Floating Maple",
@@ -238,6 +239,46 @@ const FRAME_TYPES = {
     materialDeep: "#7d5227",
     finish: "wood",
     matBoard: false
+  },
+  "gilded-gold": {
+    label: "Gilded Gold",
+    jp: "金箔の額",
+    story: "金箔のきらめきが、祝祭の光を纏わせる。",
+    modelPath: "",
+    material: "#c9a44f",
+    materialDeep: "#7a5a1e",
+    finish: "gold",
+    matBoard: true
+  },
+  "white-gallery": {
+    label: "White Gallery",
+    jp: "白の画廊",
+    story: "白の余白が、作品に呼吸をあたえる。",
+    modelPath: "",
+    material: "#e8e4da",
+    materialDeep: "#b9b2a4",
+    finish: "gesso",
+    matBoard: true
+  },
+  "antique-silver": {
+    label: "Antique Silver",
+    jp: "古銀の額",
+    story: "古びた銀が、月の光をしずかに映す。",
+    modelPath: "",
+    material: "#9aa0a6",
+    materialDeep: "#4d5257",
+    finish: "silver",
+    matBoard: true
+  },
+  "ebony-gold": {
+    label: "Ebony & Gold",
+    jp: "黒檀と金",
+    story: "闇と金のあわいに、色彩が目を覚ます。",
+    modelPath: "",
+    material: "#1b1712",
+    materialDeep: "#060402",
+    finish: "ebony",
+    matBoard: true
   }
 };
 const BACKDROP_TYPES = {
@@ -2951,7 +2992,6 @@ function renderGalleryFocusModal() {
           <p>${plant.copy?.collectionLabel ?? plant.motif}</p>
           <small>${getArchiveLine(plant)}</small>
         </div>
-        <p class="plaque-frame-label">額装: ${getFrameLabel(plant)}</p>
       </div>
     </div>
   `;
@@ -3051,7 +3091,6 @@ function renderGallery() {
           <p>${plant.copy?.collectionLabel ?? plant.motif}</p>
           <small>${getArchiveLine(plant)}</small>
         </div>
-        <p class="plaque-frame-label">額装: ${getFrameLabel(plant)}</p>
       </div>
     </article>
   `).join("");
@@ -3067,7 +3106,9 @@ function backdropVars(type) {
 }
 
 function getFrameOptions(plant) {
-  return plant.frameOptions?.length ? plant.frameOptions : Object.keys(FRAME_TYPES);
+  // 2026-07-14: 額のラインナップ拡充にあわせ、全植物ですべての額から選べるようにする
+  // （plants.json の frameOptions は旧3種のみの記載で残っているため参照しない）
+  return Object.keys(FRAME_TYPES);
 }
 
 function getFrameModelPath(plant) {
@@ -3257,7 +3298,9 @@ async function createGalleryScene(container, runtime, token) {
   const [frameModel, plantModel, soilModel] = await Promise.all([
     safeLoadGltf(loader, container.dataset.frameModel),
     loadGltf(loader, container.dataset.plantModel),
-    loadSoilAsset(THREE, loader, container.dataset.soilModel)
+    // 額の中は「描かれた絵」として見せる: 土植物は3Dの土を置かず、
+    // 背景に描いた大地と足元の影で受ける（2026-07-14。水面植物は従来どおり）
+    environmentType === "water" ? loadSoilAsset(THREE, loader, container.dataset.soilModel) : Promise.resolve(null)
   ]);
   if (!isCurrentModelRender(container, token)) return;
 
@@ -3323,7 +3366,10 @@ async function createGalleryScene(container, runtime, token) {
     artworkGroup.add(reflectionGroup);
   }
   artworkGroup.add(plantGroup);
-  const plantEffects = !arePlantEffectsEnabled() ? null : createPlantEffects(THREE, plantDefinition, plantGroup, {
+  // 種プレビューは標本展示なのでエフェクトを付けない。
+  // （標本演出 mountSeedSpecimenMotion と bob が同じ plantGroup.position.y を
+  //   毎フレーム取り合い、水上植物の種が震える不具合の原因だった。2026-07-14）
+  const plantEffects = (!arePlantEffectsEnabled() || isSeedPreview) ? null : createPlantEffects(THREE, plantDefinition, plantGroup, {
     x: modelSettings.plantX,
     y: modelSettings.plantY,
     z: modelSettings.plantZ,
@@ -3640,6 +3686,45 @@ function getPaintedBackdropTexture(THREE, plant) {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
   }
+  // 描かれた大地: 下部にパレットと土色を混ぜた帯。3Dの土の代わりに、絵の中で植物を受ける
+  const earth = new THREE.Color(palette[2]).lerp(new THREE.Color("#3a2c1e"), 0.55);
+  const earthDeep = earth.clone().lerp(new THREE.Color("#120d08"), 0.55);
+  const rgba = (c, a) => `rgba(${Math.round(c.r * 255)}, ${Math.round(c.g * 255)}, ${Math.round(c.b * 255)}, ${a})`;
+  const groundTop = size * 0.6;
+  const groundGrad = ctx.createLinearGradient(0, groundTop - size * 0.12, 0, size);
+  groundGrad.addColorStop(0, rgba(earth, 0));
+  groundGrad.addColorStop(0.3, rgba(earth, 0.55));
+  groundGrad.addColorStop(1, rgba(earthDeep, 0.9));
+  ctx.fillStyle = groundGrad;
+  ctx.fillRect(0, groundTop - size * 0.12, size, size);
+  // 大地の筆あと（置き場所は固定。開くたびに絵が変わらないように）
+  const strokes = [
+    { x: 0.08, y: 0.66, w: 0.5, a: 0.1, light: true },
+    { x: 0.42, y: 0.71, w: 0.44, a: 0.12, light: false },
+    { x: 0.18, y: 0.77, w: 0.62, a: 0.1, light: true },
+    { x: 0.55, y: 0.83, w: 0.4, a: 0.14, light: false },
+    { x: 0.05, y: 0.88, w: 0.55, a: 0.1, light: false },
+    { x: 0.3, y: 0.93, w: 0.5, a: 0.08, light: true }
+  ];
+  for (const s of strokes) {
+    const tone = s.light ? earth.clone().lerp(new THREE.Color("#c9b08a"), 0.35) : earthDeep;
+    ctx.fillStyle = rgba(tone, s.a);
+    ctx.beginPath();
+    ctx.ellipse((s.x + s.w / 2) * size, s.y * size, (s.w / 2) * size, size * 0.012, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // 足元の影: 植物が立つあたりへごく淡い楕円の陰を落とし、絵として接地させる
+  const shadow = ctx.createRadialGradient(size * 0.5, size * 0.64, 0, size * 0.5, size * 0.64, size * 0.3);
+  shadow.addColorStop(0, "rgba(8, 6, 4, 0.34)");
+  shadow.addColorStop(1, "rgba(8, 6, 4, 0)");
+  ctx.save();
+  ctx.translate(size * 0.5, size * 0.64);
+  ctx.scale(1, 0.22);
+  ctx.translate(-size * 0.5, -size * 0.64);
+  ctx.fillStyle = shadow;
+  ctx.fillRect(0, size * 0.64 - size * 0.3, size, size * 0.6);
+  ctx.restore();
+
   // 画布の質感（ごく薄い横糸）と周辺減光
   for (let y = 0; y < size; y += 3) {
     ctx.fillStyle = `rgba(255, 250, 240, ${Math.random() * 0.016})`;
@@ -3671,16 +3756,59 @@ function getFrameWoodTexture(THREE, frameType, vertical) {
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
+  const rgba = (c, a) => `rgba(${Math.round(c.r * 255)}, ${Math.round(c.g * 255)}, ${Math.round(c.b * 255)}, ${a})`;
   ctx.fillStyle = `#${base.getHexString()}`;
   ctx.fillRect(0, 0, size, size);
-  for (let i = 0; i < 46; i++) {
-    const grain = base.clone().lerp(deep, 0.25 + Math.random() * 0.75);
-    ctx.fillStyle = `rgba(${Math.round(grain.r * 255)}, ${Math.round(grain.g * 255)}, ${Math.round(grain.b * 255)}, ${0.12 + Math.random() * 0.24})`;
-    ctx.fillRect(Math.random() * size, 0, 1 + Math.random() * 5, size);
-  }
-  for (let i = 0; i < 14; i++) {
-    ctx.fillStyle = `rgba(255, 245, 225, ${0.04 + Math.random() * 0.06})`;
-    ctx.fillRect(Math.random() * size, 0, 1 + Math.random() * 2, size);
+  const finish = spec.finish ?? "wood";
+  if (finish === "gold" || finish === "silver") {
+    // 箔: 正方形の箔を貼り継いだトーン差 + 継ぎ目 + 経年のパティナ
+    const cells = 4;
+    const cell = size / cells;
+    for (let gy = 0; gy < cells; gy++) {
+      for (let gx = 0; gx < cells; gx++) {
+        ctx.fillStyle = rgba(base.clone().lerp(deep, Math.random() * 0.3), 0.5);
+        ctx.fillRect(gx * cell, gy * cell, cell, cell);
+      }
+    }
+    ctx.strokeStyle = rgba(deep, 0.3);
+    ctx.lineWidth = 1;
+    for (let i = 1; i < cells; i++) {
+      ctx.beginPath(); ctx.moveTo(i * cell, 0); ctx.lineTo(i * cell, size); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i * cell); ctx.lineTo(size, i * cell); ctx.stroke();
+    }
+    for (let i = 0; i < 9; i++) {
+      const x = Math.random() * size; const y = Math.random() * size;
+      const r = 18 + Math.random() * 40;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, rgba(deep, 0.1 + Math.random() * 0.14));
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+  } else if (finish === "gesso") {
+    // 石膏の白: 漆喰の細かい粒と刷毛の流れ
+    for (let i = 0; i < 1400; i++) {
+      const dark = Math.random() < 0.5;
+      ctx.fillStyle = dark ? rgba(deep, 0.05 + Math.random() * 0.06) : "rgba(255,255,252,0.06)";
+      ctx.fillRect(Math.random() * size, Math.random() * size, 1 + Math.random() * 1.6, 1 + Math.random() * 1.6);
+    }
+    for (let i = 0; i < 8; i++) {
+      ctx.fillStyle = rgba(deep, 0.03 + Math.random() * 0.03);
+      ctx.fillRect(0, Math.random() * size, size, 2 + Math.random() * 5);
+    }
+  } else {
+    // 木目（ebonyはコントラストを抑えた細目の黒檀）
+    const streaks = finish === "ebony" ? 70 : 46;
+    for (let i = 0; i < streaks; i++) {
+      const grain = base.clone().lerp(deep, 0.25 + Math.random() * 0.75);
+      const alpha = finish === "ebony" ? 0.08 + Math.random() * 0.12 : 0.12 + Math.random() * 0.24;
+      ctx.fillStyle = rgba(grain, alpha);
+      ctx.fillRect(Math.random() * size, 0, 1 + Math.random() * (finish === "ebony" ? 3 : 5), size);
+    }
+    for (let i = 0; i < 14; i++) {
+      ctx.fillStyle = `rgba(255, 245, 225, ${finish === "ebony" ? 0.02 + Math.random() * 0.03 : 0.04 + Math.random() * 0.06})`;
+      ctx.fillRect(Math.random() * size, 0, 1 + Math.random() * 2, size);
+    }
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
@@ -3709,17 +3837,26 @@ function buildShadowBoxFrame(THREE, frameType, { innerW, innerH, centerX, bottom
   const outerW = innerW + barX * 2;
   const faceZ = frontZ - barDepth / 2;
 
-  // 仕上げ: 木製は木目テクスチャ＋低い金属感、漆黒（museum-black）は艶のあるラッカー
-  const isLacquer = spec.finish === "lacquer";
-  // 木の色はテクスチャ×colorの乗算で決まる。シーンの照明が強く色が飛ぶため、暗めに乗算して本来の材色に戻す
-  const woodTone = new THREE.Color("#8f867a");
+  // 仕上げ別の材質: 木・黒檀・金箔・古銀・石膏白はテクスチャ＋乗算トーン、漆黒はラッカー
+  // （テクスチャ×colorの乗算で材色を決める。シーンの照明が強く色が飛ぶため暗めに乗算して戻す）
+  const finish = spec.finish ?? "wood";
+  const isLacquer = finish === "lacquer";
+  const finishLook = {
+    wood: { tone: "#8f867a", metalness: 0.1, roughness: 0.58 },
+    ebony: { tone: "#6f6a62", metalness: 0.18, roughness: 0.42 },
+    gold: { tone: "#eeda9e", metalness: 0.82, roughness: 0.34 },
+    silver: { tone: "#c8cdd2", metalness: 0.85, roughness: 0.4 },
+    gesso: { tone: "#efece4", metalness: 0.02, roughness: 0.88 }
+  }[finish] ?? { tone: "#8f867a", metalness: 0.1, roughness: 0.58 };
   const frameMatH = isLacquer
     ? new THREE.MeshStandardMaterial({ color: frameColor, metalness: 0.42, roughness: 0.3 })
-    : new THREE.MeshStandardMaterial({ map: getFrameWoodTexture(THREE, frameType, false), color: woodTone, metalness: 0.1, roughness: 0.58 });
+    : new THREE.MeshStandardMaterial({ map: getFrameWoodTexture(THREE, frameType, false), color: new THREE.Color(finishLook.tone), metalness: finishLook.metalness, roughness: finishLook.roughness });
   const frameMatV = isLacquer
     ? frameMatH
-    : new THREE.MeshStandardMaterial({ map: getFrameWoodTexture(THREE, frameType, true), color: woodTone, metalness: 0.1, roughness: 0.58 });
-  const lipMat = new THREE.MeshStandardMaterial({ color: new THREE.Color("#c2a45e"), metalness: 0.75, roughness: 0.35 });
+    : new THREE.MeshStandardMaterial({ map: getFrameWoodTexture(THREE, frameType, true), color: new THREE.Color(finishLook.tone), metalness: finishLook.metalness, roughness: finishLook.roughness });
+  // 内縁の細縁: 金が基本。金箔の額は影色の古金、古銀は銀、黒檀は金を太く効かせる
+  const lipColor = finish === "gold" ? "#8a6b2c" : finish === "silver" ? "#b9bfc4" : "#c2a45e";
+  const lipMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(lipColor), metalness: 0.75, roughness: 0.35 });
   // 内壁は暗く沈める: 明るい内壁は箱の奥行きを強調しすぎる（実際の標本箱の内側も暗色）
   const wallMat = new THREE.MeshStandardMaterial({ color: frameColor.clone().multiplyScalar(0.13), metalness: 0.05, roughness: 0.95 });
   // 背板: 絵の具の背景があれば「描かれたカンヴァス」として照明の影響を受けない材質で貼る
@@ -3739,13 +3876,23 @@ function buildShadowBoxFrame(THREE, frameType, { innerW, innerH, centerX, bottom
   addBox(outerW, barY, barDepth, cx, cy - innerH / 2 - barY / 2, faceZ, frameMatH);
   addBox(barX, innerH, barDepth, cx - innerW / 2 - barX / 2, cy, faceZ, frameMatV);
   addBox(barX, innerH, barDepth, cx + innerW / 2 + barX / 2, cy, faceZ, frameMatV);
-  // 開口の内側に走る金の細縁
-  const lip = Math.max(0.045, innerW * 0.025);
-  const lipZ = frontZ - barDepth - lip / 2;
-  addBox(innerW, lip, lip, cx, cy + innerH / 2 - lip / 2, lipZ, lipMat);
-  addBox(innerW, lip, lip, cx, cy - innerH / 2 + lip / 2, lipZ, lipMat);
-  addBox(lip, innerH, lip, cx - innerW / 2 + lip / 2, cy, lipZ, lipMat);
-  addBox(lip, innerH, lip, cx + innerW / 2 - lip / 2, cy, lipZ, lipMat);
+  // 段プロファイル: 開口寄りに一段高い立ち上がりを足し、平板ではなく彫りのある額にする
+  const stepW = Math.min(barX, barY) * 0.34;
+  const stepRise = 0.05;
+  const stepZ = faceZ + barDepth / 2 + stepRise / 2;
+  addBox(innerW + stepW * 2, stepW, stepRise, cx, cy + innerH / 2 + stepW / 2, stepZ, frameMatH);
+  addBox(innerW + stepW * 2, stepW, stepRise, cx, cy - innerH / 2 - stepW / 2, stepZ, frameMatH);
+  addBox(stepW, innerH, stepRise, cx - innerW / 2 - stepW / 2, cy, stepZ, frameMatV);
+  addBox(stepW, innerH, stepRise, cx + innerW / 2 + stepW / 2, cy, stepZ, frameMatV);
+  // 開口の内側に走る金の細縁（純黒ミニマルの額は張らない）
+  const lip = Math.max(0.045, innerW * 0.025) * (finish === "ebony" ? 1.7 : 1);
+  if (spec.lip !== false) {
+    const lipZ = frontZ - barDepth - lip / 2;
+    addBox(innerW, lip, lip, cx, cy + innerH / 2 - lip / 2, lipZ, lipMat);
+    addBox(innerW, lip, lip, cx, cy - innerH / 2 + lip / 2, lipZ, lipMat);
+    addBox(lip, innerH, lip, cx - innerW / 2 + lip / 2, cy, lipZ, lipMat);
+    addBox(lip, innerH, lip, cx + innerW / 2 - lip / 2, cy, lipZ, lipMat);
+  }
   // マット紙: 金縁のすぐ奥に沈むアイボリーの台紙（浮かぶ楓は「光の隙間」が売りなので入れない）
   if (spec.matBoard) {
     const matB = Math.max(0.09, innerW * 0.085);
@@ -3754,6 +3901,16 @@ function buildShadowBoxFrame(THREE, frameType, { innerW, innerH, centerX, bottom
     addBox(innerW, matB, 0.024, cx, cy - innerH / 2 + matB / 2, matZ, matBoardMat);
     addBox(matB, innerH - matB * 2, 0.024, cx - innerW / 2 + matB / 2, cy, matZ, matBoardMat);
     addBox(matB, innerH - matB * 2, 0.024, cx + innerW / 2 - matB / 2, cy, matZ, matBoardMat);
+    // マットの面取り: 開口部の斜めカットが作る細い陰影線（実物のマット紙の証）
+    const bevelMat = new THREE.MeshStandardMaterial({ color: new THREE.Color("#c7bda6"), metalness: 0, roughness: 0.95 });
+    const bevel = 0.018;
+    const openW = innerW - matB * 2;
+    const openH = innerH - matB * 2;
+    const bevelZ = matZ - 0.014;
+    addBox(openW + bevel * 2, bevel, 0.02, cx, cy + openH / 2 + bevel / 2, bevelZ, bevelMat);
+    addBox(openW + bevel * 2, bevel, 0.02, cx, cy - openH / 2 - bevel / 2, bevelZ, bevelMat);
+    addBox(bevel, openH, 0.02, cx - openW / 2 - bevel / 2, cy, bevelZ, bevelMat);
+    addBox(bevel, openH, 0.02, cx + openW / 2 + bevel / 2, cy, bevelZ, bevelMat);
   }
   // 箱の側壁と背板（回転したときに立体標本らしく見える）
   const wallT = 0.06;
