@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-50";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-50";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-50";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-50";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-50";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-51";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-51";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-51";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-51";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-51";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -67,7 +67,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-50";
+const ASSET_VERSION = "20260710-51";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
@@ -3366,10 +3366,7 @@ async function createGalleryScene(container, runtime, token) {
     artworkGroup.add(reflectionGroup);
   }
   artworkGroup.add(plantGroup);
-  // 種プレビューは標本展示なのでエフェクトを付けない。
-  // （標本演出 mountSeedSpecimenMotion と bob が同じ plantGroup.position.y を
-  //   毎フレーム取り合い、水上植物の種が震える不具合の原因だった。2026-07-14）
-  const plantEffects = (!arePlantEffectsEnabled() || isSeedPreview) ? null : createPlantEffects(THREE, plantDefinition, plantGroup, {
+  const plantEffects = !arePlantEffectsEnabled() ? null : createPlantEffects(THREE, plantDefinition, plantGroup, {
     x: modelSettings.plantX,
     y: modelSettings.plantY,
     z: modelSettings.plantZ,
@@ -4054,7 +4051,10 @@ async function createPlantScene(container, runtime, token) {
     artworkGroup.add(frameGroup);
     container.classList.add("has-procedural-frame");
   }
-  const plantEffects = !arePlantEffectsEnabled() ? null : createPlantEffects(THREE, plantDefinition, plantGroup, {
+  // 種プレビューは標本展示なのでエフェクトを付けない。
+  // （標本演出 mountSeedSpecimenMotion と水面植物の bob が同じ
+  //   plantGroup.position.y を毎フレーム取り合い、種が震える不具合の原因。2026-07-14）
+  const plantEffects = (!arePlantEffectsEnabled() || isSeedPreview) ? null : createPlantEffects(THREE, plantDefinition, plantGroup, {
     x: modelSettings.plantX,
     y: modelSettings.plantY,
     z: modelSettings.plantZ,
