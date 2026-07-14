@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-44";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-44";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-44";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-44";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-44";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-45";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-45";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-45";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-45";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-45";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -67,7 +67,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-44";
+const ASSET_VERSION = "20260710-45";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
@@ -1780,6 +1780,7 @@ function renderHome() {
     progressLine.setAttribute("aria-label", `${nextGrowthLabel} ${Math.round(stageProgress * 100)}%。タップで歩数の詳細を表示します`);
     document.getElementById("growth-progress-label").textContent = growthProgressTitle;
     document.getElementById("growth-progress-percent").textContent = `${Math.round(stageProgress * 100)}%`;
+    maybeShowSteplineHint();
     const detail = document.getElementById("growth-progress-detail");
     if (detail) {
       detail.hidden = true;
@@ -1923,6 +1924,24 @@ function maybeShowWeatherGreeting(weather) {
   window.setTimeout(() => {
     greet.classList.add("is-done");
     window.setTimeout(() => greet.remove(), 700);
+  }, 6000);
+}
+
+// 進捗ラインのタップ（歩数同期）の発見性: 初回だけ小さな示唆を出す
+const STEPLINE_HINT_KEY = "artarium-stepline-hinted";
+
+function maybeShowSteplineHint() {
+  if (localStorage.getItem(STEPLINE_HINT_KEY)) return;
+  const line = document.getElementById("daily-progress-line");
+  if (!line || line.hidden || line.querySelector(".stepline-hint")) return;
+  localStorage.setItem(STEPLINE_HINT_KEY, "1");
+  const hint = document.createElement("p");
+  hint.className = "stepline-hint";
+  hint.textContent = "ラインをタップすると歩数を同期できます";
+  line.appendChild(hint);
+  window.setTimeout(() => {
+    hint.classList.add("is-done");
+    window.setTimeout(() => hint.remove(), 700);
   }, 6000);
 }
 
@@ -4291,6 +4310,10 @@ function startSceneAnimationLoop(container, token, renderer, scene, camera, { wa
   const needsFullFrameRate = Boolean(waterSurface);
   const baseCameraX = camera.position.x;
   const baseCameraY = camera.position.y;
+  const baseCameraZ = camera.position.z;
+  // 鑑賞モードの呼吸: 約14秒周期でごくゆっくり寄り、また戻る（reduced-motion時は無効）
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+  let breatheAmount = 0;
   let parallaxX = 0;
   let parallaxY = 0;
   let frameCount = 0;
@@ -4314,6 +4337,12 @@ function startSceneAnimationLoop(container, token, renderer, scene, camera, { wa
       if (skyCanvas) {
         skyCanvas.style.transform = `translate(${(-parallaxX * 60).toFixed(1)}px, ${(parallaxY * 30).toFixed(1)}px) scale(1.08)`;
       }
+    }
+    const breatheTarget = !reduceMotion && document.body.classList.contains("is-viewing-mode") ? 1 : 0;
+    if (breatheAmount > 0.001 || breatheTarget > 0) {
+      breatheAmount += (breatheTarget - breatheAmount) * 0.02;
+      const breatheT = performance.now() / 1000;
+      camera.position.z = baseCameraZ - (Math.sin(breatheT * 0.45 - Math.PI / 2) * 0.5 + 0.5) * 0.26 * breatheAmount;
     }
     waterSurface?.update(renderer);
     plantEffects?.update(performance.now());

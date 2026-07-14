@@ -3348,6 +3348,25 @@ body.is-demo-mode .demo-control {
   animation: tap-hint-in 0.8s ease 1.2s backwards, tap-hint-pulse 2.6s ease 2s infinite;
 }
 
+/* 天気の一言は空の情報なので上部（ヘッダーの下）に出す。植物と重ねない */
+.tap-hint.weather-greet {
+  bottom: auto;
+  top: 148px;
+}
+
+.stepline-hint {
+  margin: 6px 0 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: rgba(237, 234, 224, 0.55);
+  animation: tap-hint-in 0.8s ease 0.6s backwards;
+  transition: opacity 0.7s ease;
+}
+
+.stepline-hint.is-done {
+  opacity: 0;
+}
+
 .tap-hint.is-done {
   animation: none;
   opacity: 0;
