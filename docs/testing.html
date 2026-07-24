@@ -40,7 +40,28 @@
 <li>[ ] 種選択 → 開花プレビュー → 「この種を育てる」が通る</li>
 <li>[ ] デモの歩数加算でステージが上がり、点灯式が再生される</li>
 <li>[ ] 額装フロー（名前入力 → 額縁選択 → 収蔵）が一周する</li>
-<li>[ ] コレクションの拡大鑑賞・図鑑・作品画像の保存が動く</li>
+<li>[ ] コレクションの拡大鑑賞・図鑑が動く</li>
+</ul>
+<h2 id="%E8%87%AA%E5%8B%95%E3%83%86%E3%82%B9%E3%83%88">自動テスト</h2>
+<pre><code>node --test tests/*.test.mjs</code></pre>
+<ul>
+<li>[ ] 成長段階の境界値がすべてPASSする</li>
+<li>[ ] 10歩未満の端数繰越がPASSする</li>
+<li>[ ] 6,000ptの完成上限がPASSする</li>
+<li>[ ] 歩数履歴が直近21日へ整理される</li>
+<li>[ ] 旧形式・壊れたJSON・将来版の進行保存テストがPASSする</li>
+<li>[ ] 設定画面の表示反映と全ボタンのイベント委譲テストがPASSする</li>
+<li>[ ] コレクションの空状態・作品一覧・図鑑・クリック／キーボード操作テストがPASSする</li>
+<li>[ ] ホーム進捗の表示・詳細展開と完成プレートの折りたたみ／再表示テストがPASSする</li>
+</ul>
+<h2 id="%E5%88%9D%E5%9B%9E%E8%B2%A0%E8%8D%B7%E3%83%BB%E3%82%AA%E3%83%95%E3%83%A9%E3%82%A4%E3%83%B3">初回負荷・オフライン</h2>
+<p>Chromeを <code>--remote-debugging-port=9333</code> で起動し、390×844相当で以下を実行する。</p>
+<pre><code>node scripts/check-runtime-performance.mjs</code></pre>
+<ul>
+<li>[ ] 初回転送量が6MB以下</li>
+<li>[ ] 初回GLB要求が6件以下</li>
+<li>[ ] JavaScript例外・console.errorが0件</li>
+<li>[ ] <code>scripts/check-stale-settings.mjs</code> でオフライン再読込と保存済み3D表示がPASSする</li>
 </ul>
 <h2 id="%E3%83%AA%E3%83%AA%E3%83%BC%E3%82%B9%E5%89%8D%E3%81%AE%E7%89%88%E6%95%B0%E3%83%81%E3%82%A7%E3%83%83%E3%82%AF%EF%BC%88%E6%AF%8E%E5%9B%9E%EF%BC%89">リリース前の版数チェック（毎回）</h2>
 <p>以下の3つが<strong>同じ版数</strong>であることを確認する（過去に不一致が発生: <code>architecture.md</code> A-1）。</p>
@@ -62,7 +83,9 @@
 <li>[ ] <strong>旧バージョンの設定が残った状態</strong>でも起動して確認（scratchpad の check-stale-settings.mjs 方式。焼き込み値が localStorage の古い値に勝つこと）</li>
 <li>[ ] SWの更新が反映される（リロード2回、または DevTools → Application → Service Workers → Update）</li>
 <li>[ ] <code>.json</code> の再生成がリロードで届く（ネットワーク優先の確認）</li>
+<li>[ ] 表示したGLBが <code>artarium-shell-v*-models</code> に保存され、19件目で最古の項目が削除される</li>
 </ul>
+<p><code>scripts/check-stale-settings.mjs</code> は失敗時に終了コード1を返す。Chromeを <code>--remote-debugging-port=9333</code> で起動し、127.0.0.1:3025で配信してから実行する。通常は現在のHTML版数をそのまま使い、特定版を確認する場合だけ <code>ARTARIUM_V=&lt;版数&gt;</code> を指定する。</p>
 <h2 id="3d%E9%85%8D%E7%BD%AE%E3%81%AE%E6%A4%9C%E8%A8%BC%EF%BC%88claude.md-%E9%89%84%E5%89%873%EF%BC%89">3D配置の検証（CLAUDE.md 鉄則3）</h2>
 <p>数値が合っていても見た目が正しいとは限らない。<strong>必ずスクリーンショットで目視確認</strong>する。</p>
 <ul>
@@ -80,6 +103,8 @@
 <li>[ ] DeviceMotion 歩数計の精度と画面消灯時の挙動</li>
 <li>[ ] 点灯式が低速端末でフレーム落ちしない</li>
 <li>[ ] VoiceOver / TalkBack で額装フローが一周できる</li>
+<li>[ ] モーダル内でTab/Shift+Tabが循環し、閉じると元のボタンへフォーカスが戻る</li>
+<li>[ ] モーダル表示中に背景をスクロール・操作できない</li>
 <li>[ ] 横向きにしたときの破綻の程度を確認（現状 orientation 対応なし）</li>
 </ul>
 <h2 id="%E3%83%89%E3%82%AD%E3%83%A5%E3%83%A1%E3%83%B3%E3%83%88%E3%81%AE%E6%9B%B4%E6%96%B0%E3%83%81%E3%82%A7%E3%83%83%E3%82%AF">ドキュメントの更新チェック</h2>

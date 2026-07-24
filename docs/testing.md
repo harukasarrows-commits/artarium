@@ -23,7 +23,35 @@ python3 -m http.server 3025 --bind 127.0.0.1
 - [ ] 種選択 → 開花プレビュー → 「この種を育てる」が通る
 - [ ] デモの歩数加算でステージが上がり、点灯式が再生される
 - [ ] 額装フロー（名前入力 → 額縁選択 → 収蔵）が一周する
-- [ ] コレクションの拡大鑑賞・図鑑・作品画像の保存が動く
+- [ ] コレクションの拡大鑑賞・図鑑が動く
+
+## 自動テスト
+
+```bash
+node --test tests/*.test.mjs
+```
+
+- [ ] 成長段階の境界値がすべてPASSする
+- [ ] 10歩未満の端数繰越がPASSする
+- [ ] 6,000ptの完成上限がPASSする
+- [ ] 歩数履歴が直近21日へ整理される
+- [ ] 旧形式・壊れたJSON・将来版の進行保存テストがPASSする
+- [ ] 設定画面の表示反映と全ボタンのイベント委譲テストがPASSする
+- [ ] コレクションの空状態・作品一覧・図鑑・クリック／キーボード操作テストがPASSする
+- [ ] ホーム進捗の表示・詳細展開と完成プレートの折りたたみ／再表示テストがPASSする
+
+## 初回負荷・オフライン
+
+Chromeを `--remote-debugging-port=9333` で起動し、390×844相当で以下を実行する。
+
+```bash
+node scripts/check-runtime-performance.mjs
+```
+
+- [ ] 初回転送量が6MB以下
+- [ ] 初回GLB要求が6件以下
+- [ ] JavaScript例外・console.errorが0件
+- [ ] `scripts/check-stale-settings.mjs` でオフライン再読込と保存済み3D表示がPASSする
 
 ## リリース前の版数チェック（毎回）
 
@@ -48,6 +76,9 @@ python3 -m http.server 3025 --bind 127.0.0.1
 - [ ] **旧バージョンの設定が残った状態**でも起動して確認（scratchpad の check-stale-settings.mjs 方式。焼き込み値が localStorage の古い値に勝つこと）
 - [ ] SWの更新が反映される（リロード2回、または DevTools → Application → Service Workers → Update）
 - [ ] `.json` の再生成がリロードで届く（ネットワーク優先の確認）
+- [ ] 表示したGLBが `artarium-shell-v*-models` に保存され、19件目で最古の項目が削除される
+
+`scripts/check-stale-settings.mjs` は失敗時に終了コード1を返す。Chromeを `--remote-debugging-port=9333` で起動し、127.0.0.1:3025で配信してから実行する。通常は現在のHTML版数をそのまま使い、特定版を確認する場合だけ `ARTARIUM_V=<版数>` を指定する。
 
 ## 3D配置の検証（CLAUDE.md 鉄則3）
 
@@ -68,6 +99,8 @@ python3 -m http.server 3025 --bind 127.0.0.1
 - [ ] DeviceMotion 歩数計の精度と画面消灯時の挙動
 - [ ] 点灯式が低速端末でフレーム落ちしない
 - [ ] VoiceOver / TalkBack で額装フローが一周できる
+- [ ] モーダル内でTab/Shift+Tabが循環し、閉じると元のボタンへフォーカスが戻る
+- [ ] モーダル表示中に背景をスクロール・操作できない
 - [ ] 横向きにしたときの破綻の程度を確認（現状 orientation 対応なし）
 
 ## ドキュメントの更新チェック

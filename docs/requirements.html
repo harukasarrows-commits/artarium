@@ -109,10 +109,10 @@
 <div class="table-wrap"><table>
 <thead><tr><th>ID</th><th>要件</th><th>実装状況</th></tr></thead>
 <tbody>
-<tr><td>FR-6.1</td><td>Service Worker によるアプリシェルキャッシュ（<code>?v=</code> 世代管理）</td><td>✅ v235</td></tr>
-<tr><td>FR-6.2</td><td><code>.json</code> とナビゲーションはネットワーク優先、画像・GLBはキャッシュ優先</td><td>✅ CLAUDE.md 鉄則6の対策済み</td></tr>
+<tr><td>FR-6.1</td><td>Service Worker によるアプリシェルキャッシュ（<code>?v=</code> 世代管理）</td><td>✅ shell v329（2026-07-22）</td></tr>
+<tr><td>FR-6.2</td><td><code>.json</code> とナビゲーションはネットワーク優先、画像・GLBはキャッシュ優先</td><td>✅ GLBは世代付き専用キャッシュへ最大18件保存（2026-07-21）。CLAUDE.md 鉄則6を維持</td></tr>
 <tr><td>FR-6.3</td><td>manifest（standalone / portrait / テーマ色 #111813）</td><td>✅</td></tr>
-<tr><td>FR-6.4</td><td>オンライン/オフライン状態の画面内表示</td><td>✅</td></tr>
+<tr><td>FR-6.4</td><td>オンライン/オフライン状態の画面内表示</td><td>✅ 設定画面の「接続状態」に表示（2026-07-22に欠落していたDOMを復旧）</td></tr>
 </tbody></table></div>
 <h3 id="fr-7-%E9%96%8B%E7%99%BA%E3%83%BB%E9%81%8B%E7%94%A8%E6%94%AF%E6%8F%B4%EF%BC%88%60%3Fdemo%3D1%60-%E3%81%AE%E3%81%BF%EF%BC%89">FR-7 開発・運用支援（<code>?demo=1</code> のみ）</h3>
 <div class="table-wrap"><table>
@@ -130,8 +130,8 @@
 <tbody>
 <tr><td>NFR-1</td><td><strong>段階的フォールバック</strong>: WebGL2不可→CSS空、float texture不可→CSS水面、Three.js読込失敗（ローカル→CDN）→CSS額装、JSON取得失敗→焼き込みデータ、天気API失敗→時刻連動のみ</td><td>✅ 全経路実装済み</td></tr>
 <tr><td>NFR-2</td><td><strong>省電力</strong>: 雲の低解像度描画・フレーム間引き・非表示時停止・GPUコンテキスト解放</td><td>✅</td></tr>
-<tr><td>NFR-3</td><td><strong>モデル軽量化</strong>: テクスチャ512〜1K、ポリゴン20,000以下目安</td><td>✅ 運用ルールとして規定</td></tr>
-<tr><td>NFR-4</td><td><strong>アクセシビリティ</strong>: <code>prefers-reduced-motion</code> 尊重、aria-live/aria-label、タップ領域44px以上</td><td>✅ 方針あり（網羅検証は ux-review.md で扱う）</td></tr>
+<tr><td>NFR-3</td><td><strong>モデル軽量化</strong>: テクスチャ512〜1K、ポリゴン20,000以下目安</td><td>⚠️ 通常モデルは約1MB。Pearl Light BloomのみStage1 3.3MB／Stage4 4.5MB／Stage6 8.7MBで再圧縮候補。初回は遅延読込で回避済み</td></tr>
+<tr><td>NFR-4</td><td><strong>アクセシビリティ</strong>: <code>prefers-reduced-motion</code> 尊重、aria-live/aria-label、タップ領域44px以上</td><td>✅ 2026-07-22にモーダルのTab循環・フォーカス復帰・背景inertを共通化。実機読み上げ検証は継続</td></tr>
 <tr><td>NFR-5</td><td><strong>移行容易性</strong>: localStorage→AsyncStorage、ブリッジ→HealthKit/Health Connect、Three.js→expo-three を差し替えやすい構造</td><td>△ 方針はあるが app.js が単一巨大ファイル（architecture.md で扱う）</td></tr>
 <tr><td>NFR-6</td><td><strong>データ保全</strong>: 進行データはローカルのみ。端末変更・ブラウザデータ削除で消失</td><td>⚠️ クラウド保存は未実装（既知の検討事項）</td></tr>
 <tr><td>NFR-7</td><td><strong>プライバシー</strong>: 位置情報は天気取得のみに使用、外部送信は Open-Meteo への座標のみ</td><td>✅ ただし明文化されたポリシーはない</td></tr>

@@ -43,9 +43,9 @@
 <pre><code>┌────────────────────────────────────────────────────────────┐
 │ index.html（画面骨格） + styles.css（ダークギャラリートークン）│
 ├────────────────────────────────────────────────────────────┤
-│                    app.js（統合ハブ・約3,900行）              │
+│                    app.js（統合ハブ・約4,742行）              │
 │  状態管理 / ビュー描画 / 歩数→成長 / 額装フロー / 3Dシーン構築 │
-│  デモ調整パネル / 画像保存 / SW登録                           │
+│  デモ調整パネル / 鑑賞モード / SW登録                         │
 ├──────────┬──────────┬───────────┬──────────┬───────────────┤
 │ sky-     │ water-   │ plant-    │ weather  │ ambient-      │
 │ background│ surface  │ effects   │ .js      │ sound.js      │
@@ -65,14 +65,21 @@
 <div class="table-wrap"><table>
 <thead><tr><th>ファイル</th><th>行数</th><th>役割</th><th>主要export</th><th>特記</th></tr></thead>
 <tbody>
-<tr><td>app.js</td><td>3,915</td><td>統合ハブ（下記 §4）</td><td>なし（エントリポイント）</td><td><strong>肥大化が最大の技術的負債</strong>（§8）</td></tr>
-<tr><td>sky-background.js</td><td>708</td><td>空＋湖のGLSL背景。時刻8点補間×季節×天気。FXレイヤー（花火・蛍・流れ星）</td><td>mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress ほか</td><td>低解像度雲・フレーム間引き・非表示停止の省電力設計（NFR-2）</td></tr>
+<tr><td>app.js</td><td>4,742</td><td>統合ハブ（下記 §4）</td><td>なし（エントリポイント）</td><td><strong>肥大化が最大の技術的負債</strong>（§8）</td></tr>
+<tr><td>core/progress.js</td><td>51</td><td>成長段階・歩数換算・履歴整理の純粋ロジック</td><td>getStage, applyStepsToProgress, trimStepHistory ほか</td><td>2026-07-21に最初の分割として追加。<code>node:test</code> で検証</td></tr>
+<tr><td>storage/progress-store.js</td><td>33</td><td>進行データの読込・保存・スキーマ移行</td><td>loadProgressState, saveProgressState, migrateProgressState</td><td>旧形式・壊れたJSON・将来版を自動テスト</td></tr>
+<tr><td>ui/modal-controller.js</td><td>87</td><td>モーダル共通のフォーカス・背景操作制御</td><td>createModalController</td><td>Tab循環、フォーカス復帰、背景inert、スクロール停止</td></tr>
+<tr><td>views/settings-view.js</td><td>51</td><td>設定画面の描画とイベント結線</td><td>renderSettingsView, bindSettingsView</td><td>実処理をコールバック注入し、DOM表示を単体テスト</td></tr>
+<tr><td>views/collection-view.js</td><td>142</td><td>コレクション一覧・空状態・図鑑・一覧操作</td><td>renderCollectionView, renderCodexView, bindCollectionView</td><td>3D生成はapp.jsに残し、マークアップ関数を注入</td></tr>
+<tr><td>views/home-status-view.js</td><td>88</td><td>ホーム進捗ライン・完成プレート・関連操作</td><td>renderHomeProgressView, renderCompletionPlaqueView, bindHomeStatusView</td><td>成長計算と額装遷移はapp.jsに残す</td></tr>
+<tr><td>sky-background.js</td><td>960</td><td>空＋湖のGLSL背景。時刻8点補間×季節×天気。FXレイヤー（花火・蛍・流れ星）</td><td>mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress ほか</td><td>低解像度雲・フレーム間引き・非表示停止の省電力設計（NFR-2）</td></tr>
 <tr><td>water-surface.js</td><td>575</td><td>波動方程式シミュレーション水面（独立canvas版とThree.jsメッシュ版の2系統）</td><td>mountWaterSurface, observeWaterSurfaces, createThreeWater, setAmbientRain, rainBurst</td><td>RG16F ping-pong FBO。光の道は空の太陽位置と同期</td></tr>
-<tr><td>plant-effects.js</td><td>1,045</td><td>モチーフ別演出（揺れ・粒子・開花後の散り・雨の露）。頂点シェーダー注入</td><td>createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow</td><td>花びら色はGLBテクスチャの実画素から採取</td></tr>
+<tr><td>plant-effects.js</td><td>1,157</td><td>モチーフ別演出（揺れ・粒子・開花後の散り・雨の露）。頂点シェーダー注入</td><td>createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow</td><td>花びら色はGLBテクスチャの実画素から採取</td></tr>
 <tr><td>weather.js</td><td>105</td><td>Open-Meteo→表現パラメータ変換。30分キャッシュ</td><td>initWeatherSync, WEATHER_PRESETS</td><td>位置情報拒否時は東京固定</td></tr>
-<tr><td>ambient-sound.js</td><td>126</td><td>WebAudio合成音（雨・波紋・雷鳴）</td><td>setSoundEnabled, setRainSoundLevel, playRipplePlop</td><td>音声ファイル不使用。オフ時はAudioContext自体を作らない</td></tr>
-<tr><td>sw.js</td><td>71</td><td>アプリシェルキャッシュ</td><td>—</td><td><code>.json</code> はネットワーク優先（鉄則6）</td></tr>
+<tr><td>ambient-sound.js</td><td>290</td><td>WebAudio合成音（雨・波紋・雷鳴・風・渡り鳥）</td><td>setSoundEnabled, setRainSoundLevel, playRipplePlop ほか</td><td>音声ファイル不使用。オフ時はAudioContext自体を作らない</td></tr>
+<tr><td>sw.js</td><td>102</td><td>アプリシェル＋容量制御付きGLBランタイムキャッシュ</td><td>—</td><td><code>.json</code> はネットワーク優先（鉄則6）、GLBは最大18件</td></tr>
 <tr><td>scripts/sync-models.mjs</td><td>—</td><td>GLB差し替え＋fallback同期＋版数一括更新</td><td>—</td><td>運用の要（§7）</td></tr>
+<tr><td>scripts/check-runtime-performance.mjs</td><td>114</td><td>初回転送量・GLB要求数・JS例外・メモリの計測</td><td>—</td><td>初回6MB以下・GLB 6件以下を回帰条件にする</td></tr>
 <tr><td>docs/build-html.mjs</td><td>—</td><td>Markdown→HTML資料ビルダー</td><td>—</td><td>自前パーサ</td></tr>
 </tbody></table></div>
 <h2 id="4.-app.js-%E3%81%AE%E5%86%85%E9%83%A8%E6%A7%8B%E9%80%A0%EF%BC%88as-is%EF%BC%89">4. app.js の内部構造（as-is）</h2>
@@ -92,6 +99,7 @@
 <tr><td>3Dシーン構築</td><td>2761〜3915</td><td><code>loadThreeRuntime</code>、<code>createGalleryScene</code> / <code>createPlantScene</code>、額縁組み立て、反射・水面・真珠質マテリアル、アニメーションループ、GLB読込、フォールバック</td></tr>
 </tbody></table></div>
 <p><strong>描画モデル</strong>: <code>render()</code> が全ビューの renderXxx を呼び、<code>is-active</code> の切替とinnerHTML再構築で更新する。3Dシーンだけは <code>container.__artariumScene</code> とトークン（<code>isCurrentModelRender</code>）で管理し、再描画時に持続canvas（空・FX・水面）を除いて破棄・再構築する（CLAUDE.md 鉄則5の背景）。</p>
+<p>種選択一覧のStage1 GLBは <code>IntersectionObserver</code> で画面付近だけ遅延読込する。2026-07-22の390×844計測では、初回転送量を11.48MBから4.61MB、GLB要求を9件から5件へ削減した。</p>
 <h2 id="5.-%E3%83%87%E3%83%BC%E3%82%BF%E3%83%95%E3%83%AD%E3%83%BC">5. データフロー</h2>
 <h3 id="5.1-%E6%AD%A9%E6%95%B0-%E2%86%92-%E6%88%90%E9%95%B7-%E2%86%92-%E4%BF%9D%E5%AD%98-%E2%86%92-%E8%A1%A8%E7%A4%BA%EF%BC%88%E3%82%B3%E3%82%A2%E3%83%AB%E3%83%BC%E3%83%97%EF%BC%89">5.1 歩数 → 成長 → 保存 → 表示（コアループ）</h3>
 <pre><code>[歩数ソース]                       [変換]                [永続化]
@@ -167,8 +175,8 @@ getSceneModelSettings(stage, plantId) → シーン構築へ</code></pre>
 <div class="table-wrap"><table>
 <thead><tr><th>#</th><th>課題</th><th>提案</th></tr></thead>
 <tbody>
-<tr><td>A-4</td><td><strong>テスト不在</strong>: 成長計算・日付リセット・端数繰越などの純ロジックにも自動テストがない。現状の検証はスクリーンショット目視と scratchpad のスクリプト</td><td>core/growth.js 切り出しと同時に <code>node --test</code> で単体テスト追加（ビルド不要のまま導入できる）。特に「日付跨ぎ」「端数繰越」「ステージ境界」「21日履歴の刈り込み」</td></tr>
-<tr><td>A-5</td><td><strong>localStorage 直書きの散在</strong>: 読み書きが11キーに分散</td><td>storage抽象（上記②）に集約。AsyncStorage移行（NFR-5）の必須前提</td></tr>
+<tr><td>A-4</td><td><strong>自動テスト不足</strong> → <strong>一部対応（2026-07-21）</strong>: <code>core/progress.js</code> と <code>tests/progress.test.mjs</code> を追加し、端数繰越・ステージ境界・完成上限・21日履歴を検証。日付跨ぎ・保存移行・画面遷移は引き続き追加が必要</td><td>次はstorage層の分離と同時に、保存移行・日付リセットを <code>node:test</code> へ追加する</td></tr>
+<tr><td>A-5</td><td><strong>localStorage 直書きの散在</strong> → <strong>進行データは対応（2026-07-22）</strong>: <code>storage/progress-store.js</code> へ読込・保存・migrationを分離し、<code>__schemaVersion: 1</code> を自動付与。モデル調整設定は鉄則を守るため現状維持</td><td>ネイティブ移行時は同じ関数境界のstorage引数をAsyncStorageアダプターへ差し替える</td></tr>
 <tr><td>A-6</td><td><strong>fallbackPlants の二重管理</strong>: plants.json とapp.js内配列の重複。sync-models.mjs が同期するが、手編集すると乖離しうる</td><td>当面は「plants.json を手で編集したら必ず sync-models.mjs を通す」を運用ルール化。分割後は fetch失敗時のみ動的importする別ファイルへ</td></tr>
 </tbody></table></div>
 <h3 id="8.3-%E5%B0%86%E6%9D%A5%EF%BC%88%E3%82%A2%E3%83%97%E3%83%AA%E5%8C%96%E4%BB%A5%E9%99%8D%EF%BC%89">8.3 将来（アプリ化以降）</h3>

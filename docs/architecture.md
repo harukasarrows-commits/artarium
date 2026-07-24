@@ -27,9 +27,9 @@
 ┌────────────────────────────────────────────────────────────┐
 │ index.html（画面骨格） + styles.css（ダークギャラリートークン）│
 ├────────────────────────────────────────────────────────────┤
-│                    app.js（統合ハブ・約3,900行）              │
+│                    app.js（統合ハブ・約4,742行）              │
 │  状態管理 / ビュー描画 / 歩数→成長 / 額装フロー / 3Dシーン構築 │
-│  デモ調整パネル / 画像保存 / SW登録                           │
+│  デモ調整パネル / 鑑賞モード / SW登録                         │
 ├──────────┬──────────┬───────────┬──────────┬───────────────┤
 │ sky-     │ water-   │ plant-    │ weather  │ ambient-      │
 │ background│ surface  │ effects   │ .js      │ sound.js      │
@@ -51,14 +51,21 @@
 
 | ファイル | 行数 | 役割 | 主要export | 特記 |
 |---|---:|---|---|---|
-| app.js | 3,915 | 統合ハブ（下記 §4） | なし（エントリポイント） | **肥大化が最大の技術的負債**（§8） |
-| sky-background.js | 708 | 空＋湖のGLSL背景。時刻8点補間×季節×天気。FXレイヤー（花火・蛍・流れ星） | mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress ほか | 低解像度雲・フレーム間引き・非表示停止の省電力設計（NFR-2） |
+| app.js | 4,742 | 統合ハブ（下記 §4） | なし（エントリポイント） | **肥大化が最大の技術的負債**（§8） |
+| core/progress.js | 51 | 成長段階・歩数換算・履歴整理の純粋ロジック | getStage, applyStepsToProgress, trimStepHistory ほか | 2026-07-21に最初の分割として追加。`node:test` で検証 |
+| storage/progress-store.js | 33 | 進行データの読込・保存・スキーマ移行 | loadProgressState, saveProgressState, migrateProgressState | 旧形式・壊れたJSON・将来版を自動テスト |
+| ui/modal-controller.js | 87 | モーダル共通のフォーカス・背景操作制御 | createModalController | Tab循環、フォーカス復帰、背景inert、スクロール停止 |
+| views/settings-view.js | 51 | 設定画面の描画とイベント結線 | renderSettingsView, bindSettingsView | 実処理をコールバック注入し、DOM表示を単体テスト |
+| views/collection-view.js | 142 | コレクション一覧・空状態・図鑑・一覧操作 | renderCollectionView, renderCodexView, bindCollectionView | 3D生成はapp.jsに残し、マークアップ関数を注入 |
+| views/home-status-view.js | 88 | ホーム進捗ライン・完成プレート・関連操作 | renderHomeProgressView, renderCompletionPlaqueView, bindHomeStatusView | 成長計算と額装遷移はapp.jsに残す |
+| sky-background.js | 960 | 空＋湖のGLSL背景。時刻8点補間×季節×天気。FXレイヤー（花火・蛍・流れ星） | mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress ほか | 低解像度雲・フレーム間引き・非表示停止の省電力設計（NFR-2） |
 | water-surface.js | 575 | 波動方程式シミュレーション水面（独立canvas版とThree.jsメッシュ版の2系統） | mountWaterSurface, observeWaterSurfaces, createThreeWater, setAmbientRain, rainBurst | RG16F ping-pong FBO。光の道は空の太陽位置と同期 |
-| plant-effects.js | 1,045 | モチーフ別演出（揺れ・粒子・開花後の散り・雨の露）。頂点シェーダー注入 | createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow | 花びら色はGLBテクスチャの実画素から採取 |
+| plant-effects.js | 1,157 | モチーフ別演出（揺れ・粒子・開花後の散り・雨の露）。頂点シェーダー注入 | createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow | 花びら色はGLBテクスチャの実画素から採取 |
 | weather.js | 105 | Open-Meteo→表現パラメータ変換。30分キャッシュ | initWeatherSync, WEATHER_PRESETS | 位置情報拒否時は東京固定 |
-| ambient-sound.js | 126 | WebAudio合成音（雨・波紋・雷鳴） | setSoundEnabled, setRainSoundLevel, playRipplePlop | 音声ファイル不使用。オフ時はAudioContext自体を作らない |
-| sw.js | 71 | アプリシェルキャッシュ | — | `.json` はネットワーク優先（鉄則6） |
+| ambient-sound.js | 290 | WebAudio合成音（雨・波紋・雷鳴・風・渡り鳥） | setSoundEnabled, setRainSoundLevel, playRipplePlop ほか | 音声ファイル不使用。オフ時はAudioContext自体を作らない |
+| sw.js | 102 | アプリシェル＋容量制御付きGLBランタイムキャッシュ | — | `.json` はネットワーク優先（鉄則6）、GLBは最大18件 |
 | scripts/sync-models.mjs | — | GLB差し替え＋fallback同期＋版数一括更新 | — | 運用の要（§7） |
+| scripts/check-runtime-performance.mjs | 114 | 初回転送量・GLB要求数・JS例外・メモリの計測 | — | 初回6MB以下・GLB 6件以下を回帰条件にする |
 | docs/build-html.mjs | — | Markdown→HTML資料ビルダー | — | 自前パーサ |
 
 ## 4. app.js の内部構造（as-is）
@@ -79,6 +86,8 @@
 | 3Dシーン構築 | 2761〜3915 | `loadThreeRuntime`、`createGalleryScene` / `createPlantScene`、額縁組み立て、反射・水面・真珠質マテリアル、アニメーションループ、GLB読込、フォールバック |
 
 **描画モデル**: `render()` が全ビューの renderXxx を呼び、`is-active` の切替とinnerHTML再構築で更新する。3Dシーンだけは `container.__artariumScene` とトークン（`isCurrentModelRender`）で管理し、再描画時に持続canvas（空・FX・水面）を除いて破棄・再構築する（CLAUDE.md 鉄則5の背景）。
+
+種選択一覧のStage1 GLBは `IntersectionObserver` で画面付近だけ遅延読込する。2026-07-22の390×844計測では、初回転送量を11.48MBから4.61MB、GLB要求を9件から5件へ削減した。
 
 ## 5. データフロー
 
@@ -179,8 +188,8 @@ app.js（エントリ・結線のみに縮小）
 
 | # | 課題 | 提案 |
 |---|---|---|
-| A-4 | **テスト不在**: 成長計算・日付リセット・端数繰越などの純ロジックにも自動テストがない。現状の検証はスクリーンショット目視と scratchpad のスクリプト | core/growth.js 切り出しと同時に `node --test` で単体テスト追加（ビルド不要のまま導入できる）。特に「日付跨ぎ」「端数繰越」「ステージ境界」「21日履歴の刈り込み」 |
-| A-5 | **localStorage 直書きの散在**: 読み書きが11キーに分散 | storage抽象（上記②）に集約。AsyncStorage移行（NFR-5）の必須前提 |
+| A-4 | **自動テスト不足** → **一部対応（2026-07-21）**: `core/progress.js` と `tests/progress.test.mjs` を追加し、端数繰越・ステージ境界・完成上限・21日履歴を検証。日付跨ぎ・保存移行・画面遷移は引き続き追加が必要 | 次はstorage層の分離と同時に、保存移行・日付リセットを `node:test` へ追加する |
+| A-5 | **localStorage 直書きの散在** → **進行データは対応（2026-07-22）**: `storage/progress-store.js` へ読込・保存・migrationを分離し、`__schemaVersion: 1` を自動付与。モデル調整設定は鉄則を守るため現状維持 | ネイティブ移行時は同じ関数境界のstorage引数をAsyncStorageアダプターへ差し替える |
 | A-6 | **fallbackPlants の二重管理**: plants.json とapp.js内配列の重複。sync-models.mjs が同期するが、手編集すると乖離しうる | 当面は「plants.json を手で編集したら必ず sync-models.mjs を通す」を運用ルール化。分割後は fetch失敗時のみ動的importする別ファイルへ |
 
 ### 8.3 将来（アプリ化以降）
