@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-80";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-80";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-80";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-80";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-80";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-87";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-87";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-87";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-87";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-87";
 import {
   STAGE_THRESHOLDS,
   COMPLETION_THRESHOLD,
@@ -12,19 +12,19 @@ import {
   getNextThreshold,
   isPlantComplete,
   trimStepHistory
-} from "./core/progress.js?v=20260710-80";
+} from "./core/progress.js?v=20260710-87";
 import {
   loadProgressState,
   saveProgressState
-} from "./storage/progress-store.js?v=20260710-80";
-import { createModalController } from "./ui/modal-controller.js?v=20260710-80";
-import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-80";
-import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-80";
+} from "./storage/progress-store.js?v=20260710-87";
+import { createModalController } from "./ui/modal-controller.js?v=20260710-87";
+import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-87";
+import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-87";
 import {
   bindHomeStatusView,
   renderCompletionPlaqueView,
   renderHomeProgressView
-} from "./views/home-status-view.js?v=20260710-80";
+} from "./views/home-status-view.js?v=20260710-87";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -88,7 +88,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-80";
+const ASSET_VERSION = "20260710-87";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const modalController = createModalController(document);
 const MODEL_STAGE_COUNT = 6;
@@ -127,6 +127,8 @@ const DEFAULT_MODEL_SETTINGS = {
   soilRotY: 0,
   soilRotZ: 0,
   reflectionOpacity: 0.2,
+  shadowOpacity: 1,
+  shadowLength: 1,
   reflectionY: 0,
   reflectionZ: 0,
   reflectionSquash: 0.2,
@@ -929,7 +931,7 @@ function saveDemoModelSettings() {
 // デモの調整値を焼き込み（data/model-settings.json）と同じ形でダウンロードする。
 // 手動調整の結果をスクショや転記なしで受け渡すための開発用機能（?demo=1 のみ）。
 // 書き出すのは焼き込み対象のキーだけ（鉄則1: 意図したキー以外を固定化しない）
-const BAKED_EXPORT_KEYS = ["plantScale", "plantX", "plantY", "plantRotX", "plantRotY", "plantRotZ", "soilScale", "waterOpacity", "reflectionOpacity"];
+const BAKED_EXPORT_KEYS = ["plantScale", "plantX", "plantY", "plantRotX", "plantRotY", "plantRotZ", "soilScale", "waterOpacity", "reflectionOpacity", "shadowOpacity", "shadowLength"];
 
 function exportDemoModelSettings() {
   const plants = {};
@@ -2660,7 +2662,9 @@ function renderDemoModelSettings() {
     { key: "reflectionY", label: "反射 高さ", min: -1.5, max: 1.5, step: 0.01 },
     { key: "reflectionZ", label: "反射 奥行き", min: -2, max: 2, step: 0.02 },
     { key: "reflectionSquash", label: "反射 潰れ具合", min: 0.03, max: 0.8, step: 0.01 },
-    { key: "reflectionScale", label: "反射 サイズ", min: 0.2, max: 2, step: 0.01 }
+    { key: "reflectionScale", label: "反射 サイズ", min: 0.2, max: 2, step: 0.01 },
+    { key: "shadowOpacity", label: "影 濃さ", min: 0, max: 2, step: 0.02 },
+    { key: "shadowLength", label: "影 長さ", min: 0.2, max: 2, step: 0.02 }
   ];
   const selectedPlant = getSelectedPlant();
   const selectedProgress = selectedPlant ? state.progress[selectedPlant.id] : null;
@@ -4078,6 +4082,10 @@ async function createPlantScene(container, runtime, token) {
   const keyLight = new THREE.DirectionalLight(sunLighting.color, 2.4);
   keyLight.position.copy(sunLighting.position);
   scene.add(keyLight);
+  // 土の土台の接地影はシルエット方式（createGroundShadowGroup）で落とす。
+  // シャドウマッピングも試したが、このシーンはカメラが地面すれすれで
+  // 地面が強くつぶれて見えるため、実影はほぼ画面に映らなかった（2026-07-24）
+  const castsGroundShadow = environmentType !== "water" && !isSeedPreview;
   addArtworkMaterialLights(THREE, scene, plantDefinition);
 
   const plant = normalizeModel(THREE, plantModel.scene, modelSettings.plantScale * growthScale);
@@ -4140,6 +4148,9 @@ async function createPlantScene(container, runtime, token) {
     yaw: modelSettings.plantRotY,
     roll: modelSettings.plantRotZ
   });
+  if (castsGroundShadow) {
+    attachSoilContactShadow(THREE, renderer, plantGroup, homeSoilGroup, Number(container.dataset.stage) || 1, modelSettings);
+  }
   artworkGroup.add(plantGroup);
   if (isSeedPreview && !isSeedThumbnail) {
     mountSeedSpecimenMotion(container, token, renderer, scene, camera, plantGroup, {
@@ -4272,6 +4283,102 @@ function createTunedModelGroup(THREE, object, transform) {
   pitchGroup.add(yawGroup);
   yawGroup.add(object);
   return root;
+}
+
+// 土の土台の接地影: 水面の反射と同じ発想で、植物の黒いシルエットを
+// 根元を支点に手前の斜面へ寝かせて落とす（2026-07-24 ユーザー要望）。
+// 立てた鏡映だと不透明な土の中に埋まるため、寝かせた影として描く
+// 土の接地影（デカール方式。2026-07-24）: 植物を真上から見た黒いシルエットを
+// 一度テクスチャに描き、土の山の表面そのものに貼り付ける。
+// 平面を斜面に寝かせる方式は、起伏で土に埋まる／視線上で本体より手前に出て
+// 植物に被る問題が構造的に避けられなかったため置き換えた。
+// - 土の表面に密着するので埋まらない
+// - 土は常に植物より奥に描かれるので本体に被らない
+function attachSoilContactShadow(THREE, renderer, plantGroup, soilGroup, stage, modelSettings = {}) {
+  if (!soilGroup) return;
+  // 影を貼る先: 土グループの中で最も頂点数の多いメッシュ（＝山本体）
+  let mound = null;
+  let maxCount = 0;
+  soilGroup.updateMatrixWorld(true);
+  soilGroup.traverse((child) => {
+    const count = child.isMesh ? child.geometry?.attributes?.position?.count || 0 : 0;
+    if (count > maxCount) {
+      maxCount = count;
+      mound = child;
+    }
+  });
+  if (!mound) return;
+
+  // 1. 真上からの平行投影でシルエットを小さなテクスチャへ描く（平行投影なので拡大歪みなし）
+  const box = new THREE.Box3().setFromObject(plantGroup);
+  const spread = Math.max(0.2, modelSettings.shadowLength ?? 1);
+  const cx = (box.min.x + box.max.x) / 2;
+  const cz = (box.min.z + box.max.z) / 2;
+  const w = Math.max(0.5, (box.max.x - box.min.x) * 1.15) * spread;
+  const d = Math.max(0.5, (box.max.z - box.min.z) * 1.15) * spread;
+  const silhouette = plantGroup.clone(true);
+  silhouette.traverse((child) => {
+    if (!child.isMesh) return;
+    const makeBlack = () => new THREE.MeshBasicMaterial({ color: 0x000000 });
+    child.material = Array.isArray(child.material) ? child.material.map(makeBlack) : makeBlack();
+  });
+  const rtScene = new THREE.Scene();
+  rtScene.add(silhouette);
+  const camera = new THREE.OrthographicCamera(-w / 2, w / 2, d / 2, -d / 2, 0.1, 40);
+  camera.position.set(cx, box.max.y + 6, cz);
+  camera.up.set(0, 0, -1);
+  camera.lookAt(cx, 0, cz);
+  const renderTarget = new THREE.WebGLRenderTarget(128, 128);
+  const prevColor = renderer.getClearColor(new THREE.Color());
+  const prevAlpha = renderer.getClearAlpha();
+  renderer.setRenderTarget(renderTarget);
+  renderer.setClearColor(0x000000, 0);
+  renderer.clear();
+  renderer.render(rtScene, camera);
+  renderer.setRenderTarget(null);
+  renderer.setClearColor(prevColor, prevAlpha);
+
+  // 2. 山メッシュの複製に「真上から見た位置＝UV」を与えて重ねる（土の起伏に完全に沿う）。
+  // 真下に貼ると植物本体に隠れて見えないため、貼り付け位置を手前の斜面へ
+  // 半歩ずらし、午後の日差しが手前に落とす影のように見せる。
+  // 太陽連動（2026-07-24）: シーンを描く時点の太陽で、
+  //   - 左右: 太陽と反対側へ影がずれる（朝夕で向きが変わる）
+  //   - 長さ: 太陽が低いほど長く伸びる（朝夕は長く・昼は短い）
+  //   - 濃さ: 太陽が高いほど濃く、曇り・雨は淡く、夜は月明かりの淡い影
+  const { sunPos } = getSkySunState();
+  const sunSide = (Number(sunPos?.[0]) || 0.5) - 0.5;
+  const sunHeight = Math.max(0, Math.min(1, Number(sunPos?.[1]) || 0));
+  const shadowCx = cx - sunSide * w * 0.8;
+  const dShadow = d * (1.55 - sunHeight * 0.85);
+  const shadowCz = cz + dShadow * 0.55;
+  const geometry = mound.geometry.clone();
+  const positions = geometry.attributes.position;
+  const uv = new Float32Array(positions.count * 2);
+  const vertex = new THREE.Vector3();
+  for (let i = 0; i < positions.count; i++) {
+    vertex.fromBufferAttribute(positions, i).applyMatrix4(mound.matrixWorld);
+    uv[i * 2] = (vertex.x - shadowCx) / w + 0.5;
+    uv[i * 2 + 1] = 0.5 - (vertex.z - shadowCz) / dShadow;
+  }
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+  const weather = (DEMO_MODE && debugWeatherKey && WEATHER_PRESETS[debugWeatherKey]) || lastRealWeather || { cloud: 0.28, rain: 0 };
+  const skyDim = 1 - Math.min(0.75, (weather.cloud || 0) * 0.45 + (weather.rain || 0) * 0.5 + (weather.snow || 0) * 0.35);
+  const daylight = 0.45 + 0.55 * sunHeight; // 夜(太陽高度0)でも月明かり分は残す
+  const strength = Math.min(0.55, (stage >= 5 ? 0.34 : stage >= 3 ? 0.3 : 0.24) * daylight * skyDim * (modelSettings.shadowOpacity ?? 1));
+  const overlay = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+    map: renderTarget.texture,
+    transparent: true,
+    opacity: strength,
+    depthWrite: false,
+    // 山本体と同一面のためポリゴンオフセットでZファイトを防ぐ
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2
+  }));
+  overlay.position.copy(mound.position);
+  overlay.rotation.copy(mound.rotation);
+  overlay.scale.copy(mound.scale);
+  mound.parent.add(overlay);
 }
 
 function prepareReflectionModel(THREE, object, stage, modelSettings) {

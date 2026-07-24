@@ -1,29 +1,29 @@
-const CACHE_NAME = "artarium-shell-v350";
+const CACHE_NAME = "artarium-shell-v357";
 const MODEL_CACHE_NAME = `${CACHE_NAME}-models`;
 const MODEL_CACHE_LIMIT = 18;
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=20260710-80",
-  "./app.js?v=20260710-80",
-  "./water-surface.js?v=20260710-80",
-  "./sky-background.js?v=20260710-80",
-  "./weather.js?v=20260710-80",
-  "./ambient-sound.js?v=20260710-80",
-  "./plant-effects.js?v=20260710-80",
-  "./core/progress.js?v=20260710-80",
-  "./storage/progress-store.js?v=20260710-80",
-  "./ui/modal-controller.js?v=20260710-80",
-  "./views/settings-view.js?v=20260710-80",
-  "./views/collection-view.js?v=20260710-80",
-  "./views/home-status-view.js?v=20260710-80",
-  "./data/plants.json?v=20260710-80",
-  "./data/model-settings.json?v=20260710-80",
+  "./styles.css?v=20260710-87",
+  "./app.js?v=20260710-87",
+  "./water-surface.js?v=20260710-87",
+  "./sky-background.js?v=20260710-87",
+  "./weather.js?v=20260710-87",
+  "./ambient-sound.js?v=20260710-87",
+  "./plant-effects.js?v=20260710-87",
+  "./core/progress.js?v=20260710-87",
+  "./storage/progress-store.js?v=20260710-87",
+  "./ui/modal-controller.js?v=20260710-87",
+  "./views/settings-view.js?v=20260710-87",
+  "./views/collection-view.js?v=20260710-87",
+  "./views/home-status-view.js?v=20260710-87",
+  "./data/plants.json?v=20260710-87",
+  "./data/model-settings.json?v=20260710-87",
   "./vendor/three.module.js",
   "./vendor/GLTFLoader.js",
   "./vendor/BufferGeometryUtils.js",
-  "./manifest.webmanifest?v=20260710-80",
-  "./icon.svg?v=20260710-80"
+  "./manifest.webmanifest?v=20260710-87",
+  "./icon.svg?v=20260710-87"
 ];
 
 self.addEventListener("install", (event) => {
