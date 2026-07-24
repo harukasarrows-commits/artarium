@@ -49,6 +49,11 @@ body {
   background: var(--canvas);
 }
 
+body.has-open-modal {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 button,
 select {
   font: inherit;
@@ -212,12 +217,50 @@ h3 {
   opacity: 0.42;
 }
 
+/* 押下の手応え: 押した瞬間（離した時ではなく）にわずかに沈む。戻りはひと呼吸ゆっくり */
+.tab-button,
+.seed-choice,
+.choice-option,
+.frame-choice-close {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 180ms ease;
+}
+
+.tab-button:active,
+.choice-option:active {
+  transform: scale(0.96);
+  transition-duration: 70ms;
+}
+
+.seed-choice:active {
+  transform: scale(0.97);
+  transition-duration: 70ms;
+}
+
+.frame-choice-close:active {
+  transform: scale(0.9);
+  transition-duration: 70ms;
+}
+
+.shadow-box:active {
+  transform: scale(0.98);
+  filter: brightness(0.95);
+  transition-duration: 70ms;
+}
+
 .view {
   display: none;
 }
 
 .view.is-active {
   display: block;
+  animation: view-enter 200ms ease-out;
+}
+
+@keyframes view-enter {
+  from {
+    opacity: 0;
+  }
 }
 
 .home-grid,
@@ -1232,6 +1275,61 @@ body.is-viewing-mode {
   display: none;
 }
 
+/* 開閉の呼吸: 作品が下からわずかに浮かんで現れ、閉じるときは同じ道を戻る（入りと出の対称）。
+   is-opening は「開いた瞬間」だけ付く（開いたままの再描画では動かさない） */
+.gallery-focus-modal.is-opening {
+  animation: focus-veil-in 240ms ease-out;
+}
+
+.gallery-focus-modal.is-opening .gallery-focus-panel {
+  animation: focus-panel-in 300ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.gallery-focus-modal.is-closing {
+  animation: focus-veil-out 200ms ease-in forwards;
+  pointer-events: none;
+}
+
+.gallery-focus-modal.is-closing .gallery-focus-panel {
+  animation: focus-panel-out 200ms cubic-bezier(0.7, 0, 0.8, 0.1) forwards;
+}
+
+@keyframes focus-veil-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes focus-veil-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes focus-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.965);
+  }
+}
+
+@keyframes focus-panel-out {
+  to {
+    opacity: 0;
+    transform: translateY(14px) scale(0.965);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-focus-modal.is-opening .gallery-focus-panel {
+    animation: focus-veil-in 160ms ease;
+  }
+
+  .gallery-focus-modal.is-closing .gallery-focus-panel {
+    animation: focus-veil-out 160ms ease forwards;
+  }
+}
+
 .gallery-focus-panel {
   position: relative;
   display: grid;
@@ -1986,11 +2084,42 @@ body::after {
   place-items: end center;
   padding: 18px;
   background: rgba(20, 20, 19, 0.4);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(18px); /* 全画面の幕は18pxに統一（作品詳細と同じ厚み。2026-07-24） */
 }
 
 .frame-choice-modal[hidden] {
   display: none;
+}
+
+/* 開閉の呼吸: 作品詳細モーダルと同じ「入りと出の対称」を額縁選択・週間振り返り・
+   名前入力にも展開（2026-07-24）。表示のたびに入場、is-closing で退場 */
+.frame-choice-modal {
+  animation: focus-veil-in 240ms ease-out;
+}
+
+.frame-choice-modal .frame-choice-panel {
+  animation: focus-panel-in 300ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.frame-choice-modal.is-closing {
+  animation: focus-veil-out 200ms ease-in forwards;
+  pointer-events: none;
+}
+
+.frame-choice-modal.is-closing .frame-choice-panel {
+  animation: focus-panel-out 200ms cubic-bezier(0.7, 0, 0.8, 0.1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame-choice-modal,
+  .frame-choice-modal .frame-choice-panel {
+    animation: focus-veil-in 160ms ease;
+  }
+
+  .frame-choice-modal.is-closing,
+  .frame-choice-modal.is-closing .frame-choice-panel {
+    animation: focus-veil-out 160ms ease forwards;
+  }
 }
 
 .frame-choice-panel {
@@ -2238,7 +2367,7 @@ body::after {
   border-left: 1px solid rgba(194, 164, 94, 0.72);
   color: var(--ink);
   background: linear-gradient(90deg, rgba(12, 18, 14, 0.72), transparent);
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(8px); /* チップ層は8pxに統一（厚み階層 §12。2026-07-24） */
   pointer-events: none;
   transition: opacity 220ms ease, transform 300ms ease;
 }
@@ -3118,8 +3247,9 @@ body.is-demo-mode .demo-control {
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
     inset 0 -1px 0 rgba(255, 255, 255, 0.16),
     0 8px 26px rgba(17, 24, 19, 0.16);
-  -webkit-backdrop-filter: blur(18px) saturate(1.35);
-  backdrop-filter: blur(18px) saturate(1.35);
+  /* 小さなボタンはチップ層の8pxに（大きい面ほど厚くの階層 §12。2026-07-24） */
+  -webkit-backdrop-filter: blur(8px) saturate(1.35);
+  backdrop-filter: blur(8px) saturate(1.35);
 }
 
 .daily-hero.has-growth-progress .viewing-mode-button::before {
@@ -3358,7 +3488,8 @@ body.is-demo-mode .demo-control {
   margin: 6px 0 0;
   font-size: 0.68rem;
   letter-spacing: 0.12em;
-  color: rgba(237, 234, 224, 0.55);
+  /* シーン(動く背景)の上の淡文字は少し強く出す（ビブランシー §12。2026-07-24） */
+  color: rgba(237, 234, 224, 0.78);
   animation: tap-hint-in 0.8s ease 0.6s backwards;
   transition: opacity 0.7s ease;
 }
@@ -4023,4 +4154,77 @@ body.is-demo-mode .demo-control {
     inset 0 0 0 1px rgba(120, 108, 84, 0.35),
     inset 0 0 0 2px rgba(216, 188, 120, 0.4);
   pointer-events: none;
+}
+
+/* アクセシビリティ信号への追従（apple-designスキル §14。2026-07-24）
+   reduced-motion は各所で対応済み。残り2信号に応える:
+   - 透過を減らす設定: すりガラスをやめ、面をほぼ不透明にする
+   - コントラストを上げる設定: ヘアラインを強い輪郭に引き上げる */
+@media (prefers-reduced-transparency: reduce) {
+  .tabbar,
+  .viewing-mode-button,
+  .viewing-exit-hint,
+  .completion-plaque,
+  .seed-specimen-label,
+  .seed-started-message,
+  .daily-progress-line[aria-expanded="true"],
+  .install-invite,
+  .tap-hint,
+  .seed-confirm-bar .secondary-action,
+  .plaque-reopen,
+  .next-artwork-button {
+    backdrop-filter: none;
+    background: #161d18;
+  }
+
+  .gallery-focus-modal,
+  .frame-choice-modal {
+    backdrop-filter: none;
+    background: rgba(8, 10, 8, 0.95);
+  }
+}
+
+@media (prefers-contrast: more) {
+  /* 境界線を持たない要素にも効くよう、レイアウトを崩さない内側輪郭で描く */
+  .tab-button,
+  .seed-choice,
+  .choice-option,
+  .primary-action,
+  .secondary-action,
+  .shadow-box,
+  .frame-choice-close,
+  .frame-choice-panel,
+  .gallery-focus-panel {
+    border-color: rgba(244, 241, 232, 0.55);
+    box-shadow: inset 0 0 0 1px rgba(244, 241, 232, 0.45);
+  }
+
+  .tabbar,
+  .completion-plaque,
+  .install-invite {
+    border-color: rgba(244, 241, 232, 0.4);
+    box-shadow: inset 0 0 0 1px rgba(244, 241, 232, 0.3);
+  }
+}
+
+/* スクロールエッジ（apple-designスキル §12。2026-07-24）:
+   浮いているタブバーと内容が重なる下端だけ、境界線でなく柔らかい暗がりで溶かす。
+   没入型のホームには掛けず、スクロールするコレクション・設定のみ */
+.scroll-edge-veil {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 96px;
+  z-index: 19; /* タブバー(20)のすぐ下 */
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(17, 24, 19, 0), rgba(17, 24, 19, 0.82));
+}
+
+@media (max-width: 900px) {
+  body[data-current-view="gallery"] .scroll-edge-veil,
+  body[data-current-view="settings"] .scroll-edge-veil {
+    display: block;
+  }
 }

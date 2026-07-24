@@ -2,8 +2,8 @@
 // 植物のNDC位置（app.jsのデモ計測フック）を読み、目標の高さ・接地位置に
 // 収束するまで __artariumTune.set() で調整を繰り返す。
 const PORT = 9333;
-const VERSION = process.env.ARTARIUM_V || "20260709-82";
-const APP_URL = `http://127.0.0.1:3025/?demo=1&v=${VERSION}`;
+const VERSION = process.env.ARTARIUM_V;
+const APP_URL = `http://127.0.0.1:3025/?demo=1${VERSION ? `&v=${encodeURIComponent(VERSION)}` : ""}`;
 const PLANTS = [
   "scream-bloom", "sunflower-bloom", "wave-crest-bloom", "aquatic-bloom",
   "renaissance-smile-bloom", "nocturne-sky-bloom", "golden-embrace-bloom",

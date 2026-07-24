@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Artarium">
     <title>Artarium - 名画の庭</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260710-51">
-    <link rel="icon" href="./icon.svg?v=20260710-51" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="./icon.svg?v=20260710-51">
-    <link rel="stylesheet" href="./styles.css?v=20260710-51">
+    <link rel="manifest" href="./manifest.webmanifest?v=20260710-80">
+    <link rel="icon" href="./icon.svg?v=20260710-80" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon.svg?v=20260710-80">
+    <link rel="stylesheet" href="./styles.css?v=20260710-80">
   </head>
   <body>
     <div class="app-shell">
@@ -87,7 +87,7 @@
               </div>
             </div>
             <section class="settings-group">
-              <p class="settings-label">歩数連携</p>
+              <p class="settings-label">歩数</p>
               <div class="settings-list">
                 <div class="settings-row">
                   <span>今日の歩数</span>
@@ -105,10 +105,6 @@
                   <span>歩数データを同期</span>
                   <strong>確認</strong>
                 </button>
-                <button class="settings-row" id="settings-weekly-recap-button" type="button">
-                  <span>今週の振り返り</span>
-                  <strong>表示</strong>
-                </button>
                 <button class="settings-row" id="settings-test-steps-button" type="button">
                   <span>開発用テスト加算</span>
                   <strong>100歩</strong>
@@ -117,12 +113,8 @@
               </div>
             </section>
             <section class="settings-group">
-              <p class="settings-label">Artariumについて</p>
+              <p class="settings-label">演出と音</p>
               <div class="settings-list">
-                <button class="settings-row" id="settings-author-button" type="button">
-                  <span>作者名</span>
-                  <strong id="settings-author-name">未設定</strong>
-                </button>
                 <button class="settings-row" id="settings-sound-button" type="button">
                   <span>環境音（波・雨・雷）</span>
                   <strong id="settings-sound-state">オフ</strong>
@@ -135,9 +127,31 @@
                   <span>テーマ</span>
                   <strong>黒と真鍮</strong>
                 </div>
+              </div>
+            </section>
+            <section class="settings-group">
+              <p class="settings-label">記録</p>
+              <div class="settings-list">
+                <button class="settings-row" id="settings-author-button" type="button">
+                  <span>作者名</span>
+                  <strong id="settings-author-name">未設定</strong>
+                </button>
+                <button class="settings-row" id="settings-weekly-recap-button" type="button">
+                  <span>今週の振り返り</span>
+                  <strong>表示</strong>
+                </button>
                 <div class="settings-row">
                   <span>植物データ</span>
                   <strong>JSON管理</strong>
+                </div>
+              </div>
+            </section>
+            <section class="settings-group">
+              <p class="settings-label">データ</p>
+              <div class="settings-list">
+                <div class="settings-row" role="status" aria-live="polite">
+                  <span>接続状態</span>
+                  <strong id="network-status-label">確認中</strong>
                 </div>
                 <button class="settings-row is-danger" id="settings-reset-button" type="button">
                   <span>進行を初期化</span>
@@ -149,6 +163,8 @@
         </section>
       </main>
     </div>
+
+    <div class="scroll-edge-veil" aria-hidden="true"></div>
 
     <div class="frame-choice-modal" id="frame-choice-modal" hidden>
       <div class="frame-choice-panel" role="dialog" aria-modal="true" aria-labelledby="frame-choice-title">
@@ -194,6 +210,6 @@
       </form>
     </div>
 
-    <script src="./app.js?v=20260710-51" type="module"></script>
+    <script src="./app.js?v=20260710-80" type="module"></script>
   </body>
 </html>

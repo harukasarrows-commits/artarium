@@ -1112,8 +1112,13 @@ export function createPlantEffects(THREE, plantDefinition, plantRoot, anchor = {
       plantRoot.rotation.x = Math.sin(t * 17.9 + seed) * 0.004 * config.tremble;
     }
     if (config.bob) {
-      const lift = Math.sin(t * 0.9 + seed) * 0.035 * config.bob;
-      const tilt = Math.sin(t * 0.7 + seed) * 0.01 * config.bob;
+      // 種(Stage1)は小さく水面に浮いているだけなので揺れ幅を大きく落とす。
+      // 成木と同じ±0.035では種が水面から出たり沈んだりして見え、
+      // 縦圧縮された映り込みが追従しているのも分からなくなる（2026-07-23）
+      // 成木側も±0.035は大きすぎるためユーザー指示で段階的に縮小（2026-07-23。0.65→0.45→0.35）
+      const bobDepth = stage === 1 ? 0.32 : 0.35;
+      const lift = Math.sin(t * 0.9 + seed) * 0.035 * config.bob * bobDepth;
+      const tilt = Math.sin(t * 0.7 + seed) * 0.01 * config.bob * (stage === 1 ? 0.6 : 1);
       plantRoot.position.y = baseY + lift;
       plantRoot.rotation.z = tilt;
       if (reflectionRoot) {

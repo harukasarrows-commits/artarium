@@ -1,13 +1,33 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-51";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-51";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-51";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-51";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-51";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-80";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-80";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-80";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-80";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-80";
+import {
+  STAGE_THRESHOLDS,
+  COMPLETION_THRESHOLD,
+  STEPS_PER_POINT,
+  applyStepsToProgress,
+  getStage,
+  getNextThreshold,
+  isPlantComplete,
+  trimStepHistory
+} from "./core/progress.js?v=20260710-80";
+import {
+  loadProgressState,
+  saveProgressState
+} from "./storage/progress-store.js?v=20260710-80";
+import { createModalController } from "./ui/modal-controller.js?v=20260710-80";
+import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-80";
+import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-80";
+import {
+  bindHomeStatusView,
+  renderCompletionPlaqueView,
+  renderHomeProgressView
+} from "./views/home-status-view.js?v=20260710-80";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
-
-const STAGE_THRESHOLDS = [0, 1000, 2000, 3000, 4000, 5000];
 
 // 図鑑: 各植物の元になった名画の解説（教養コンテンツ）
 const CODEX_NOTES = {
@@ -48,8 +68,6 @@ const CODEX_NOTES = {
     note: "暗闇の中、少女の耳元で一粒の真珠だけが光を集めます。フェルメールが愛した「一点の光」を、この植物は真珠色の球にたたえて育ちます。"
   }
 };
-const COMPLETION_THRESHOLD = 6000;
-const STEPS_PER_POINT = 10;
 const DAILY_STEP_GOAL = 8000; // 光の道の演出が最大になる1日の歩数
 const AMBIENT_SOUND_STORAGE_KEY = "artarium-ambient-sound";
 const STORAGE_KEY = "artarium-mvp-state";
@@ -62,13 +80,17 @@ const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const INSTALL_HINT_KEY = "artarium-install-hinted";
 const MOTION_AUTO_KEY = "artarium-motion-auto";
 const PLANT_EFFECTS_STORAGE_KEY = "artarium-plant-effects";
+// デモパネルで明示的に調整した値だけを覚えておく別枠（焼き込みより優先）。
+// 旧作からの自動保存値と違い、ユーザーの意図した操作のみが入るので起動時に勝たせてよい
+const TUNED_OVERRIDES_STORAGE_KEY = "artarium-tuned-overrides";
 
 function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-51";
+const ASSET_VERSION = "20260710-80";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
+const modalController = createModalController(document);
 const MODEL_STAGE_COUNT = 6;
 const MODEL_STAGE_KEYS = Object.freeze(
   Array.from({ length: MODEL_STAGE_COUNT }, (_, index) => String(index + 1))
@@ -104,7 +126,7 @@ const DEFAULT_MODEL_SETTINGS = {
   soilRotX: 0,
   soilRotY: 0,
   soilRotZ: 0,
-  reflectionOpacity: 1,
+  reflectionOpacity: 0.2,
   reflectionY: 0,
   reflectionZ: 0,
   reflectionSquash: 0.2,
@@ -113,7 +135,7 @@ const DEFAULT_MODEL_SETTINGS = {
   waterY: 0,
   waterZ: 0,
   waterScale: 1,
-  waterOpacity: 0.92
+  waterOpacity: 0.5
 };
 const DEFAULT_WATER_SURFACE_MODEL_SETTINGS = {
   ...DEFAULT_MODEL_SETTINGS,
@@ -131,7 +153,7 @@ const DEFAULT_WATER_SURFACE_MODEL_SETTINGS = {
   soilRotX: 0,
   soilRotY: 0,
   soilRotZ: 0,
-  reflectionOpacity: 0.74,
+  reflectionOpacity: 0.2,
   reflectionY: 0.02,
   reflectionZ: -0.1,
   reflectionSquash: 0.28,
@@ -332,6 +354,7 @@ const state = {
   productionModelSettings: loadProductionModelSettings(),
   demoSoilAssignments: loadSoilAssignments(DEMO_SOIL_STORAGE_KEY),
   productionSoilAssignments: loadSoilAssignments(PRODUCTION_SOIL_STORAGE_KEY),
+  tunedOverrides: loadJsonObject(TUNED_OVERRIDES_STORAGE_KEY, "Tuned overrides"),
   userName: loadUserName()
 };
 
@@ -760,7 +783,11 @@ async function init() {
   }
   migrateWaterSurfaceAssignments();
   normalizeCompletedPlants();
-  applyBakedModelSettings(await loadBakedModelSettings());
+  // 焼き込み値は「初期値」ボタンの戻し先としても使うため保持しておく
+  state.bakedModelSettings = await loadBakedModelSettings();
+  applyBakedModelSettings(state.bakedModelSettings);
+  // ユーザーが明示的に調整した値は焼き込みの上に重ねる（保存が巻き戻らないように）
+  applyTunedOverrides();
   saveDemoModelSettings();
   saveProductionModelSettings();
   bindEvents();
@@ -832,8 +859,48 @@ function applyBakedModelSettings(baked) {
   }
 }
 
+// 調整オーバーライド: デモパネルで明示的に動かした値だけを覚え、
+// 起動時に焼き込みの上へ重ねる。これが無いと「保存」しても
+// 再読み込みで焼き込み値に巻き戻ってしまう（2026-07-23 ユーザー報告）
+function recordTunedOverride(plantId, stage, key, value) {
+  if (!plantId) return;
+  const overrides = state.tunedOverrides;
+  if (!overrides.plants) overrides.plants = {};
+  const stages = (overrides.plants[plantId] ??= {});
+  const entry = (stages[String(stage)] ??= {});
+  entry[key] = value;
+}
+
+function clearTunedOverridesForStage(plantId, stage) {
+  const stages = state.tunedOverrides?.plants?.[plantId];
+  if (!stages) return;
+  delete stages[String(stage)];
+  if (!Object.keys(stages).length) delete state.tunedOverrides.plants[plantId];
+}
+
+function saveTunedOverrides() {
+  saveJson(TUNED_OVERRIDES_STORAGE_KEY, state.tunedOverrides);
+}
+
+function applyTunedOverrides() {
+  const plants = state.tunedOverrides?.plants;
+  if (!plants) return;
+  for (const settings of [state.demoModelSettings, state.productionModelSettings]) {
+    if (!settings.plants) settings.plants = {};
+    for (const [plantId, stages] of Object.entries(plants)) {
+      for (const [stage, partial] of Object.entries(stages)) {
+        if (!partial || !Object.keys(partial).length) continue;
+        const current = getModelSettings(settings, plantId, Number(stage));
+        setModelSettingsForStage(settings, plantId, Number(stage), { ...current, ...partial });
+      }
+    }
+  }
+}
+
 function loadSavedState() {
-  return migratePlantIdKeys(loadJsonObject(STORAGE_KEY, "Saved state"));
+  return migratePlantIdKeys(loadProgressState(localStorage, STORAGE_KEY, (error) => {
+    console.warn("Saved state could not be loaded:", error);
+  }));
 }
 
 function loadUserName() {
@@ -841,7 +908,10 @@ function loadUserName() {
 }
 
 function saveUserName(name) {
-  const normalizedName = String(name || "").trim().slice(0, 24);
+  const normalizedName = String(name || "")
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .trim()
+    .slice(0, 24);
   if (!normalizedName) return false;
   state.userName = normalizedName;
   localStorage.setItem(USER_PROFILE_STORAGE_KEY, normalizedName);
@@ -854,6 +924,35 @@ function loadDemoModelSettings() {
 
 function saveDemoModelSettings() {
   saveJson(DEMO_MODEL_STORAGE_KEY, state.demoModelSettings);
+}
+
+// デモの調整値を焼き込み（data/model-settings.json）と同じ形でダウンロードする。
+// 手動調整の結果をスクショや転記なしで受け渡すための開発用機能（?demo=1 のみ）。
+// 書き出すのは焼き込み対象のキーだけ（鉄則1: 意図したキー以外を固定化しない）
+const BAKED_EXPORT_KEYS = ["plantScale", "plantX", "plantY", "plantRotX", "plantRotY", "plantRotZ", "soilScale", "waterOpacity", "reflectionOpacity"];
+
+function exportDemoModelSettings() {
+  const plants = {};
+  for (const plant of state.plants) {
+    const stages = {};
+    for (let stage = 1; stage <= MODEL_STAGE_COUNT; stage++) {
+      const resolved = getModelSettings(state.demoModelSettings, plant.id, stage);
+      const entry = {};
+      for (const key of BAKED_EXPORT_KEYS) {
+        if (Number.isFinite(resolved?.[key])) entry[key] = resolved[key];
+      }
+      stages[String(stage)] = entry;
+    }
+    plants[plant.id] = stages;
+  }
+  const payload = { exportedAt: new Date().toISOString(), plants };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "artarium-tuned-settings.json";
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function loadProductionModelSettings() {
@@ -1079,7 +1178,7 @@ function loadStepState(saved) {
 }
 
 function saveProgress() {
-  saveJson(STORAGE_KEY, {
+  saveProgressState(localStorage, STORAGE_KEY, {
     ...state.progress,
     __activePlantId: state.selectedPlantId,
     __steps: {
@@ -1089,22 +1188,6 @@ function saveProgress() {
       sourceStatus: state.steps.sourceStatus
     }
   });
-}
-
-function getStage(points) {
-  const stageIndex = STAGE_THRESHOLDS.reduce((stage, threshold, index) => {
-    return points >= threshold ? index : stage;
-  }, 0);
-  return Math.min(stageIndex + 1, 6);
-}
-
-function getNextThreshold(stage) {
-  if (stage >= 6) return COMPLETION_THRESHOLD;
-  return STAGE_THRESHOLDS[stage] ?? STAGE_THRESHOLDS[5];
-}
-
-function isPlantComplete(progress) {
-  return (progress?.points ?? 0) >= COMPLETION_THRESHOLD;
 }
 
 function getSelectedPlant() {
@@ -1135,70 +1218,64 @@ function bindEvents() {
   });
 
 
-  document.querySelector("[data-plaque-close]")?.addEventListener("click", () => {
-    completionPlaqueCollapsed = true;
-    render();
-  });
-
-  document.querySelector("[data-completion-action]")?.addEventListener("click", () => {
-    const plant = getSelectedPlant();
-    if (!plant) return;
-    const progress = state.progress[plant.id];
-    if (progress?.displayed) {
-      state.currentView = "gallery";
-      state.newlyCompletedPlantId = "";
+  bindHomeStatusView(document, {
+    onCollapsePlaque: () => {
+      completionPlaqueCollapsed = true;
       render();
-      return;
+    },
+    onReopenPlaque: () => {
+      completionPlaqueCollapsed = false;
+      completionPlaqueInstant = true;
+      render();
+    },
+    onCompletionAction: () => {
+      const plant = getSelectedPlant();
+      if (!plant) return;
+      const progress = state.progress[plant.id];
+      if (progress?.displayed) {
+        state.currentView = "gallery";
+        state.newlyCompletedPlantId = "";
+        render();
+        return;
+      }
+      openFrameChoice(plant.id);
     }
-    openFrameChoice(plant.id);
-  });
-
-  const progressLine = document.getElementById("daily-progress-line");
-  const toggleProgressDetails = () => {
-    if (!progressLine || progressLine.hidden) return;
-    const expanded = progressLine.getAttribute("aria-expanded") !== "true";
-    progressLine.setAttribute("aria-expanded", String(expanded));
-    progressLine.querySelector(".growth-progress-detail")?.toggleAttribute("hidden", !expanded);
-  };
-  progressLine?.addEventListener("click", toggleProgressDetails);
-  progressLine?.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    toggleProgressDetails();
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") exitViewingMode();
   });
 
-  const soundButton = document.getElementById("settings-sound-button");
-  const soundState = document.getElementById("settings-sound-state");
-  const syncSoundLabel = () => {
-    if (soundState) soundState.textContent = isSoundEnabled() ? "オン" : "オフ";
-  };
   if (localStorage.getItem(AMBIENT_SOUND_STORAGE_KEY) === "on") {
     setSoundEnabled(true);
   }
-  syncSoundLabel();
-  soundButton?.addEventListener("click", () => {
-    const next = !isSoundEnabled();
-    setSoundEnabled(next);
-    localStorage.setItem(AMBIENT_SOUND_STORAGE_KEY, next ? "on" : "off");
-    syncSoundLabel();
-    if (next) playRipplePlop(0.3);
+  bindSettingsView(document, {
+    onToggleSound: () => {
+      const next = !isSoundEnabled();
+      setSoundEnabled(next);
+      localStorage.setItem(AMBIENT_SOUND_STORAGE_KEY, next ? "on" : "off");
+      if (next) playRipplePlop(0.3);
+      return next;
+    },
+    onToggleEffects: () => {
+      localStorage.setItem(PLANT_EFFECTS_STORAGE_KEY, arePlantEffectsEnabled() ? "off" : "on");
+      render();
+      return arePlantEffectsEnabled();
+    },
+    onReset: resetArtariumProgress,
+    onEditAuthor: openNameEntryModal,
+    onStartMotion: startMotionStepCounter,
+    onSyncSteps: syncSmartphoneSteps,
+    onOpenRecap: openWeeklyRecap,
+    onCloseRecap: () => closeModalWithExit(document.getElementById("weekly-recap-modal")),
+    onAddTestSteps: () => addStepsToSelectedPlant(100, "開発用に100歩分を加算しました")
   });
-
-  const effectsButton = document.getElementById("settings-effects-button");
-  const effectsState = document.getElementById("settings-effects-state");
-  const syncEffectsLabel = () => {
-    if (effectsState) effectsState.textContent = arePlantEffectsEnabled() ? "オン" : "オフ";
-  };
-  syncEffectsLabel();
-  effectsButton?.addEventListener("click", () => {
-    localStorage.setItem(PLANT_EFFECTS_STORAGE_KEY, arePlantEffectsEnabled() ? "off" : "on");
-    syncEffectsLabel();
-    // シーンを作り直して、エフェクトの有無を即時反映する
-    render();
+  bindCollectionView(document, {
+    onGoHome: () => {
+      state.currentView = "home";
+      render();
+    },
+    onOpenArtwork: openGalleryFocus
   });
 
   document.getElementById("frame-choice-modal")?.addEventListener("click", (event) => {
@@ -1221,20 +1298,6 @@ function bindEvents() {
     }
   });
 
-  document.getElementById("gallery-wall")?.addEventListener("click", (event) => {
-    const item = event.target.closest("[data-gallery-open]");
-    if (!item) return;
-    openGalleryFocus(item.dataset.galleryOpen);
-  });
-
-  document.getElementById("gallery-wall")?.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    const item = event.target.closest("[data-gallery-open]");
-    if (!item) return;
-    event.preventDefault();
-    openGalleryFocus(item.dataset.galleryOpen);
-  });
-
   const galleryFocusModal = document.getElementById("gallery-focus-modal");
   galleryFocusModal?.addEventListener("click", (event) => {
     if (event.target === galleryFocusModal || event.target.closest("[data-gallery-focus-close]")) {
@@ -1252,6 +1315,11 @@ function bindEvents() {
     const nameEntryModal = document.getElementById("name-entry-modal");
     if (event.key === "Escape" && nameEntryModal && !nameEntryModal.hidden) {
       closeNameEntryModal();
+      return;
+    }
+    const weeklyRecapModal = document.getElementById("weekly-recap-modal");
+    if (event.key === "Escape" && weeklyRecapModal && !weeklyRecapModal.hidden) {
+      closeModalWithExit(weeklyRecapModal);
       return;
     }
     // 収蔵の儀式が始まったら中断不可（収蔵は確定済み。Escで見た目だけ閉じる競合を防ぐ）
@@ -1279,7 +1347,7 @@ function bindEvents() {
       input?.focus();
       return;
     }
-    document.getElementById("name-entry-modal").hidden = true;
+    closeModalWithExit(document.getElementById("name-entry-modal"));
     if (pendingFrameChoiceAfterName) {
       const plantId = pendingFrameChoiceAfterName;
       pendingFrameChoiceAfterName = "";
@@ -1287,34 +1355,6 @@ function bindEvents() {
       return;
     }
     render();
-  });
-
-  document.getElementById("settings-reset-button").addEventListener("click", () => {
-    resetArtariumProgress();
-  });
-
-  document.getElementById("settings-author-button")?.addEventListener("click", () => {
-    openNameEntryModal();
-  });
-
-  document.getElementById("settings-motion-button").addEventListener("click", () => {
-    startMotionStepCounter();
-  });
-
-  document.getElementById("settings-sync-button").addEventListener("click", () => {
-    syncSmartphoneSteps();
-  });
-
-  document.getElementById("settings-weekly-recap-button")?.addEventListener("click", () => {
-    openWeeklyRecap();
-  });
-
-  document.querySelector("[data-recap-close]")?.addEventListener("click", () => {
-    document.getElementById("weekly-recap-modal").hidden = true;
-  });
-
-  document.getElementById("settings-test-steps-button").addEventListener("click", () => {
-    addStepsToSelectedPlant(100, "開発用に100歩分を加算しました");
   });
 
   document.getElementById("demo-model-settings")?.addEventListener("input", (event) => {
@@ -1370,11 +1410,11 @@ function bindEvents() {
 
   document.getElementById("demo-model-settings")?.addEventListener("click", (event) => {
     const resetButton = event.target.closest("[data-demo-model-reset]");
-    const referenceButton = event.target.closest("[data-demo-model-reference]");
     const autoReflectionButton = event.target.closest("[data-demo-reflection-auto]");
     const saveButton = event.target.closest("[data-demo-model-save]");
     const applyButton = event.target.closest("[data-demo-model-apply-production]");
     const openProductionButton = event.target.closest("[data-demo-model-open-production]");
+    const exportButton = event.target.closest("[data-demo-model-export]");
     const stepButton = event.target.closest("[data-demo-model-step]");
     const stageButton = event.target.closest("[data-demo-model-stage]");
     const bloomPreviewButton = event.target.closest("[data-demo-bloom-preview]");
@@ -1440,14 +1480,36 @@ function bindEvents() {
       stepDemoModelSetting(stepButton);
       return;
     }
-    if (resetButton || referenceButton) {
-      setModelSettingsForStage(
-        state.demoModelSettings,
-        state.selectedPlantId,
-        state.demoModelStage,
-        getDefaultModelSettingsForStage(state.demoModelSettings, state.demoModelStage, state.selectedPlantId)
+    if (resetButton) {
+      // 保存済みの調整（オーバーライド）ごと消す破壊的操作なので、実行前に確認を挟む
+      const plantName = state.plants.find((plant) => plant.id === state.selectedPlantId)?.name
+        || "選択中の植物";
+      const confirmed = window.confirm(
+        `${plantName} の Stage${state.demoModelStage} を初期値に戻します。\nこの段階の調整（保存済みの値も含む）は消えます。よろしいですか？`
       );
+      if (!confirmed) return;
+      // 「初期値」= 焼き込み値（model-settings.json）へ戻す。
+      // 旧実装の getDefaultModelSettingsForStage は基準植物の現在値を返すだけで、
+      // 水面植物では自分自身の現在値＝実質何もしない状態だった（2026-07-23 修正）
+      const bakedEntry = state.bakedModelSettings?.plants?.[state.selectedPlantId]?.[String(state.demoModelStage)];
+      const resetBase = bakedEntry
+        ? {
+            ...getModelSettings(state.demoModelSettings, state.selectedPlantId, state.demoModelStage),
+            ...bakedEntry
+          }
+        : getDefaultModelSettingsForStage(state.demoModelSettings, state.demoModelStage, state.selectedPlantId);
+      setModelSettingsForStage(state.demoModelSettings, state.selectedPlantId, state.demoModelStage, resetBase);
+      // 初期値に戻したステージは調整オーバーライドも消す（残すと再読み込みで復活する）
+      clearTunedOverridesForStage(state.selectedPlantId, state.demoModelStage);
+      saveTunedOverrides();
       render();
+      // パネルの入力値とシーンを初期値で即時更新する（render()だけでは既存入力のDOM値が残る）
+      const resetSettings = getModelSettings(state.demoModelSettings, state.selectedPlantId, state.demoModelStage);
+      document.querySelectorAll(".demo-number[data-demo-model-setting]").forEach((input) => {
+        const settingKey = input.dataset.demoModelSetting;
+        if (Number.isFinite(resetSettings?.[settingKey])) syncDemoModelInputs(settingKey, resetSettings[settingKey]);
+      });
+      refreshDemoModelPreview();
       return;
     }
     if (autoReflectionButton) {
@@ -1461,6 +1523,7 @@ function bindEvents() {
     if (saveButton) {
       saveDemoModelSettings();
       saveDemoSoilAssignments();
+      saveTunedOverrides();
       saveButton.textContent = "保存しました";
       window.setTimeout(() => {
         saveButton.textContent = "保存";
@@ -1469,6 +1532,7 @@ function bindEvents() {
     }
     if (applyButton) {
       applyDemoSettingsToProduction();
+      saveTunedOverrides();
       refreshDemoModelPreview();
       applyButton.textContent = "本番に反映しました";
       window.setTimeout(() => {
@@ -1479,6 +1543,14 @@ function bindEvents() {
     if (openProductionButton) {
       applyDemoSettingsToProduction();
       window.open(`${window.location.pathname}?v=${ASSET_VERSION}`, "_blank", "noopener");
+      return;
+    }
+    if (exportButton) {
+      exportDemoModelSettings();
+      exportButton.textContent = "書き出しました";
+      window.setTimeout(() => {
+        exportButton.textContent = "調整値を書き出す";
+      }, 1400);
     }
   });
 }
@@ -1579,6 +1651,7 @@ function updateDemoModelSetting(input) {
     ...getModelSettings(state.demoModelSettings, state.selectedPlantId, state.demoModelStage),
     [key]: value
   });
+  recordTunedOverride(state.selectedPlantId, state.demoModelStage, key, value);
   syncDemoModelInputs(key, value);
   refreshDemoModelPreview();
 }
@@ -1645,13 +1718,38 @@ function render() {
   renderNetworkStatus();
   renderHome();
   initSeedChoiceThumbnail();
-  renderGallery();
-  renderCodex();
+  renderCollectionViews();
   renderSettings();
   renderFrameChoiceModal();
   renderGalleryFocusModal();
   initHomeModelViewer();
   initGalleryModelViewers();
+}
+
+function renderCollectionViews() {
+  const shared = {
+    plants: state.plants,
+    progress: state.progress
+  };
+  renderCollectionView(document, {
+    ...shared,
+    newlyCollectedPlantId: state.newlyCollectedPlantId,
+    getCollectionTitle,
+    getArchiveLine,
+    paletteVars,
+    backdropVars,
+    getPlantModelPath,
+    getSoilModelPath,
+    getEnvironmentTypeForPlant,
+    getFrameModelPath,
+    galleryViewerMarkup
+  });
+  renderCodexView(document, {
+    ...shared,
+    codexNotes: CODEX_NOTES,
+    paletteVars,
+    plantMarkup
+  });
 }
 
 function renderNetworkStatus() {
@@ -1741,7 +1839,7 @@ function renderHome() {
       state.currentView = "gallery";
       render();
     });
-    document.getElementById("daily-progress-line")?.setAttribute("hidden", "");
+    renderHomeProgressView(document, { visible: false });
     return;
   }
 
@@ -1814,22 +1912,15 @@ function renderHome() {
     `;
   }
   // タブバー直上は、次の成長段階までの進み具合だけを静かに示す。
-  const progressLine = document.getElementById("daily-progress-line");
-  if (progressLine) {
-    progressLine.hidden = false;
-    progressLine.setAttribute("aria-expanded", "false");
-    progressLine.setAttribute("aria-label", `${nextGrowthLabel} ${Math.round(stageProgress * 100)}%。タップで歩数の詳細を表示します`);
-    document.getElementById("growth-progress-label").textContent = growthProgressTitle;
-    document.getElementById("growth-progress-percent").textContent = `${Math.round(stageProgress * 100)}%`;
-    maybeShowSteplineHint();
-    const detail = document.getElementById("growth-progress-detail");
-    if (detail) {
-      detail.hidden = true;
-      detail.textContent = `今日 ${todaySteps.toLocaleString()}歩　・　開花まで ${totalStepsRemaining.toLocaleString()}歩`;
-    }
-    const fill = document.getElementById("daily-progress-fill");
-    if (fill) fill.style.width = `${Math.round(stageProgress * 100)}%`;
-  }
+  renderHomeProgressView(document, {
+    visible: true,
+    progress: stageProgress,
+    nextGrowthLabel,
+    title: growthProgressTitle,
+    todaySteps,
+    totalStepsRemaining
+  });
+  maybeShowSteplineHint();
   renderCompletionPlaque(selectedPlant, awaitingFrameChoice);
   if (selectedProgress.displayed) mountNextArtworkButton(hero);
 }
@@ -1883,7 +1974,7 @@ function renderSeedPreview(hero, plant) {
   homeArtwork.appendChild(landingFx);
   mountSkyBackground(homeArtwork, { waterTint: skyWaterTint(plant) });
   renderCompletionPlaque(null, false);
-  document.getElementById("daily-progress-line")?.setAttribute("hidden", "");
+  renderHomeProgressView(document, { visible: false });
   const specimenLabel = document.createElement("div");
   specimenLabel.className = "seed-specimen-label";
   specimenLabel.innerHTML = `
@@ -1991,46 +2082,20 @@ let completionPlaqueInstant = false;
 let bloomCelebrationActive = false;
 
 function renderCompletionPlaque(plant, shouldShow) {
-  const plaque = document.getElementById("completion-plaque");
-  if (!plaque) return;
-  const hero = document.querySelector(".daily-hero");
-  hero?.querySelector(".plaque-reopen")?.remove();
-  // 点灯式の最中はプレートを出さない（終演後に reveal で表示する）
-  if (bloomCelebrationActive) {
-    plaque.hidden = true;
-    return;
-  }
   if (!plant || !shouldShow) {
-    plaque.hidden = true;
     completionPlaqueCollapsed = false;
     completionPlaqueInstant = false;
-    return;
   }
-  if (completionPlaqueCollapsed) {
-    // 折りたたみ中: 植物を隠さない小さなチップだけ残す
-    plaque.hidden = true;
-    const chip = document.createElement("button");
-    chip.className = "plaque-reopen";
-    chip.type = "button";
-    chip.textContent = "額装へ";
-    chip.addEventListener("click", () => {
-      completionPlaqueCollapsed = false;
-      completionPlaqueInstant = true;
-      render();
-    });
-    hero?.appendChild(chip);
-    return;
-  }
-  plaque.hidden = false;
-  plaque.classList.toggle("is-instant", completionPlaqueInstant);
-  document.getElementById("completion-title").textContent = plant.name;
-  document.getElementById("completion-subtitle").textContent = plant.copy?.completionNote ?? `${plant.motif} / ${plant.artist}, ${plant.year}`;
-  const action = plaque.querySelector("[data-completion-action]");
-  if (action) {
-    const progress = state.progress[plant.id];
-    action.textContent = progress?.displayed ? "コレクションを見る" : "額装を選ぶ";
-    action.dataset.frameChoiceOpen = progress?.displayed ? "" : plant.id;
-  }
+  const progress = plant ? state.progress[plant.id] : null;
+  renderCompletionPlaqueView(document, {
+    plant,
+    shouldShow,
+    bloomCelebrationActive,
+    collapsed: completionPlaqueCollapsed,
+    instant: completionPlaqueInstant,
+    displayed: progress?.displayed ?? false,
+    subtitle: plant?.copy?.completionNote ?? (plant ? `${plant.motif} / ${plant.artist}, ${plant.year}` : "")
+  });
 }
 
 async function syncSmartphoneSteps() {
@@ -2106,20 +2171,16 @@ function addGrowthFromSteps(steps) {
   const progress = state.progress[state.selectedPlantId];
   if (!progress || isPlantComplete(progress)) return;
 
-  const wasComplete = isPlantComplete(progress);
-  const stageBefore = getStage(progress.points);
-  const availableSteps = progress.stepRemainder + steps;
-  const pointsToAdd = Math.floor(availableSteps / STEPS_PER_POINT);
-  progress.stepRemainder = availableSteps % STEPS_PER_POINT;
-  if (!pointsToAdd) return;
-  progress.points = Math.min(progress.points + pointsToAdd, COMPLETION_THRESHOLD);
-  const stageAfter = getStage(progress.points);
-  if (stageAfter > stageBefore) {
-    recordStageArrival(progress, stageBefore + 1, stageAfter);
+  const growth = applyStepsToProgress(progress, steps);
+  progress.stepRemainder = growth.stepRemainder;
+  if (!growth.pointsAdded) return;
+  progress.points = growth.points;
+  if (growth.stageAfter > growth.stageBefore) {
+    recordStageArrival(progress, growth.stageBefore + 1, growth.stageAfter);
     // ステージが上がった: 次の3D描画完了時に開花演出を再生する
     state.pendingBloomCelebration = state.selectedPlantId;
   }
-  if (!wasComplete && isPlantComplete(progress)) {
+  if (growth.completedNow) {
     markPlantCompleted(progress);
     state.newlyCompletedPlantId = state.selectedPlantId;
   }
@@ -2425,8 +2486,7 @@ function resetDailyStepsIfNeeded() {
 function recordDailySteps() {
   if (!state.steps.history) state.steps.history = {};
   state.steps.history[state.steps.date || getTodayKey()] = state.steps.todaySteps;
-  const keys = Object.keys(state.steps.history).sort();
-  while (keys.length > 21) delete state.steps.history[keys.shift()];
+  state.steps.history = trimStepHistory(state.steps.history);
 }
 
 function getTodayKey() {
@@ -2439,6 +2499,16 @@ function getTodayKey() {
 
 function formatNumber(value) {
   return new Intl.NumberFormat("ja-JP").format(value);
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;"
+  })[character]);
 }
 
 // 直近7日の歩数と成長を1枚のカードで振り返る
@@ -2485,7 +2555,7 @@ function openWeeklyRecap() {
   } else {
     growthEl.textContent = "";
   }
-  modal.hidden = false;
+  modalController.open(modal, { initialFocus: "[data-recap-close]" });
   localStorage.setItem(WEEKLY_RECAP_KEY, getWeekKey());
 }
 
@@ -2498,52 +2568,20 @@ function maybeOfferWeeklyRecap() {
   openWeeklyRecap();
 }
 
-function renderCodex() {
-  const summary = document.getElementById("codex-summary");
-  const grid = document.getElementById("codex-grid");
-  const head = document.querySelector(".codex-head");
-  if (!summary || !grid) return;
-  // 名画の由来は、収蔵した作品のぶんだけ増えていく（美術館のキャプション）
-  const collectedPlants = state.plants.filter((plant) => state.progress[plant.id].displayed);
-  const hasCollection = collectedPlants.length > 0;
-  if (head) head.hidden = !hasCollection;
-  grid.hidden = !hasCollection;
-  if (!hasCollection) {
-    grid.innerHTML = "";
-    return;
-  }
-  summary.textContent = `収蔵 ${collectedPlants.length}点`;
-  grid.innerHTML = collectedPlants.map((plant) => {
-    const codex = CODEX_NOTES[plant.id];
-    return `
-      <article class="codex-card is-collected" style="${paletteVars(plant)}">
-        <div class="codex-thumb">${plantMarkup(6)}</div>
-        <div class="codex-copy">
-          <div class="codex-title-row">
-            <h3>${plant.name}</h3>
-          </div>
-          <p class="codex-source">${codex?.source ?? `${plant.motif} / ${plant.artist}, ${plant.year}`}</p>
-          <p class="codex-note">${codex?.note ?? plant.temperament ?? ""}</p>
-        </div>
-      </article>
-    `;
-  }).join("");
-}
-
 function renderSettings() {
-  const motionState = document.getElementById("settings-motion-state");
-  if (!motionState) return;
   const selectedPlant = getSelectedPlant();
   const selectedProgress = selectedPlant ? state.progress[selectedPlant.id] : null;
-  const isComplete = selectedProgress ? isPlantComplete(selectedProgress) : false;
-  motionState.textContent = state.steps.motionEnabled ? "接続中" : "未接続";
-  document.getElementById("settings-today-steps").textContent = `${formatNumber(state.steps.todaySteps)}歩`;
-  document.getElementById("settings-step-status").textContent = state.steps.sourceStatus;
-  document.getElementById("settings-motion-button").disabled = state.steps.motionEnabled;
-  document.getElementById("settings-sync-button").disabled = isComplete;
-  document.getElementById("settings-test-steps-button").disabled = !selectedPlant || isComplete;
-  document.getElementById("settings-test-steps-button").hidden = !DEMO_MODE;
-  document.getElementById("settings-author-name").textContent = state.userName || "未設定";
+  renderSettingsView(document, {
+    todaySteps: state.steps.todaySteps,
+    sourceStatus: state.steps.sourceStatus,
+    motionEnabled: state.steps.motionEnabled,
+    selectedPlant,
+    selectedPlantComplete: selectedProgress ? isPlantComplete(selectedProgress) : false,
+    userName: state.userName,
+    demoMode: DEMO_MODE,
+    soundEnabled: isSoundEnabled(),
+    effectsEnabled: arePlantEffectsEnabled()
+  });
   renderDemoModelSettings();
 }
 
@@ -2559,13 +2597,32 @@ function openNameEntryModal() {
   if (input) input.value = state.userName || "";
   const confirmButton = modal.querySelector(".frame-choice-confirm");
   if (confirmButton) confirmButton.textContent = pendingFrameChoiceAfterName ? "この名前で額装へ" : "この名前にする";
-  modal.hidden = false;
-  window.setTimeout(() => input?.focus(), 80);
+  modalController.open(modal, { initialFocus: input });
+}
+
+// 共有モーダル（額縁選択・週間振り返り・名前入力）の退場アニメーション付きクローズ。
+// 作品詳細モーダルと同じ「入りと出の対称」で畳む（2026-07-24 展開）
+function closeModalWithExit(modal, onHidden) {
+  if (!modal || modal.hidden) {
+    onHidden?.();
+    return;
+  }
+  if (modal.classList.contains("is-closing")) return;
+  modal.classList.add("is-closing");
+  const finish = () => {
+    // 閉じる途中で開き直された場合は何もしない（is-closing が外されている）
+    if (!modal.classList.contains("is-closing")) return;
+    modal.classList.remove("is-closing");
+    modalController.close(modal);
+    onHidden?.();
+  };
+  modal.addEventListener("animationend", () => finish(), { once: true });
+  setTimeout(finish, 320);
 }
 
 function closeNameEntryModal() {
   const modal = document.getElementById("name-entry-modal");
-  if (modal) modal.hidden = true;
+  closeModalWithExit(modal);
   pendingFrameChoiceAfterName = "";
 }
 
@@ -2617,11 +2674,11 @@ function renderDemoModelSettings() {
         <div class="demo-settings-head">
           <span>Stage${state.demoModelStage}を調整中</span>
           <span class="demo-settings-actions">
-            <button class="secondary-action" data-demo-model-reference type="button">参考画像</button>
             <button class="secondary-action" data-demo-model-reset type="button">初期値</button>
             <button class="primary-action" data-demo-model-save type="button">保存</button>
             <button class="primary-action" data-demo-model-apply-production type="button">本番へ反映</button>
             <button class="secondary-action" data-demo-model-open-production type="button">本番で確認</button>
+            <button class="secondary-action" data-demo-model-export type="button">調整値を書き出す</button>
           </span>
         </div>
       <div class="demo-stage-tabs" aria-label="成長段階を選択">
@@ -2854,9 +2911,26 @@ function openGalleryFocus(plantId) {
 }
 
 function closeGalleryFocus() {
-  state.galleryFocusPlantId = "";
-  state.galleryFocusAngle = 0;
-  renderGalleryFocusModal();
+  const modal = document.getElementById("gallery-focus-modal");
+  const finish = () => {
+    state.galleryFocusPlantId = "";
+    state.galleryFocusAngle = 0;
+    renderGalleryFocusModal();
+  };
+  if (!modal || modal.hidden) {
+    finish();
+    return;
+  }
+  if (modal.classList.contains("is-closing")) return;
+  // 退場は入場と同じ道を戻る。アニメーションの完了を待ってから畳む
+  modal.classList.add("is-closing");
+  const onDone = () => {
+    // 閉じる途中で開き直された場合は何もしない（is-closing が外されている）
+    if (!modal.classList.contains("is-closing")) return;
+    finish();
+  };
+  modal.addEventListener("animationend", onDone, { once: true });
+  setTimeout(onDone, 320);
 }
 
 function updateGalleryFocusAngle() {
@@ -2869,17 +2943,39 @@ function updateGalleryFocusAngle() {
   }
 }
 
+// 作品回転の「手で扱う」感触（apple-designスキル §5/§6/§9。2026-07-24）:
+// - 指を離した速度を引き継いで回り続け、指数減衰で自然に止まる
+// - 端（±LIMIT）は硬い壁で止めず、超えるほど粘る抵抗＋離すとバネで戻る
+// - 慣性で回っている最中に掴むと、その場で止まって指に追従する（中断可能）
+const GALLERY_FOCUS_ANGLE_LIMIT = 0.38;
+let galleryFocusInertiaFrame = 0;
+
+function rubberbandOvershoot(overshoot, range = GALLERY_FOCUS_ANGLE_LIMIT, give = 0.55) {
+  return (overshoot * range * give) / (range + give * Math.abs(overshoot));
+}
+
 function startGalleryFocusDrag(event, target) {
   event.preventDefault();
+  cancelAnimationFrame(galleryFocusInertiaFrame);
   const pointerId = event.pointerId;
   const startX = event.clientX;
   const startAngle = state.galleryFocusAngle;
+  const history = [{ x: event.clientX, t: performance.now() }];
   target.setPointerCapture?.(pointerId);
   target.classList.add("is-dragging");
 
   const move = (moveEvent) => {
     if (moveEvent.pointerId !== pointerId) return;
-    state.galleryFocusAngle = Math.min(0.38, Math.max(-0.38, startAngle + (moveEvent.clientX - startX) * 0.004));
+    const raw = startAngle + (moveEvent.clientX - startX) * 0.004;
+    let angle = raw;
+    if (raw > GALLERY_FOCUS_ANGLE_LIMIT) {
+      angle = GALLERY_FOCUS_ANGLE_LIMIT + rubberbandOvershoot(raw - GALLERY_FOCUS_ANGLE_LIMIT);
+    } else if (raw < -GALLERY_FOCUS_ANGLE_LIMIT) {
+      angle = -GALLERY_FOCUS_ANGLE_LIMIT + rubberbandOvershoot(raw + GALLERY_FOCUS_ANGLE_LIMIT);
+    }
+    state.galleryFocusAngle = angle;
+    history.push({ x: moveEvent.clientX, t: performance.now() });
+    if (history.length > 6) history.shift();
     updateGalleryFocusAngle();
   };
   const stop = (stopEvent) => {
@@ -2889,6 +2985,12 @@ function startGalleryFocusDrag(event, target) {
     target.removeEventListener("pointermove", move);
     target.removeEventListener("pointerup", stop);
     target.removeEventListener("pointercancel", stop);
+    // 直近~120msの移動から離した瞬間の速度を求める（角度/ms）
+    const now = performance.now();
+    const past = history.find((entry) => now - entry.t <= 120) || history[0];
+    const dt = Math.max(1, now - past.t);
+    const velocity = Math.max(-0.002, Math.min(0.002, ((stopEvent.clientX - past.x) / dt) * 0.004));
+    startGalleryFocusInertia(velocity);
   };
 
   target.addEventListener("pointermove", move);
@@ -2896,13 +2998,51 @@ function startGalleryFocusDrag(event, target) {
   target.addEventListener("pointercancel", stop);
 }
 
+function startGalleryFocusInertia(initialVelocity) {
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+    state.galleryFocusAngle = Math.min(GALLERY_FOCUS_ANGLE_LIMIT, Math.max(-GALLERY_FOCUS_ANGLE_LIMIT, state.galleryFocusAngle));
+    updateGalleryFocusAngle();
+    return;
+  }
+  let velocity = initialVelocity;
+  let last = performance.now();
+  const tick = (now) => {
+    if (!document.querySelector("[data-gallery-focus-stage]")) return; // モーダルが閉じたら停止
+    const dt = Math.min(48, Math.max(1, now - last));
+    last = now;
+    let angle = state.galleryFocusAngle + velocity * dt;
+    velocity *= Math.pow(0.9955, dt);
+    const over = angle > GALLERY_FOCUS_ANGLE_LIMIT ? angle - GALLERY_FOCUS_ANGLE_LIMIT
+      : angle < -GALLERY_FOCUS_ANGLE_LIMIT ? angle + GALLERY_FOCUS_ANGLE_LIMIT : 0;
+    if (over) {
+      velocity *= Math.pow(0.98, dt); // 端の外では強めに減速し
+      angle -= over * Math.min(1, dt * 0.012); // バネで境界へ引き戻す
+    }
+    state.galleryFocusAngle = angle;
+    updateGalleryFocusAngle();
+    if (Math.abs(velocity) < 0.000012 && Math.abs(over) < 0.0006) {
+      state.galleryFocusAngle = Math.min(GALLERY_FOCUS_ANGLE_LIMIT, Math.max(-GALLERY_FOCUS_ANGLE_LIMIT, angle));
+      updateGalleryFocusAngle();
+      return;
+    }
+    galleryFocusInertiaFrame = requestAnimationFrame(tick);
+  };
+  galleryFocusInertiaFrame = requestAnimationFrame(tick);
+}
+
 function renderFrameChoiceModal() {
   const modal = document.getElementById("frame-choice-modal");
   if (!modal) return;
   const plant = state.plants.find((item) => item.id === state.frameChoicePlantId);
   const progress = plant ? state.progress[plant.id] : null;
-  modal.hidden = !plant || !progress || progress.displayed;
-  if (modal.hidden) return;
+  const shouldOpen = Boolean(plant && progress && !progress.displayed);
+  if (!shouldOpen) {
+    // 表示中なら退場アニメーションを挟んで畳む（renderは毎フレーム相当で呼ばれるため is-closing で多重実行を防ぐ）
+    if (!modal.hidden) closeModalWithExit(modal);
+    else modalController.close(modal);
+    return;
+  }
+  modal.classList.remove("is-closing");
 
   const frameType = progress.frameType ?? plant.defaultFrameType ?? "walnut";
   const backgroundType = "nocturne";
@@ -2927,7 +3067,7 @@ function renderFrameChoiceModal() {
     </div>
     <div class="curation-plate">
       <strong>${getCollectionTitle(plant)}</strong>
-      <span>${state.userName || "Artarium Artist"}</span>
+      <span>${escapeHtml(state.userName || "Artarium Artist")}</span>
     </div>
   `;
   document.getElementById("frame-choice-options").innerHTML = getFrameOptions(plant).map((type) => `
@@ -2945,6 +3085,7 @@ function renderFrameChoiceModal() {
   if (storyEl) storyEl.textContent = FRAME_TYPES[frameType]?.story ?? "";
   const confirmButton = modal.querySelector("[data-frame-choice-confirm]");
   if (confirmButton) confirmButton.textContent = `「${FRAME_TYPES[frameType]?.jp ?? frameType}」で収蔵する`;
+  modalController.open(modal, { initialFocus: "[data-frame-choice-close]" });
   initGalleryModelViewers();
 }
 
@@ -2953,10 +3094,18 @@ function renderGalleryFocusModal() {
   if (!modal) return;
   const plant = state.plants.find((item) => item.id === state.galleryFocusPlantId);
   const progress = plant ? state.progress[plant.id] : null;
-  modal.hidden = !plant || !progress?.displayed;
+  const wasHidden = modal.hidden;
   if (!plant || !progress?.displayed) {
+    modal.classList.remove("is-opening", "is-closing");
     modal.innerHTML = "";
+    modalController.close(modal);
     return;
+  }
+  if (wasHidden || modal.classList.contains("is-closing")) {
+    // 開いた瞬間だけ入場の動きを付ける（開いたままの再描画では動かさない）
+    modal.classList.remove("is-closing");
+    modal.classList.add("is-opening");
+    setTimeout(() => modal.classList.remove("is-opening"), 360);
   }
 
   const backdropType = progress.backgroundType || "nocturne";
@@ -2990,11 +3139,12 @@ function renderGalleryFocusModal() {
         <div>
           <h3 id="gallery-focus-title">${getCollectionTitle(plant)}</h3>
           <p>${plant.copy?.collectionLabel ?? plant.motif}</p>
-          <small>${getArchiveLine(plant)}</small>
+          <small>${escapeHtml(getArchiveLine(plant))}</small>
         </div>
       </div>
     </div>
   `;
+  modalController.open(modal, { initialFocus: "[data-gallery-focus-close]" });
 }
 
 function getFrameLabel(plant) {
@@ -3026,74 +3176,6 @@ function formatArchiveDate(value) {
   if (Number.isNaN(date.getTime())) return "";
   const month = new Intl.DateTimeFormat("en-US", { month: "short" }).format(date).toUpperCase();
   return `${String(date.getDate()).padStart(2, "0")} ${month} ${date.getFullYear()}`;
-}
-
-function renderGallery() {
-  const displayedPlants = state.plants.filter((plant) => state.progress[plant.id].displayed);
-  const galleryWall = document.getElementById("gallery-wall");
-  galleryWall.dataset.artworkCount = String(displayedPlants.length);
-  const newlyCollectedPlant = state.plants.find((plant) => plant.id === state.newlyCollectedPlantId);
-  const gallerySummary = document.getElementById("gallery-summary");
-  // 全体の作品数は明かさない（コレクションの終わりを予感させないため）
-  gallerySummary.textContent = newlyCollectedPlant
-    ? `「${getCollectionTitle(newlyCollectedPlant)}」を収蔵しました`
-    : displayedPlants.length ? `作品 ${displayedPlants.length}点` : "";
-  gallerySummary.setAttribute("role", "status");
-
-  if (!displayedPlants.length) {
-    galleryWall.innerHTML = `
-      <div class="empty-gallery">
-        <div class="empty-frame is-lit" aria-hidden="true">
-          <span class="empty-frame-plate">最初の作品を<br>待っています</span>
-        </div>
-        <h3>展示を待つ壁</h3>
-        <p>開花した作品が、シャドーボックスの額縁に収められてこの壁に並びます。</p>
-        <button class="secondary-action" type="button" data-empty-jump-home>育てにいく</button>
-      </div>
-    `;
-    galleryWall.querySelector("[data-empty-jump-home]")?.addEventListener("click", () => {
-      state.currentView = "home";
-      render();
-    });
-    return;
-  }
-
-  galleryWall.innerHTML = displayedPlants.map((plant) => `
-    <article
-      class="shadow-box ${plant.id === state.newlyCollectedPlantId ? "is-new-arrival" : ""}"
-      style="${paletteVars(plant)}${backdropVars("nocturne")}"
-      data-gallery-open="${plant.id}"
-      role="button"
-      tabindex="0"
-      aria-label="${getCollectionTitle(plant)}を拡大表示"
-    >
-      <div class="exhibit-light" aria-hidden="true"></div>
-      <div class="exhibit-hang">
-        <div
-          class="model-stage ${plant.id === "pearl-light-bloom" ? "is-pearl-material" : ""}"
-          data-model-viewer
-          data-stage="6"
-          data-plant-id="${plant.id}"
-          data-plant-model="${getPlantModelPath(plant, 6)}"
-          data-soil-model="${getSoilModelPath(plant)}"
-          data-environment="${getEnvironmentTypeForPlant(plant)}"
-          data-frame-model="${getFrameModelPath(plant)}"
-          data-frame-type="${state.progress[plant.id].frameType}"
-          data-backdrop-type="nocturne"
-          data-settings-source="production"
-        >
-          ${galleryViewerMarkup(plant)}
-        </div>
-      </div>
-      <div class="artwork-plaque">
-        <div>
-          <h3>${getCollectionTitle(plant)}</h3>
-          <p>${plant.copy?.collectionLabel ?? plant.motif}</p>
-          <small>${getArchiveLine(plant)}</small>
-        </div>
-      </div>
-    </article>
-  `).join("");
 }
 
 function paletteVars(plant) {
@@ -3236,23 +3318,49 @@ async function initHomeModelViewer() {
   });
 }
 
-async function initSeedChoiceThumbnail() {
+let seedThumbnailObserver = null;
+let seedThumbnailRuntimePromise = null;
+
+function initSeedChoiceThumbnail() {
+  seedThumbnailObserver?.disconnect();
+  seedThumbnailObserver = null;
   const viewers = Array.from(document.querySelectorAll("[data-seed-thumbnail]:not([data-ready])"));
   if (!viewers.length) return;
 
-  const runtime = await loadThreeRuntime();
-  viewers.forEach((viewer) => {
-    viewer.dataset.ready = "true";
-    const token = String(++modelRenderSerial);
-    viewer.dataset.modelRenderToken = token;
-    if (!runtime || !viewer.dataset.plantModel) {
-      viewer.innerHTML = plantMarkup(1);
-      return;
-    }
-    createPlantScene(viewer, runtime, token).catch((error) => {
-      console.warn("Seed thumbnail fallback:", error);
-      viewer.innerHTML = plantMarkup(1);
+  if (!("IntersectionObserver" in window)) {
+    viewers.forEach((viewer) => loadSeedChoiceThumbnail(viewer));
+    return;
+  }
+
+  seedThumbnailObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      observer.unobserve(entry.target);
+      loadSeedChoiceThumbnail(entry.target);
     });
+  }, { rootMargin: "80px 0px", threshold: 0.01 });
+  viewers.forEach((viewer) => seedThumbnailObserver.observe(viewer));
+}
+
+async function loadSeedChoiceThumbnail(viewer) {
+  if (!viewer?.isConnected || viewer.dataset.ready) return;
+  viewer.dataset.ready = "loading";
+  seedThumbnailRuntimePromise ||= loadThreeRuntime();
+  const runtime = await seedThumbnailRuntimePromise;
+  if (!viewer.isConnected) return;
+  const token = String(++modelRenderSerial);
+  viewer.dataset.modelRenderToken = token;
+  if (!runtime || !viewer.dataset.plantModel) {
+    viewer.dataset.ready = "true";
+    viewer.innerHTML = plantMarkup(1);
+    return;
+  }
+  createPlantScene(viewer, runtime, token).then(() => {
+    if (viewer.isConnected) viewer.dataset.ready = "true";
+  }).catch((error) => {
+    console.warn("Seed thumbnail fallback:", error);
+    viewer.dataset.ready = "true";
+    viewer.innerHTML = plantMarkup(1);
   });
 }
 
@@ -3990,7 +4098,12 @@ async function createPlantScene(container, runtime, token) {
   const soil = environmentType !== "water" && soilModel && !isSeedPreview
     ? normalizeModel(THREE, soilModel.scene, modelSettings.soilScale)
     : null;
-  if (soil) prepareSoilModel(THREE, soil, plantDefinition);
+  if (soil) {
+    // 高さ（接地）は変えず、横方向だけを締めて植物より土が勝たない楕円の島にする。
+    soil.scale.x *= 0.88;
+    soil.scale.z *= 0.88;
+    prepareSoilModel(THREE, soil, plantDefinition);
+  }
   const artworkGroup = new THREE.Group();
   let homeSoilGroup = null;
   if (soil) {
@@ -4003,6 +4116,11 @@ async function createPlantScene(container, runtime, token) {
       roll: modelSettings.soilRotZ
     });
     artworkGroup.add(homeSoilGroup);
+    if ((Number(container.dataset.stage) || 1) === 1) {
+      const soilBox = new THREE.Box3().setFromObject(homeSoilGroup);
+      const plantingDetail = createSeedPlantingDetail(THREE, plantDefinition, modelSettings, soilBox.max.y, homeSoilGroup);
+      artworkGroup.add(plantingDetail);
+    }
   }
   if (waterSurface) {
     artworkGroup.add(waterSurface.mesh);
@@ -4084,6 +4202,8 @@ async function createPlantScene(container, runtime, token) {
   if (waterSurface || plantEffects) {
     startSceneAnimationLoop(container, token, renderer, scene, camera, { waterSurface, plantEffects });
   }
+  // ギャラリーシーンと同様に参照を公開する（検証プローブ・デバッグ用）
+  container.__artariumScene = { renderer, scene, camera, plantGroup, plantEffects, waterSurface };
   {
     // 植物の画面内位置（NDC）を公開する。開花演出の筆致・スポットライトと、デモの配置調整が参照する
     const box = new THREE.Box3().setFromObject(plantGroup);
@@ -4182,13 +4302,14 @@ function prepareReflectionModel(THREE, object, stage, modelSettings) {
 
 // 植物ごとの土台の配色・質感（モチーフの名画に合わせる）
 const SOIL_STYLES = {
-  "scream-bloom": { color: "#8a4a2e", emissive: "#5a1f0f", emissiveIntensity: 0.12, roughness: 0.75 },
-  "sunflower-bloom": { color: "#c9942e", emissive: "#7a4d10", emissiveIntensity: 0.1, roughness: 0.65 },
-  "renaissance-smile-bloom": { color: "#6f6242", emissive: "#3c3423", emissiveIntensity: 0.06, roughness: 0.82 },
-  "nocturne-sky-bloom": { color: "#2c3a6e", emissive: "#1b2f6b", emissiveIntensity: 0.22, roughness: 0.55 },
-  "golden-embrace-bloom": { color: "#d4a437", emissive: "#8a6a1a", emissiveIntensity: 0.18, roughness: 0.35, metalness: 0.55 },
-  "monochrome-fracture-bloom": { color: "#8f8f8f", emissive: "#2c2c2c", emissiveIntensity: 0.05, roughness: 0.6 },
-  "pearl-light-bloom": { color: "#e8dcc2", emissive: "#b9a06b", emissiveIntensity: 0.08, roughness: 0.4 }
+  // 土は作品の額ではなく、すべての植物をつなぐ「庭」。固有色はごく薄い含み色に留める。
+  "scream-bloom": { color: "#463128", emissive: "#1b0d09", emissiveIntensity: 0.025, roughness: 0.94 },
+  "sunflower-bloom": { color: "#4a3a27", emissive: "#1b1208", emissiveIntensity: 0.02, roughness: 0.93 },
+  "renaissance-smile-bloom": { color: "#403a2e", emissive: "#17140e", emissiveIntensity: 0.018, roughness: 0.95 },
+  "nocturne-sky-bloom": { color: "#30343d", emissive: "#0e121a", emissiveIntensity: 0.03, roughness: 0.92 },
+  "golden-embrace-bloom": { color: "#4c4028", emissive: "#1b1508", emissiveIntensity: 0.025, roughness: 0.9 },
+  "monochrome-fracture-bloom": { color: "#3d3b37", emissive: "#11100f", emissiveIntensity: 0.015, roughness: 0.95 },
+  "pearl-light-bloom": { color: "#484239", emissive: "#17140e", emissiveIntensity: 0.018, roughness: 0.91 }
 };
 
 function prepareSoilModel(THREE, object, plant) {
@@ -4200,7 +4321,7 @@ function prepareSoilModel(THREE, object, plant) {
     const materials = Array.isArray(child.material) ? child.material : [child.material];
     const tuned = materials.map((material) => {
       const clone = material?.clone ? material.clone() : new THREE.MeshStandardMaterial();
-      if (clone.color) clone.color.lerp(new THREE.Color(style.color), 0.62);
+      if (clone.color) clone.color.lerp(new THREE.Color(style.color), 0.34);
       if (clone.emissive !== undefined && style.emissive) {
         clone.emissive = new THREE.Color(style.emissive);
         clone.emissiveIntensity = style.emissiveIntensity ?? 0.08;
@@ -4387,7 +4508,7 @@ function createShaderWaterSurface(THREE, plant, modelSettings, { framed = false 
     width: baseSize * 2,
     depth: baseSize * 2 * 0.58,
     deepColor: palette[0],
-    opacity: modelSettings.waterOpacity ?? 0.92,
+    opacity: modelSettings.waterOpacity ?? 0.5,
     lightDir: sun.waterDir,
     lightColor: sun.waterColor
   });
@@ -4522,7 +4643,7 @@ function createWaterEnvironmentGroup(THREE, plant, modelSettings, { framed = fal
     roughness: 0.28,
     metalness: 0.08,
     transparent: true,
-    opacity: 0.58,
+    opacity: 0.5,
     side: THREE.DoubleSide
   });
   const water = new THREE.Mesh(new THREE.CircleGeometry(baseSize, 96), waterMaterial);
@@ -4605,26 +4726,30 @@ function createProceduralSoilMound(THREE) {
     v.fromBufferAttribute(pos, i);
     const ang = Math.atan2(v.z, v.x);
     const flare = 1 + (1 - v.y) * 0.22;
-    const und = (noise(Math.cos(ang) * 2.4 + 7, Math.sin(ang) * 2.4 + v.y * 2.2) - 0.5) * 0.12
-      + (noise(Math.cos(ang) * 7 + 31, Math.sin(ang) * 7 + v.y * 6) - 0.5) * 0.05;
+    const und = (noise(Math.cos(ang) * 2.4 + 7, Math.sin(ang) * 2.4 + v.y * 2.2) - 0.5) * 0.075
+      + (noise(Math.cos(ang) * 7 + 31, Math.sin(ang) * 7 + v.y * 6) - 0.5) * 0.025;
     // 土くれ: 掘り返した土の小さな塊。sin^2で角の丸いこぶにする
     const clodNoise = noise(Math.cos(ang) * 13 + 53, Math.sin(ang) * 13 + v.y * 11);
-    const clod = clodNoise * clodNoise * 0.045;
-    const grain = (noise(ang * 26 + 11, v.y * 30 + 3) - 0.5) * 0.02;
+    const clod = clodNoise * clodNoise * 0.018;
+    const grain = (noise(ang * 20 + 11, v.y * 22 + 3) - 0.5) * 0.006;
     const r = Math.max(0.05, flare + und + clod + grain);
     // 植え穴: 頂点中央の小さな窪みと、そのまわりの掘り縁（育つと植物に隠れる）
+    // 半径は種がちょうど収まる程度に絞る（広いと平らな「影の円盤」に見え、
+    // 種が縁をまたいだとき影を貫通しているような違和感が出る。2026-07-23）
     const rho = Math.sqrt(v.x * v.x + v.z * v.z);
     let dig = 0;
-    if (rho < 0.34) {
-      const dt = rho / 0.34;
+    if (rho < 0.26) {
+      const dt = rho / 0.26;
       dig = -0.045 * Math.pow(Math.max(0, 1 - dt / 0.62), 2)
         + 0.016 * Math.exp(-Math.pow((dt - 0.75) / 0.18, 2));
     }
-    pos.setXYZ(i, v.x * r, Math.max(0, v.y * 0.4 + (und + clod) * 0.3 * v.y + dig), v.z * r);
+    pos.setXYZ(i, v.x * r, Math.max(0, v.y * 0.32 + (und + clod) * 0.18 * v.y + dig), v.z * r);
     // 擬似AO: 土くれの谷を暗く、こぶの頂を明るく。下限を高めにして稜線が空の光を拾えるようにする
-    let shade = 0.84 + clodNoise * 0.34;
-    shade *= 0.92 + v.y * 0.12;
-    if (dig < -0.005) shade *= 0.88; // 植え穴の中は掘りたてで湿って暗い
+    let shade = 0.88 + clodNoise * 0.2;
+    shade *= 0.94 + v.y * 0.08;
+    // 植え穴の中は掘りたてで湿って暗い。深さに比例して滑らかに落とす
+    // （二値の境界だと縁の硬い影の円盤に見える）
+    if (dig < 0) shade *= 1 - Math.min(1, -dig / 0.045) * 0.13;
     // 汀: 水際に近い裾は濡れて暗い（水と土の境目を締める）
     const wet = 1 - Math.min(1, v.y / 0.2);
     shade *= 1 - wet * 0.35;
@@ -4635,29 +4760,29 @@ function createProceduralSoilMound(THREE) {
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = 512;
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#4a3828";
+  ctx.fillStyle = "#302820";
   ctx.fillRect(0, 0, 512, 512);
   // 大きな色むら: 乾いた土と湿った土のまだら
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 24; i++) {
     const x = hash(i, 61.3) * 512; const y = hash(i, 67.9) * 512;
     const radius = 24 + hash(i, 71.1) * 58;
     const dry = hash(i, 79.3) > 0.5;
     const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    g.addColorStop(0, dry ? "rgba(112,88,60,0.1)" : "rgba(20,14,10,0.12)");
+    g.addColorStop(0, dry ? "rgba(105,88,67,0.07)" : "rgba(13,11,9,0.1)");
     g.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = g;
     ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
   }
-  for (let i = 0; i < 15000; i++) {
+  for (let i = 0; i < 4200; i++) {
     const x = hash(i, 1.3) * 512; const y = hash(i, 7.7) * 512;
     // 粒のむら: 中スケールのノイズが濃い所に粒が集まり、薄い所はまばらになる
     const cluster = noise(x / 512 * 5.5 + 13, y / 512 * 5.5 + 29);
     if (hash(i, 4.7) > cluster * 1.35) continue;
     const l = hash(i, 3.1);
-    const size = 1.4 + hash(i, 9.2) * 3.4;
-    if (l > 0.972) ctx.fillStyle = "rgba(168,148,118,0.85)";
-    else if (l > 0.5) ctx.fillStyle = `rgba(122,96,68,${0.4 + l * 0.35})`;
-    else ctx.fillStyle = `rgba(18,12,8,${0.35 + l * 0.5})`;
+    const size = 1 + hash(i, 9.2) * 2.2;
+    if (l > 0.985) ctx.fillStyle = "rgba(144,128,104,0.48)";
+    else if (l > 0.5) ctx.fillStyle = `rgba(91,75,57,${0.22 + l * 0.2})`;
+    else ctx.fillStyle = `rgba(14,11,9,${0.2 + l * 0.3})`;
     ctx.beginPath();
     ctx.arc(x, y, size / 2, 0, Math.PI * 2);
     ctx.fill();
@@ -4673,9 +4798,9 @@ function createProceduralSoilMound(THREE) {
     ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
   }
   // 熊手目: 植物のまわりに同心円の手入れ跡。溝の陰と土の盛りの明を対で描く
-  for (let line = 0; line < 6; line++) {
-    const baseY = 58 + line * 22;
-    for (const [offset, colr, alpha] of [[0, "18,12,8", 0.22], [2.6, "128,102,72", 0.13]]) {
+  for (let line = 0; line < 4; line++) {
+    const baseY = 68 + line * 27;
+    for (const [offset, colr, alpha] of [[0, "14,11,9", 0.13], [2.4, "112,94,70", 0.07]]) {
       ctx.strokeStyle = `rgba(${colr},${alpha})`;
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -4692,12 +4817,12 @@ function createProceduralSoilMound(THREE) {
   map.repeat.set(1.6, 0.9);
   map.colorSpace = THREE.SRGBColorSpace;
   const material = new THREE.MeshStandardMaterial({
-    map, bumpMap: map, bumpScale: 1.3, roughness: 0.82, metalness: 0, vertexColors: true
+    map, bumpMap: map, bumpScale: 0.32, roughness: 0.94, metalness: 0, vertexColors: true
   });
   const group = new THREE.Group();
   group.add(new THREE.Mesh(geo, material));
   // 半分埋まった小石: 大きさの基準になる静かな脇役。植物パレットには染めない
-  for (let s = 0; s < 3; s++) {
+  for (let s = 0; s < 2; s++) {
     const ang = hash(s, 101.3) * Math.PI * 2;
     const rad = 0.42 + hash(s, 107.9) * 0.38;
     const size = 0.016 + hash(s, 113.7) * 0.013;
@@ -4713,37 +4838,63 @@ function createProceduralSoilMound(THREE) {
     stone.rotation.set(hash(s, 131.3) * 0.6, hash(s, 137.9) * Math.PI, hash(s, 139.7) * 0.5);
     const sx = Math.cos(ang) * rad;
     const sz = Math.sin(ang) * rad;
-    stone.position.set(sx, 0.38 * Math.sqrt(Math.max(0, 1 - rad * rad * 0.62)) + size * 0.02, sz);
+    // 丘の高さ係数（0.32）と一致させ、中心を少し沈めて小石を表面へ接地させる。
+    const soilSurfaceY = 0.32 * Math.sqrt(Math.max(0, 1 - rad * rad * 0.62));
+    stone.position.set(sx, soilSurfaceY - size * 0.18, sz);
     stone.userData.noSoilStyle = true;
     group.add(stone);
   }
 
-  // 裾の草株: 生きた庭のしるし。ごく小さく暗い緑で、主役の植物と競わせない
-  const grassMat = new THREE.MeshStandardMaterial({ color: 0x36503e, roughness: 1, metalness: 0 });
-  for (let c = 0; c < 3; c++) {
-    const ang = hash(c, 71.3) * Math.PI * 2;
-    const rad = 0.62 + hash(c, 77.7) * 0.3;
-    const cx = Math.cos(ang) * rad;
-    const cz = Math.sin(ang) * rad;
-    const baseY = 0.38 * Math.sqrt(Math.max(0, 1 - rad * rad * 0.62));
-    const blades = 3 + Math.floor(hash(c, 91.1) * 3);
-    for (let b = 0; b < blades; b++) {
-      const k = c * 10 + b;
-      const h = 0.055 + hash(k, 13.7) * 0.065;
-      const blade = new THREE.Mesh(new THREE.ConeGeometry(0.0055, h, 4), grassMat);
-      blade.userData.noSoilStyle = true; // 草は植物パレットの土染めから除外
-      blade.position.set(
-        cx + (hash(k, 23.9) - 0.5) * 0.07,
-        baseY + h * 0.5 - 0.004,
-        cz + (hash(k, 29.3) - 0.5) * 0.07
-      );
-      blade.rotation.z = (hash(k, 31.7) - 0.5) * 0.75;
-      blade.rotation.x = (hash(k, 37.1) - 0.5) * 0.75;
-      group.add(blade);
-    }
-  }
   proceduralSoilCache = group;
   return group.clone();
+}
+
+// Stage 1専用の植え付け跡。掘り返した土くれが種の根元を囲み「植えた」状態を作る。
+// 接触影の平面ディスクは置かない — 土に沈む種の視線上どうしても手前に重なり、
+// 種が影を貫通しているような違和感になる（植え穴の頂点AOが陰の役を担う。2026-07-23）
+function createSeedPlantingDetail(THREE, plant, settings, soilTopY, soilGroup = null) {
+  const group = new THREE.Group();
+  const centerX = settings.plantX;
+  const centerZ = settings.plantZ + 0.015;
+
+  const paletteSoil = SOIL_STYLES[plant?.id]?.color || "#40362b";
+  const clodMaterial = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(paletteSoil).multiplyScalar(0.72),
+    roughness: 0.98,
+    metalness: 0
+  });
+  const clods = [
+    [-0.105, 0.002, 0.025, 0.024, 0.006],
+    [-0.07, 0.004, -0.075, 0.018, 0.005],
+    [0.025, 0.003, -0.105, 0.022, 0.006],
+    [0.105, 0.002, -0.04, 0.02, 0.005],
+    [0.09, 0.003, 0.07, 0.017, 0.004],
+    [-0.025, 0.002, 0.11, 0.015, 0.004]
+  ];
+  // 各土くれの真下の土表面をレイキャストで測って接地させる。
+  // 山頂の高さ（soilTopY）に一律で置くと、植え穴の窪みや斜面の上で浮いて見える
+  const raycaster = soilGroup ? new THREE.Raycaster() : null;
+  if (soilGroup) soilGroup.updateMatrixWorld(true);
+  const down = new THREE.Vector3(0, -1, 0);
+  const surfaceYAt = (x, z) => {
+    if (!raycaster) return soilTopY;
+    raycaster.set(new THREE.Vector3(x, soilTopY + 1, z), down);
+    const hit = raycaster.intersectObject(soilGroup, true)[0];
+    return hit ? hit.point.y : soilTopY;
+  };
+  clods.forEach(([x, y, z, width, height], index) => {
+    const clod = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 9), clodMaterial);
+    clod.scale.set(width, height, width * (0.58 + index * 0.035));
+    const groundY = surfaceYAt(centerX + x, centerZ + z);
+    // 半分ほど土に沈めて「掘り返した土」として接地させる
+    clod.position.set(centerX + x, groundY + height * 0.45, centerZ + z);
+    clod.rotation.y = index * 1.17;
+    clod.castShadow = false;
+    clod.receiveShadow = true;
+    group.add(clod);
+  });
+
+  return group;
 }
 
 // 土モデルの読み込み口: 土の丘はコード生成、水面の器などは従来どおりGLB

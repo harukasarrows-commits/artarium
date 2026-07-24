@@ -2,12 +2,12 @@
   "plants": {
     "sunflower-bloom": {
       "1": {
-        "plantScale": 0.2057,
+        "plantScale": 0.25,
         "plantX": 0.0005,
-        "plantY": -0.379,
+        "plantY": -0.447,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0,
+        "plantRotZ": 0.68,
         "soilScale": 2.5
       },
       "2": {
@@ -60,10 +60,12 @@
       "1": {
         "plantScale": 0.1251,
         "plantX": 0.0005,
-        "plantY": -0.4487,
+        "plantY": -0.49,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0
+        "plantRotZ": 0.85,
+        "waterOpacity": 0.5,
+        "reflectionOpacity": 0.2
       },
       "2": {
         "plantScale": 0.2471,
@@ -71,7 +73,9 @@
         "plantY": -0.4375,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0
+        "plantRotZ": 0,
+        "waterOpacity": 0.5,
+        "reflectionOpacity": 0.2
       },
       "3": {
         "plantScale": 0.4481,
@@ -79,7 +83,9 @@
         "plantY": -0.367,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0
+        "plantRotZ": 0,
+        "waterOpacity": 0.5,
+        "reflectionOpacity": 0.2
       },
       "4": {
         "plantScale": 0.6121,
@@ -87,7 +93,9 @@
         "plantY": -0.2938,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0
+        "plantRotZ": 0,
+        "waterOpacity": 0.5,
+        "reflectionOpacity": 0.2
       },
       "5": {
         "plantScale": 0.9765,
@@ -95,7 +103,9 @@
         "plantY": -0.0496,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0
+        "plantRotZ": 0,
+        "waterOpacity": 0.5,
+        "reflectionOpacity": 0.2
       },
       "6": {
         "plantScale": 1.46,
@@ -103,17 +113,19 @@
         "plantY": 0.2224,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0
+        "plantRotZ": 0,
+        "waterOpacity": 0.5,
+        "reflectionOpacity": 0.2
       }
     },
     "scream-bloom": {
       "1": {
-        "plantScale": 0.1535,
+        "plantScale": 0.18,
         "plantX": 0.0004,
-        "plantY": -0.3833,
+        "plantY": -0.425,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0,
+        "plantRotZ": 0.55,
         "soilScale": 2.5
       },
       "2": {
@@ -166,10 +178,12 @@
       "1": {
         "plantScale": 0.1178,
         "plantX": 0.0004,
-        "plantY": -0.4557,
+        "plantY": -0.48,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0
+        "plantRotZ": 0.4,
+        "waterOpacity": 0.5,
+        "reflectionOpacity": 0.2
       },
       "2": {
         "plantScale": 0.2454,
@@ -177,7 +191,9 @@
         "plantY": -0.4338,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0
+        "plantRotZ": 0,
+        "waterOpacity": 0.5,
+        "reflectionOpacity": 0.2
       },
       "3": {
         "plantScale": 0.4817,
@@ -185,7 +201,9 @@
         "plantY": -0.3482,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0
+        "plantRotZ": 0,
+        "waterOpacity": 0.5,
+        "reflectionOpacity": 0.2
       },
       "4": {
         "plantScale": 0.6256,
@@ -193,7 +211,9 @@
         "plantY": -0.2143,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0
+        "plantRotZ": 0,
+        "waterOpacity": 0.5,
+        "reflectionOpacity": 0.2
       },
       "5": {
         "plantScale": 0.9166,
@@ -201,7 +221,9 @@
         "plantY": -0.0251,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0
+        "plantRotZ": 0,
+        "waterOpacity": 0.5,
+        "reflectionOpacity": 0.2
       },
       "6": {
         "plantScale": 1.4715,
@@ -209,17 +231,19 @@
         "plantY": -0.1646,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0
+        "plantRotZ": 0,
+        "waterOpacity": 0.5,
+        "reflectionOpacity": 0.2
       }
     },
     "renaissance-smile-bloom": {
       "1": {
-        "plantScale": 0.1503,
+        "plantScale": 0.175,
         "plantX": 0.0005,
-        "plantY": -0.3728,
+        "plantY": -0.44,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0,
+        "plantRotZ": -0.58,
         "soilScale": 2.5
       },
       "2": {
@@ -270,12 +294,12 @@
     },
     "nocturne-sky-bloom": {
       "1": {
-        "plantScale": 0.1525,
+        "plantScale": 0.175,
         "plantX": 0.0004,
-        "plantY": -0.3782,
+        "plantY": -0.445,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0,
+        "plantRotZ": 0.55,
         "soilScale": 2.5
       },
       "2": {
@@ -326,12 +350,12 @@
     },
     "golden-embrace-bloom": {
       "1": {
-        "plantScale": 0.1475,
+        "plantScale": 0.17,
         "plantX": 0.0006,
-        "plantY": -0.3654,
+        "plantY": -0.435,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0,
+        "plantRotZ": -0.66,
         "soilScale": 2.5
       },
       "2": {
@@ -382,12 +406,12 @@
     },
     "monochrome-fracture-bloom": {
       "1": {
-        "plantScale": 0.1637,
+        "plantScale": 0.19,
         "plantX": 0.0001,
-        "plantY": -0.4027,
+        "plantY": -0.425,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0,
+        "plantRotZ": 0.95,
         "soilScale": 2.5
       },
       "2": {
@@ -438,12 +462,12 @@
     },
     "pearl-light-bloom": {
       "1": {
-        "plantScale": 0.1466,
+        "plantScale": 0.16,
         "plantX": 0.0006,
-        "plantY": -0.3819,
+        "plantY": -0.43,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0,
+        "plantRotZ": 0.35,
         "soilScale": 2.5
       },
       "2": {
