@@ -405,5 +405,50 @@
       "Light",
       "Bloom"
     ]
+  },
+  {
+    "id": "milk-pour-bloom",
+    "name": "Milk Pour Bloom",
+    "motif": "Morning Milk",
+    "artist": "Artarium Archive",
+    "year": "1658",
+    "palette": [
+      "#f4efe0",
+      "#3f6ea6",
+      "#d9a648",
+      "#8f4f38"
+    ],
+    "temperament": "注がれるミルクの白い流れと、朝の台所の静けさをまとった植物。",
+    "copy": {
+      "seedLabel": "朝の光を宿す種",
+      "homeCaption": "白いミルクの流れが、青と黄の静かな朝へと育ちます。",
+      "completionNote": "そそがれた白が、静かな朝の花になりました。",
+      "collectionTitle": "そそがれる朝",
+      "collectionLabel": "注がれるミルクと朝の台所の光をイメージした植物作品"
+    },
+    "modelPath": "./models/plants/milk-pour-bloom/stage-01-seed/fig+fruit+3d+model+1k.glb",
+    "stageModelPaths": {
+      "1": "./models/plants/milk-pour-bloom/stage-01-seed/fig+fruit+3d+model+1k.glb",
+      "2": "./models/plants/milk-pour-bloom/stage-02-sprout/leaf+pair+3d+model+1k.glb",
+      "3": "./models/plants/milk-pour-bloom/stage-03-leaves/stylized+plant+3d+model+1k.glb",
+      "4": "./models/plants/milk-pour-bloom/stage-04-bud/ornamental+flower+3d+model+1k.glb",
+      "5": "./models/plants/milk-pour-bloom/stage-05-pre-bloom/ornamental+plant+3d+model+1k.glb",
+      "6": "./models/plants/milk-pour-bloom/stage-06-bloom/botanical+flower+3d+model+1k.glb"
+    },
+    "soilType": "gallery-loam",
+    "defaultFrameType": "white-gallery",
+    "frameOptions": [
+      "museum-black",
+      "walnut",
+      "floating-maple"
+    ],
+    "stageNames": [
+      "Seed",
+      "Drop",
+      "Pour",
+      "Vessel",
+      "Cream",
+      "Bloom"
+    ]
   }
 ]

@@ -4,11 +4,15 @@
 const PORT = 9333;
 const VERSION = process.env.ARTARIUM_V;
 const APP_URL = `http://127.0.0.1:3025/?demo=1${VERSION ? `&v=${encodeURIComponent(VERSION)}` : ""}`;
-const PLANTS = [
+const ALL_PLANTS = [
   "scream-bloom", "sunflower-bloom", "wave-crest-bloom", "aquatic-bloom",
   "renaissance-smile-bloom", "nocturne-sky-bloom", "golden-embrace-bloom",
-  "monochrome-fracture-bloom", "pearl-light-bloom"
+  "monochrome-fracture-bloom", "pearl-light-bloom", "milk-pour-bloom"
 ];
+// ARTARIUM_PLANTS=milk-pour-bloom のように指定すると対象を絞れる。
+// 既存植物のユーザー手動調整を自動調整で上書きしないための安全弁
+const PLANT_FILTER = (process.env.ARTARIUM_PLANTS || "").split(",").filter(Boolean);
+const PLANTS = PLANT_FILTER.length ? ALL_PLANTS.filter((p) => PLANT_FILTER.includes(p)) : ALL_PLANTS;
 const WATER_PLANTS = new Set(["wave-crest-bloom", "aquatic-bloom"]);
 // ステージごとの目標高さ（NDC: 画面全高=2.0）。
 // 方針B（2026-07-09 ユーザー選択）: 花が主役。序盤は小さく、開花に向けて加速して

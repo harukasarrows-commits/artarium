@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-87";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-87";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-87";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-87";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-87";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-90";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-90";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-90";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-90";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-90";
 import {
   STAGE_THRESHOLDS,
   COMPLETION_THRESHOLD,
@@ -12,19 +12,19 @@ import {
   getNextThreshold,
   isPlantComplete,
   trimStepHistory
-} from "./core/progress.js?v=20260710-87";
+} from "./core/progress.js?v=20260710-90";
 import {
   loadProgressState,
   saveProgressState
-} from "./storage/progress-store.js?v=20260710-87";
-import { createModalController } from "./ui/modal-controller.js?v=20260710-87";
-import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-87";
-import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-87";
+} from "./storage/progress-store.js?v=20260710-90";
+import { createModalController } from "./ui/modal-controller.js?v=20260710-90";
+import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-90";
+import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-90";
 import {
   bindHomeStatusView,
   renderCompletionPlaqueView,
   renderHomeProgressView
-} from "./views/home-status-view.js?v=20260710-87";
+} from "./views/home-status-view.js?v=20260710-90";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -66,6 +66,10 @@ const CODEX_NOTES = {
   "pearl-light-bloom": {
     source: "ヨハネス・フェルメール《真珠の耳飾りの少女》1665頃",
     note: "暗闇の中、少女の耳元で一粒の真珠だけが光を集めます。フェルメールが愛した「一点の光」を、この植物は真珠色の球にたたえて育ちます。"
+  },
+  "milk-pour-bloom": {
+    source: "ヨハネス・フェルメール《牛乳を注ぐ女》1658頃",
+    note: "窓辺の台所で、女性が静かにミルクを注ぎ続けています。何気ない日常の一瞬を永遠に変えたその白い流れを、この植物は花びらの白にうけて育ちます。"
   }
 };
 const DAILY_STEP_GOAL = 8000; // 光の道の演出が最大になる1日の歩数
@@ -88,7 +92,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-87";
+const ASSET_VERSION = "20260710-90";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const modalController = createModalController(document);
 const MODEL_STAGE_COUNT = 6;
@@ -129,6 +133,7 @@ const DEFAULT_MODEL_SETTINGS = {
   reflectionOpacity: 0.2,
   shadowOpacity: 1,
   shadowLength: 1,
+  shadowZ: 0,
   reflectionY: 0,
   reflectionZ: 0,
   reflectionSquash: 0.2,
@@ -767,6 +772,51 @@ const fallbackPlants = [
       "Light",
       "Bloom"
     ]
+  },
+  {
+    id: "milk-pour-bloom",
+    name: "Milk Pour Bloom",
+    motif: "Morning Milk",
+    artist: "Artarium Archive",
+    year: "1658",
+    palette: [
+      "#f4efe0",
+      "#3f6ea6",
+      "#d9a648",
+      "#8f4f38"
+    ],
+    temperament: "注がれるミルクの白い流れと、朝の台所の静けさをまとった植物。",
+    copy: {
+      seedLabel: "朝の光を宿す種",
+      homeCaption: "白いミルクの流れが、青と黄の静かな朝へと育ちます。",
+      completionNote: "そそがれた白が、静かな朝の花になりました。",
+      collectionTitle: "そそがれる朝",
+      collectionLabel: "注がれるミルクと朝の台所の光をイメージした植物作品"
+    },
+    modelPath: "./models/plants/milk-pour-bloom/stage-01-seed/fig+fruit+3d+model+1k.glb",
+    stageModelPaths: {
+      1: "./models/plants/milk-pour-bloom/stage-01-seed/fig+fruit+3d+model+1k.glb",
+      2: "./models/plants/milk-pour-bloom/stage-02-sprout/leaf+pair+3d+model+1k.glb",
+      3: "./models/plants/milk-pour-bloom/stage-03-leaves/stylized+plant+3d+model+1k.glb",
+      4: "./models/plants/milk-pour-bloom/stage-04-bud/ornamental+flower+3d+model+1k.glb",
+      5: "./models/plants/milk-pour-bloom/stage-05-pre-bloom/ornamental+plant+3d+model+1k.glb",
+      6: "./models/plants/milk-pour-bloom/stage-06-bloom/botanical+flower+3d+model+1k.glb"
+    },
+    soilType: "gallery-loam",
+    defaultFrameType: "white-gallery",
+    frameOptions: [
+      "museum-black",
+      "walnut",
+      "floating-maple"
+    ],
+    stageNames: [
+      "Seed",
+      "Drop",
+      "Pour",
+      "Vessel",
+      "Cream",
+      "Bloom"
+    ]
   }
 ];
 
@@ -931,7 +981,7 @@ function saveDemoModelSettings() {
 // デモの調整値を焼き込み（data/model-settings.json）と同じ形でダウンロードする。
 // 手動調整の結果をスクショや転記なしで受け渡すための開発用機能（?demo=1 のみ）。
 // 書き出すのは焼き込み対象のキーだけ（鉄則1: 意図したキー以外を固定化しない）
-const BAKED_EXPORT_KEYS = ["plantScale", "plantX", "plantY", "plantRotX", "plantRotY", "plantRotZ", "soilScale", "waterOpacity", "reflectionOpacity", "shadowOpacity", "shadowLength"];
+const BAKED_EXPORT_KEYS = ["plantScale", "plantX", "plantY", "plantRotX", "plantRotY", "plantRotZ", "soilScale", "waterOpacity", "reflectionOpacity", "shadowOpacity", "shadowLength", "shadowZ"];
 
 function exportDemoModelSettings() {
   const plants = {};
@@ -2664,7 +2714,8 @@ function renderDemoModelSettings() {
     { key: "reflectionSquash", label: "反射 潰れ具合", min: 0.03, max: 0.8, step: 0.01 },
     { key: "reflectionScale", label: "反射 サイズ", min: 0.2, max: 2, step: 0.01 },
     { key: "shadowOpacity", label: "影 濃さ", min: 0, max: 2, step: 0.02 },
-    { key: "shadowLength", label: "影 長さ", min: 0.2, max: 2, step: 0.02 }
+    { key: "shadowLength", label: "影 長さ", min: 0.2, max: 2, step: 0.02 },
+    { key: "shadowZ", label: "影 奥行き", min: -1.5, max: 1.5, step: 0.02 }
   ];
   const selectedPlant = getSelectedPlant();
   const selectedProgress = selectedPlant ? state.progress[selectedPlant.id] : null;
@@ -4350,7 +4401,8 @@ function attachSoilContactShadow(THREE, renderer, plantGroup, soilGroup, stage, 
   const sunHeight = Math.max(0, Math.min(1, Number(sunPos?.[1]) || 0));
   const shadowCx = cx - sunSide * w * 0.8;
   const dShadow = d * (1.55 - sunHeight * 0.85);
-  const shadowCz = cz + dShadow * 0.55;
+  // 「影 奥行き」: ＋で手前へ・−で奥へ（太陽連動の基準位置に加算）
+  const shadowCz = cz + dShadow * 0.55 + (modelSettings.shadowZ ?? 0);
   const geometry = mound.geometry.clone();
   const positions = geometry.attributes.position;
   const uv = new Float32Array(positions.count * 2);
@@ -4416,7 +4468,9 @@ const SOIL_STYLES = {
   "nocturne-sky-bloom": { color: "#30343d", emissive: "#0e121a", emissiveIntensity: 0.03, roughness: 0.92 },
   "golden-embrace-bloom": { color: "#4c4028", emissive: "#1b1508", emissiveIntensity: 0.025, roughness: 0.9 },
   "monochrome-fracture-bloom": { color: "#3d3b37", emissive: "#11100f", emissiveIntensity: 0.015, roughness: 0.95 },
-  "pearl-light-bloom": { color: "#484239", emissive: "#17140e", emissiveIntensity: 0.018, roughness: 0.91 }
+  "pearl-light-bloom": { color: "#484239", emissive: "#17140e", emissiveIntensity: 0.018, roughness: 0.91 },
+  // 注がれる朝: 台所の暖かい木の色をごく薄く含ませる
+  "milk-pour-bloom": { color: "#4a4033", emissive: "#191309", emissiveIntensity: 0.02, roughness: 0.93 }
 };
 
 function prepareSoilModel(THREE, object, plant) {

@@ -96,6 +96,13 @@ const PLANT_EFFECTS = {
     glow: { color: 0xf6ecd8, amp: 0.1, speed: 0.8 },
     particles: { type: "drift", color: 0xfff2cc, count: 14, size: 0.055 },
     shed: { kind: "rise", shape: "bubble", colors: [0xfff4d8, 0xf6ecd8, 0xffefe2], additive: true, slow: true }
+  },
+  // 注がれる朝(牛乳を注ぐ女): ミルクの白い雫がゆっくり滴り、朝の光の粒がただよう
+  "milk-pour-bloom": {
+    sway: 0.3,
+    petal: 0xf4efe0, // ミルクの白
+    particles: { type: "drift", color: 0xf8f3e6, count: 16, size: 0.05 },
+    shed: { kind: "droplet", shape: "droplet", colors: [0xf8f4e8, 0xf1e9d6, 0xffffff] }
   }
 };
 

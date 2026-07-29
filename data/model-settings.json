@@ -4,52 +4,52 @@
       "1": {
         "plantScale": 0.25,
         "plantX": 0.0005,
-        "plantY": -0.447,
-        "plantRotX": 0,
-        "plantRotY": -1.57,
-        "plantRotZ": 0.68,
+        "plantY": -0.44,
+        "plantRotX": 0.04,
+        "plantRotY": -1.7,
+        "plantRotZ": 0.3,
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.3116,
+        "plantScale": 0.35,
         "plantX": 0.0005,
-        "plantY": -0.3209,
+        "plantY": -0.34,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.5659,
+        "plantScale": 0.8,
         "plantX": 0.0002,
-        "plantY": -0.2635,
+        "plantY": -0.16,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "4": {
-        "plantScale": 0.8232,
+        "plantScale": 1,
         "plantX": 0.0007,
-        "plantY": -0.1647,
+        "plantY": -0.04,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.7
       },
       "5": {
-        "plantScale": 1.05,
+        "plantScale": 1.2,
         "plantX": 0.002,
-        "plantY": 0.0627,
+        "plantY": 0.16,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 3.245
       },
       "6": {
-        "plantScale": 1.4619,
+        "plantScale": 1.55,
         "plantX": 0.0013,
-        "plantY": 0.2519,
+        "plantY": 0.33,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
@@ -58,19 +58,19 @@
     },
     "wave-crest-bloom": {
       "1": {
-        "plantScale": 0.1251,
+        "plantScale": 0.2,
         "plantX": 0.0005,
-        "plantY": -0.49,
+        "plantY": -0.51,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0.85,
+        "plantRotZ": -0.3,
         "waterOpacity": 0.5,
-        "reflectionOpacity": 0.2
+        "reflectionOpacity": 0.74
       },
       "2": {
-        "plantScale": 0.2471,
+        "plantScale": 0.6,
         "plantX": 0.0002,
-        "plantY": -0.4375,
+        "plantY": -0.3,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
@@ -78,9 +78,9 @@
         "reflectionOpacity": 0.2
       },
       "3": {
-        "plantScale": 0.4481,
+        "plantScale": 1,
         "plantX": 0.0002,
-        "plantY": -0.367,
+        "plantY": -0.1,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
@@ -88,9 +88,9 @@
         "reflectionOpacity": 0.2
       },
       "4": {
-        "plantScale": 0.6121,
+        "plantScale": 1.4,
         "plantX": 0.0004,
-        "plantY": -0.2938,
+        "plantY": 0.08,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
@@ -98,9 +98,9 @@
         "reflectionOpacity": 0.2
       },
       "5": {
-        "plantScale": 0.9765,
+        "plantScale": 1.6,
         "plantX": 0.0007,
-        "plantY": -0.0496,
+        "plantY": 0.22,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
@@ -108,7 +108,7 @@
         "reflectionOpacity": 0.2
       },
       "6": {
-        "plantScale": 1.46,
+        "plantScale": 1.8,
         "plantX": 0.0016,
         "plantY": 0.2224,
         "plantRotX": 0,
@@ -120,54 +120,54 @@
     },
     "scream-bloom": {
       "1": {
-        "plantScale": 0.18,
+        "plantScale": 0.22,
         "plantX": 0.0004,
         "plantY": -0.425,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0.55,
+        "plantRotZ": 0,
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.38,
+        "plantScale": 0.5,
         "plantX": 0.0002,
-        "plantY": -0.356,
+        "plantY": -0.3,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.5062,
+        "plantScale": 0.7,
         "plantX": 0.0003,
-        "plantY": -0.2287,
+        "plantY": -0.15,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "4": {
-        "plantScale": 0.8226,
+        "plantScale": 0.9,
         "plantX": 0.001,
-        "plantY": -0.161,
+        "plantY": -0.08,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.7
       },
       "5": {
-        "plantScale": 1.0592,
+        "plantScale": 1.1,
         "plantX": 0.0016,
-        "plantY": 0.0558,
+        "plantY": 0.08,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 3.245
       },
       "6": {
-        "plantScale": 1.3846,
+        "plantScale": 1.5,
         "plantX": 0.0025,
-        "plantY": 0.0634,
+        "plantY": 0.08,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
@@ -176,17 +176,17 @@
     },
     "aquatic-bloom": {
       "1": {
-        "plantScale": 0.1178,
+        "plantScale": 0.2,
         "plantX": 0.0004,
-        "plantY": -0.48,
+        "plantY": -0.5,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0.4,
+        "plantRotZ": -0.04,
         "waterOpacity": 0.5,
         "reflectionOpacity": 0.2
       },
       "2": {
-        "plantScale": 0.2454,
+        "plantScale": 0.4,
         "plantX": 0.0007,
         "plantY": -0.4338,
         "plantRotX": 0,
@@ -196,9 +196,9 @@
         "reflectionOpacity": 0.2
       },
       "3": {
-        "plantScale": 0.4817,
+        "plantScale": 0.65,
         "plantX": 0.0005,
-        "plantY": -0.3482,
+        "plantY": -0.31,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
@@ -206,9 +206,9 @@
         "reflectionOpacity": 0.2
       },
       "4": {
-        "plantScale": 0.6256,
+        "plantScale": 0.8,
         "plantX": 0.0021,
-        "plantY": -0.2143,
+        "plantY": -0.23,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
@@ -216,7 +216,7 @@
         "reflectionOpacity": 0.2
       },
       "5": {
-        "plantScale": 0.9166,
+        "plantScale": 1.15,
         "plantX": 0.0028,
         "plantY": -0.0251,
         "plantRotX": 0,
@@ -226,10 +226,10 @@
         "reflectionOpacity": 0.2
       },
       "6": {
-        "plantScale": 1.4715,
+        "plantScale": 1.5,
         "plantX": 0.0046,
-        "plantY": -0.1646,
-        "plantRotX": 0,
+        "plantY": -0.28,
+        "plantRotX": 0.26,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "waterOpacity": 0.5,
@@ -238,110 +238,110 @@
     },
     "renaissance-smile-bloom": {
       "1": {
-        "plantScale": 0.175,
+        "plantScale": 0.2,
         "plantX": 0.0005,
         "plantY": -0.44,
-        "plantRotX": 0,
+        "plantRotX": 0.5,
         "plantRotY": -1.57,
-        "plantRotZ": -0.58,
+        "plantRotZ": 0,
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.3031,
+        "plantScale": 0.45,
         "plantX": 0.0003,
-        "plantY": -0.3479,
+        "plantY": -0.27,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.5235,
+        "plantScale": 0.7,
         "plantX": 0.0004,
-        "plantY": -0.2593,
+        "plantY": -0.18,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "4": {
-        "plantScale": 0.7295,
+        "plantScale": 0.9,
         "plantX": 0.0017,
-        "plantY": -0.1501,
+        "plantY": -0.03,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.7
       },
       "5": {
-        "plantScale": 1.0301,
+        "plantScale": 1.1,
         "plantX": 0.0028,
-        "plantY": 0.0741,
+        "plantY": 0.08,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 3.245
       },
       "6": {
-        "plantScale": 1.3088,
+        "plantScale": 1.4,
         "plantX": 0.0056,
-        "plantY": 0.2395,
+        "plantY": 0.18,
         "plantRotX": 0,
-        "plantRotY": -1.57,
+        "plantRotY": -2.01,
         "plantRotZ": 0,
         "soilScale": 3.52
       }
     },
     "nocturne-sky-bloom": {
       "1": {
-        "plantScale": 0.175,
+        "plantScale": 0.2,
         "plantX": 0.0004,
-        "plantY": -0.445,
+        "plantY": -0.44,
         "plantRotX": 0,
-        "plantRotY": -1.57,
-        "plantRotZ": 0.55,
+        "plantRotY": -2,
+        "plantRotZ": 0,
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.3877,
+        "plantScale": 0.5,
         "plantX": 0.0002,
-        "plantY": -0.3557,
+        "plantY": -0.3,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.5147,
+        "plantScale": 0.75,
         "plantX": 0.0004,
-        "plantY": -0.2588,
+        "plantY": -0.14,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "4": {
-        "plantScale": 0.7802,
+        "plantScale": 1,
         "plantX": 0.0007,
-        "plantY": -0.1543,
+        "plantY": 0.01,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.7
       },
       "5": {
-        "plantScale": 1.0473,
+        "plantScale": 1.2,
         "plantX": 0.0021,
-        "plantY": 0.0642,
+        "plantY": 0.16,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 3.245
       },
       "6": {
-        "plantScale": 1.3532,
+        "plantScale": 1.5,
         "plantX": 0.0037,
-        "plantY": 0.1999,
+        "plantY": 0.26,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
@@ -350,54 +350,54 @@
     },
     "golden-embrace-bloom": {
       "1": {
-        "plantScale": 0.17,
+        "plantScale": 0.2,
         "plantX": 0.0006,
         "plantY": -0.435,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": -0.66,
+        "plantRotZ": 0,
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.3737,
+        "plantScale": 0.5,
         "plantX": 0.0004,
-        "plantY": -0.3287,
+        "plantY": -0.31,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.5069,
+        "plantScale": 0.75,
         "plantX": 0.0003,
-        "plantY": -0.2289,
+        "plantY": -0.13,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "4": {
-        "plantScale": 0.7626,
+        "plantScale": 1.25,
         "plantX": 0.0004,
-        "plantY": -0.1353,
+        "plantY": 0.14,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.7
       },
       "5": {
-        "plantScale": 1.0568,
+        "plantScale": 1.25,
         "plantX": 0.0017,
-        "plantY": 0.0577,
+        "plantY": 0.18,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 3.245
       },
       "6": {
-        "plantScale": 1.5284,
+        "plantScale": 1.55,
         "plantX": 0.0038,
-        "plantY": 0.3684,
+        "plantY": 0.35,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
@@ -406,54 +406,54 @@
     },
     "monochrome-fracture-bloom": {
       "1": {
-        "plantScale": 0.19,
+        "plantScale": 0.4,
         "plantX": 0.0001,
-        "plantY": -0.425,
+        "plantY": -0.3,
         "plantRotX": 0,
         "plantRotY": -1.57,
-        "plantRotZ": 0.95,
+        "plantRotZ": 0,
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.3104,
+        "plantScale": 0.5,
         "plantX": 0.0001,
-        "plantY": -0.3619,
+        "plantY": -0.26,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.5076,
+        "plantScale": 0.8,
         "plantX": 0.0003,
-        "plantY": -0.2271,
+        "plantY": -0.11,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "4": {
-        "plantScale": 0.7663,
+        "plantScale": 1.2,
         "plantX": 0.0004,
-        "plantY": -0.1606,
+        "plantY": 0.1,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.7
       },
       "5": {
-        "plantScale": 1.0685,
+        "plantScale": 1.5,
         "plantX": 0.0014,
-        "plantY": 0.052,
+        "plantY": 0.27,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 3.245
       },
       "6": {
-        "plantScale": 1.5393,
+        "plantScale": 1.6,
         "plantX": 0.0009,
-        "plantY": 0.2792,
+        "plantY": 0.36,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
@@ -466,50 +466,106 @@
         "plantX": 0.0006,
         "plantY": -0.43,
         "plantRotX": 0,
-        "plantRotY": -1.57,
+        "plantRotY": -0.8,
         "plantRotZ": 0.35,
         "soilScale": 2.5
       },
       "2": {
-        "plantScale": 0.4999,
+        "plantScale": 0.6,
         "plantX": 0.0005,
-        "plantY": -0.3596,
+        "plantY": -0.32,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "3": {
-        "plantScale": 0.5035,
+        "plantScale": 0.75,
         "plantX": 0.0004,
-        "plantY": -0.2286,
+        "plantY": -0.14,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.5
       },
       "4": {
-        "plantScale": 0.7759,
+        "plantScale": 1.05,
         "plantX": 0.001,
-        "plantY": -0.0699,
+        "plantY": 0.03,
+        "plantRotX": 0,
+        "plantRotY": -1.57,
+        "plantRotZ": 0.04,
+        "soilScale": 2.7
+      },
+      "5": {
+        "plantScale": 1.3,
+        "plantX": -0.02,
+        "plantY": 0.21,
+        "plantRotX": 0,
+        "plantRotY": -1.57,
+        "plantRotZ": 0.1,
+        "soilScale": 3.245
+      },
+      "6": {
+        "plantScale": 1.6,
+        "plantX": 0.04,
+        "plantY": 0.37,
+        "plantRotX": 0,
+        "plantRotY": -1.57,
+        "plantRotZ": 0.08,
+        "soilScale": 3.52
+      }
+    },
+    "milk-pour-bloom": {
+      "1": {
+        "plantScale": 0.131,
+        "plantX": 0.0005,
+        "plantY": -0.4049,
+        "plantRotX": 0,
+        "plantRotY": -1.57,
+        "plantRotZ": 0,
+        "soilScale": 2.5
+      },
+      "2": {
+        "plantScale": 0.35,
+        "plantX": 0.0005,
+        "plantY": -0.34,
+        "plantRotX": 0,
+        "plantRotY": -1.57,
+        "plantRotZ": 0,
+        "soilScale": 2.5
+      },
+      "3": {
+        "plantScale": 0.4512,
+        "plantX": 0.0002,
+        "plantY": -0.2245,
+        "plantRotX": 0,
+        "plantRotY": -1.57,
+        "plantRotZ": 0,
+        "soilScale": 2.5
+      },
+      "4": {
+        "plantScale": 0.7273,
+        "plantX": 0.0007,
+        "plantY": -0.0577,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 2.7
       },
       "5": {
-        "plantScale": 1.0458,
-        "plantX": 0.0023,
-        "plantY": 0.0655,
+        "plantScale": 0.9838,
+        "plantX": 0.002,
+        "plantY": 0.1272,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,
         "soilScale": 3.245
       },
       "6": {
-        "plantScale": 1.4653,
-        "plantX": 0.0036,
-        "plantY": 0.3291,
+        "plantScale": 1.374,
+        "plantX": 0.0013,
+        "plantY": 0.376,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,

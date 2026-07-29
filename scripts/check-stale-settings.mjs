@@ -183,7 +183,8 @@ const modalCheck = await evaluate(`(async () => {
     closeFocused: document.activeElement?.matches?.("[data-recap-close]") === true
   };
   modal.querySelector("[data-recap-close]")?.click();
-  await new Promise((resolve) => setTimeout(resolve, 50));
+  // 退場アニメーション（約300msで畳む。2026-07-24 導入）の完了を待つ
+  await new Promise((resolve) => setTimeout(resolve, 600));
   return {
     opened,
     closed: {
