@@ -122,7 +122,8 @@ h1,
 h2 {
   font-family: var(--font-display);
   font-weight: 400;
-  letter-spacing: -0.02em;
+  /* 和文の題字は広い字間が正（規約）。英語向けの負トラッキングをやめる（2026-07-30） */
+  letter-spacing: 0.06em;
 }
 
 h1 {
@@ -1194,8 +1195,9 @@ body.is-viewing-mode {
   font-family: var(--font-display);
   color: var(--ink);
   font-size: 1.16rem;
-  font-weight: 560;
-  line-height: 1.35;
+  font-weight: 500; /* 明朝の太字多用を避ける（規約: display=セリフ400前後） */
+  letter-spacing: 0.08em;
+  line-height: 1.45;
 }
 
 .shadow-box p {
@@ -4227,4 +4229,161 @@ body.is-demo-mode .demo-control {
   body[data-current-view="settings"] .scroll-edge-veil {
     display: block;
   }
+}
+
+/* 美術館らしい磨き込み（2026-07-29。roadmap #3）
+   壁の漆喰・腰壁と床・常設スポットライト・収蔵票の格上げ・入館演出・展示室ラベル */
+
+/* 壁: ごく細かい漆喰のむらを重ねる（既存の背景の上に描く粒） */
+.gallery-wall::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(1px 1px at 13% 21%, rgba(255, 255, 255, 0.05), transparent 50%),
+    radial-gradient(1px 1px at 67% 9%, rgba(255, 255, 255, 0.04), transparent 50%),
+    radial-gradient(1px 1px at 41% 53%, rgba(255, 255, 255, 0.045), transparent 50%),
+    radial-gradient(1px 1px at 87% 37%, rgba(255, 255, 255, 0.04), transparent 50%),
+    radial-gradient(1px 1px at 23% 79%, rgba(255, 255, 255, 0.045), transparent 50%),
+    radial-gradient(1px 1px at 71% 91%, rgba(255, 255, 255, 0.04), transparent 50%);
+  background-size: 220px 220px;
+  opacity: 0.8;
+}
+
+/* 床の気配: 壁の最下部に腰壁の見切り線と床の帯 */
+.gallery-wall::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 26px;
+  pointer-events: none;
+  border-top: 1px solid rgba(244, 241, 232, 0.09);
+  background: linear-gradient(180deg, rgba(24, 23, 21, 0.85), rgba(10, 10, 10, 0.95));
+}
+
+/* 常設スポットライト: 各作品の上の壁に光だまりを落とす（収蔵演出とは別の常灯） */
+.shadow-box::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -20px;
+  width: 84%;
+  height: 34%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 0, rgba(255, 244, 208, 0.1), rgba(255, 244, 208, 0.03) 45%, transparent 75%);
+  filter: blur(3px);
+}
+
+/* 床の影: 額の下にごく淡い接地の暗がり */
+.shadow-box::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  width: 62%;
+  height: 14px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.32), transparent 70%);
+  filter: blur(4px);
+}
+
+/* 収蔵票: カタログ番号（セリフ体の数字）と素材・技法の行 */
+.plaque-no {
+  margin: 0 0 2px;
+  font-family: var(--font-display, serif);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  color: rgba(194, 164, 94, 0.85);
+}
+
+
+/* 展示室ラベル */
+.gallery-room-label {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 4px 0;
+}
+
+.gallery-room-label .eyebrow {
+  margin: 0;
+}
+
+.gallery-room-label span:last-child {
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  color: rgba(237, 234, 224, 0.66);
+}
+
+/* 入館の演出: 切替時だけ、作品が上から順にふわっと灯る */
+.gallery-wall.is-arriving .shadow-box {
+  animation: work-light-in 480ms ease-out both;
+  animation-delay: calc(min(var(--work-index, 0), 8) * 95ms);
+}
+
+.gallery-wall.is-arriving .gallery-room-label {
+  animation: work-light-in 480ms ease-out both;
+}
+
+@keyframes work-light-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-wall.is-arriving .shadow-box,
+  .gallery-wall.is-arriving .gallery-room-label {
+    animation: none;
+  }
+}
+
+/* 壁の収蔵票では <p> は一括非表示だが、カタログ番号だけは見せる */
+.gallery-wall .artwork-plaque p.plaque-no {
+  display: block;
+}
+
+/* タイポグラフィの全体磨き（2026-07-30 ユーザー要望）
+   - ダーク背景の細い文字を滑らかに描く
+   - 和文見出しに palt（約物・かなの詰め）で本の組版のような佇まいに
+   - 本文は呼吸のある行間とごくわずかな字間
+   - 変動する数値は等幅数字にして桁の揺れを止める */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: 0.01em;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-feature-settings: "palt" 1;
+}
+
+.section-head h2 {
+  letter-spacing: 0.14em;
+}
+
+p {
+  line-height: 1.7;
+}
+
+#growth-progress-percent,
+#settings-today-steps,
+.settings-row strong,
+.plaque-no {
+  font-variant-numeric: tabular-nums;
+}
+
+.artwork-plaque small,
+.codex-source {
+  letter-spacing: 0.06em;
 }

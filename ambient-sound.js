@@ -7,6 +7,8 @@
 
 let enabled = false;
 let audioCtx = null;
+let masterGain = null;
+let quietMode = false; // 展示室の静けさ: コレクション表示中は全体をひそめる
 let rainSource = null;
 let rainGain = null;
 let rainLevel = 0;
@@ -25,6 +27,24 @@ function ensureContext() {
     audioCtx.resume();
   }
   return audioCtx;
+}
+
+// すべての音の出口。展示室の静けさ（コレクション表示中の減衰）を一括で掛ける
+function masterOut(ctx) {
+  if (!masterGain || masterGain.context !== ctx) {
+    masterGain = ctx.createGain();
+    masterGain.gain.value = quietMode ? 0.4 : 1;
+    masterGain.connect(ctx.destination);
+  }
+  return masterGain;
+}
+
+// 美術館の静けさ: コレクション表示中は環境音をひそめる（2026-07-29）
+export function setAmbienceQuiet(on) {
+  quietMode = Boolean(on);
+  if (masterGain && audioCtx) {
+    masterGain.gain.setTargetAtTime(quietMode ? 0.4 : 1, audioCtx.currentTime, 0.6);
+  }
 }
 
 function noiseBuffer(ctx, seconds) {
@@ -49,7 +69,7 @@ function startRainLoop() {
   highpass.frequency.value = 350;
   rainGain = audioCtx.createGain();
   rainGain.gain.value = 0;
-  rainSource.connect(lowpass).connect(highpass).connect(rainGain).connect(audioCtx.destination);
+  rainSource.connect(lowpass).connect(highpass).connect(rainGain).connect(masterOut(audioCtx));
   rainSource.start();
 }
 
@@ -84,7 +104,7 @@ function playBirdChirp() {
     gain.gain.setValueAtTime(0.0001, t);
     gain.gain.exponentialRampToValueAtTime(0.018 + Math.random() * 0.012, t + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
-    osc.connect(gain).connect(ctx.destination);
+    osc.connect(gain).connect(masterOut(ctx));
     osc.start(t);
     osc.stop(t + 0.2);
   }
@@ -106,7 +126,7 @@ function playFlockCall() {
     gain.gain.setValueAtTime(0.0001, t);
     gain.gain.exponentialRampToValueAtTime(0.005 + Math.random() * 0.003, t + 0.03);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
-    osc.connect(gain).connect(ctx.destination);
+    osc.connect(gain).connect(masterOut(ctx));
     osc.start(t);
     osc.stop(t + 0.26);
   }
@@ -154,7 +174,7 @@ function startCricketLoop() {
   const master = ctx.createGain();
   master.gain.value = 0;
   phrase.connect(phraseDepth).connect(master.gain);
-  osc.connect(am).connect(master).connect(ctx.destination);
+  osc.connect(am).connect(master).connect(masterOut(ctx));
   osc.start();
   vibrato.start();
   pulse.start();
@@ -180,7 +200,7 @@ function startWindLoop() {
   sway.connect(swayDepth).connect(lowpass.frequency);
   const gain = ctx.createGain();
   gain.gain.value = 0;
-  source.connect(lowpass).connect(gain).connect(ctx.destination);
+  source.connect(lowpass).connect(gain).connect(masterOut(ctx));
   source.start();
   sway.start();
   windNodes = { gain };
@@ -236,7 +256,7 @@ export function playRipplePlop(strength = 0.3) {
   gain.gain.setValueAtTime(0.0001, t);
   gain.gain.exponentialRampToValueAtTime(volume, t + 0.012);
   gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22 + size * 0.2);
-  osc.connect(gain).connect(ctx.destination);
+  osc.connect(gain).connect(masterOut(ctx));
   osc.start(t);
   osc.stop(t + 0.6);
 }
@@ -260,7 +280,7 @@ function playThunder() {
   gain.gain.exponentialRampToValueAtTime(0.22, t + 0.08);
   gain.gain.exponentialRampToValueAtTime(0.06, t + duration * 0.5);
   gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-  source.connect(lowpass).connect(gain).connect(ctx.destination);
+  source.connect(lowpass).connect(gain).connect(masterOut(ctx));
   source.start(t);
 }
 

@@ -66,6 +66,7 @@ export function renderCollectionView(documentRef, options) {
     plants,
     progress,
     newlyCollectedPlantId,
+    animateArrival = false,
     getCollectionTitle,
     getArchiveLine,
     paletteVars,
@@ -101,13 +102,29 @@ export function renderCollectionView(documentRef, options) {
     return;
   }
 
-  wall.innerHTML = displayedPlants.map((plant) => {
+  // 入館演出は切替時だけ（開いたままの再描画で作品が点滅しないように）
+  wall.classList?.toggle?.("is-arriving", animateArrival);
+
+  const ROOM_SIZE = 6; // 展示室ひと部屋あたりの作品数
+  const ROOM_NAMES = ["一", "二", "三"];
+  const ROOM_CODES = ["I", "II", "III"];
+  wall.innerHTML = displayedPlants.map((plant, index) => {
     const title = getCollectionTitle(plant);
     const frameType = progress[plant.id]?.frameType ?? plant.defaultFrameType ?? "walnut";
+    const room = Math.floor(index / ROOM_SIZE);
+    const roomLabel = index % ROOM_SIZE === 0
+      ? `
+        <div class="gallery-room-label" aria-hidden="true">
+          <span class="eyebrow">Gallery ${ROOM_CODES[room] ?? room + 1}</span>
+          <span>第${ROOM_NAMES[room] ?? room + 1}展示室</span>
+        </div>
+      `
+      : "";
     return `
+      ${roomLabel}
       <article
         class="shadow-box ${plant.id === newlyCollectedPlantId ? "is-new-arrival" : ""}"
-        style="${escapeHtml(`${paletteVars(plant)}${backdropVars("nocturne")}`)}"
+        style="${escapeHtml(`${paletteVars(plant)}${backdropVars("nocturne")}`)}--work-index:${index};"
         data-gallery-open="${escapeHtml(plant.id)}"
         role="button"
         tabindex="0"
@@ -131,6 +148,7 @@ export function renderCollectionView(documentRef, options) {
         </div>
         <div class="artwork-plaque">
           <div>
+            <p class="plaque-no">No. ${String(index + 1).padStart(2, "0")}</p>
             <h3>${escapeHtml(title)}</h3>
             <p>${escapeHtml(plant.copy?.collectionLabel ?? plant.motif)}</p>
             <small>${escapeHtml(getArchiveLine(plant))}</small>

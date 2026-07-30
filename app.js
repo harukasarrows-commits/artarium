@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-90";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-90";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-90";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-90";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls } from "./ambient-sound.js?v=20260710-90";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-94";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-94";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-94";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-94";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-94";
 import {
   STAGE_THRESHOLDS,
   COMPLETION_THRESHOLD,
@@ -12,19 +12,19 @@ import {
   getNextThreshold,
   isPlantComplete,
   trimStepHistory
-} from "./core/progress.js?v=20260710-90";
+} from "./core/progress.js?v=20260710-94";
 import {
   loadProgressState,
   saveProgressState
-} from "./storage/progress-store.js?v=20260710-90";
-import { createModalController } from "./ui/modal-controller.js?v=20260710-90";
-import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-90";
-import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-90";
+} from "./storage/progress-store.js?v=20260710-94";
+import { createModalController } from "./ui/modal-controller.js?v=20260710-94";
+import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-94";
+import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-94";
 import {
   bindHomeStatusView,
   renderCompletionPlaqueView,
   renderHomeProgressView
-} from "./views/home-status-view.js?v=20260710-90";
+} from "./views/home-status-view.js?v=20260710-94";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -92,7 +92,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-90";
+const ASSET_VERSION = "20260710-94";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const modalController = createModalController(document);
 const MODEL_STAGE_COUNT = 6;
@@ -1778,14 +1778,20 @@ function render() {
   initGalleryModelViewers();
 }
 
+let lastRenderedView = null;
+
 function renderCollectionViews() {
   const shared = {
     plants: state.plants,
     progress: state.progress
   };
+  // 入館演出はビューを切り替えた瞬間だけ（開いたままの再描画では動かさない）
+  const arriving = lastRenderedView !== state.currentView && state.currentView === "gallery";
+  lastRenderedView = state.currentView;
   renderCollectionView(document, {
     ...shared,
     newlyCollectedPlantId: state.newlyCollectedPlantId,
+    animateArrival: arriving,
     getCollectionTitle,
     getArchiveLine,
     paletteVars,
@@ -1818,6 +1824,8 @@ function renderTabs() {
   document.querySelectorAll(".tab-button").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.view === state.currentView);
   });
+  // 美術館の静けさ: コレクション表示中は環境音をひそめる
+  setAmbienceQuiet(state.currentView === "gallery");
 }
 
 let seedPreviewId = null;
@@ -2988,12 +2996,20 @@ function closeGalleryFocus() {
   setTimeout(onDone, 320);
 }
 
+// ハイブリッド回転: 絵の中身は指の動きどおりに、額はその一部だけ浅く追従する。
+// 追従率は端＋ラバーバンド時でも旧カード傾きの安全圏（±0.13）に収まる値にする
+// （額を深く回すと固定の描画領域との境界が黒い枠として見えてしまう）
+const GALLERY_FRAME_FOLLOW = 0.24;
+
 function updateGalleryFocusAngle() {
   const stage = document.querySelector("[data-gallery-focus-stage]");
   if (!stage) return;
   stage.dataset.viewYaw = String(state.galleryFocusAngle);
   if (stage.__artariumDisplayGroup && stage.__artariumScene) {
     stage.__artariumDisplayGroup.rotation.y = state.galleryFocusAngle;
+    if (stage.__artariumFrameGroup) {
+      stage.__artariumFrameGroup.rotation.y = state.galleryFocusAngle * GALLERY_FRAME_FOLLOW;
+    }
     stage.__artariumScene.renderer.render(stage.__artariumScene.scene, stage.__artariumScene.camera);
   }
 }
@@ -3458,8 +3474,9 @@ async function createGalleryScene(container, runtime, token) {
   });
   const environmentType = container.dataset.environment || "soil";
   const plantDefinition = state.plants.find((plant) => plant.id === container.dataset.plantId);
-  const [frameModel, plantModel, soilModel] = await Promise.all([
-    safeLoadGltf(loader, container.dataset.frameModel),
+  // 額はすべて手続き生成（2026-07-14）のため、GLBの額は読み込まない。
+  // 旧実装は未使用のまま読み込んでおり、存在しない額GLBへの404と無駄な転送が出ていた（2026-07-29 掃除）
+  const [plantModel, soilModel] = await Promise.all([
     loadGltf(loader, container.dataset.plantModel),
     // 額の中は「描かれた絵」として見せる: 土植物は3Dの土を置かず、
     // 背景に描いた大地と足元の影で受ける（2026-07-14。水面植物は従来どおり）
@@ -3486,8 +3503,8 @@ async function createGalleryScene(container, runtime, token) {
   scene.add(keyLight);
   addArtworkMaterialLights(THREE, scene, plantDefinition);
 
-  // 額はCSSの額（.fallback-frame）で描く。GLBの額は箱の奥行きが深く、
-  // 作品と重ねると板が植物を隠すため使わない（モデルは残置、frameModelは読み込むが未使用）
+  // 額はCSSの額（.fallback-frame）とシーン内の手続き生成で描く。
+  // GLBの額は箱の奥行きが深く、作品と重ねると板が植物を隠すため使わない
   const frame = null;
   container.classList.toggle("has-frame-model", false);
   const plant = normalizeModel(THREE, plantModel.scene, modelSettings.plantScale);
@@ -3539,9 +3556,10 @@ async function createGalleryScene(container, runtime, token) {
   }, Number(container.dataset.stage) || 1);
   if (plantEffects) artworkGroup.add(plantEffects.group);
   displayGroup.add(artworkGroup);
-  displayGroup.rotation.y = Number(container.dataset.viewYaw) || 0;
+  // ドラッグ回転は額（frameGroup）でなく絵の中身にだけ掛ける
+  artworkGroup.rotation.y = Number(container.dataset.viewYaw) || 0;
   scene.add(displayGroup);
-  container.__artariumDisplayGroup = displayGroup;
+  container.__artariumDisplayGroup = artworkGroup;
   container.__artariumScene = { renderer, scene, camera };
 
   const resize = () => {
@@ -3667,6 +3685,9 @@ async function createGalleryScene(container, runtime, token) {
       backTexture: getPaintedBackdropTexture(THREE, plantDefinition)
     });
     displayGroup.add(frameGroup);
+    // ハイブリッド回転（2026-07-30 ユーザー選択）: 額もドラッグにわずかに追従する
+    container.__artariumFrameGroup = frameGroup;
+    frameGroup.rotation.y = (Number(container.dataset.viewYaw) || 0) * GALLERY_FRAME_FOLLOW;
     container.classList.add("has-procedural-frame");
     renderer.render(scene, camera);
   }
@@ -3682,51 +3703,12 @@ async function createGalleryScene(container, runtime, token) {
     startSceneAnimationLoop(container, token, renderer, scene, camera, { waterSurface, plantEffects });
   }
 
-  // 拡大表示（フォーカス）: トレーディングカードを愛でるように、正面を
-  // 向いたまま触れた方向へ少しだけ傾く。指を離すとゆっくり正面に戻る
+  // 拡大表示（フォーカス）のドラッグ回転はモーダル側の startGalleryFocusDrag が担う
+  // （慣性つき。旧トレーディングカード式の傾きは二重操作になるため廃止。2026-07-29）。
+  // 額は壁に掛かったまま動かさず、絵の中身（artworkGroup）だけが視差で動く —
+  // 額ごと回すと固定の描画領域との境界が見えて違和感が出るため
   if (container.classList.contains("gallery-focus-stage")) {
-    const dragTarget = renderer.domElement;
-    displayGroup.rotation.set(0, 0, 0);
-    const MAX_TILT_YAW = 0.13; // 左右の傾き（約7.5度）。上下には傾けない
-    const tilt = { y: 0, targetY: 0 };
-    let pressing = false;
-    let rafId = 0;
-    const animateTilt = () => {
-      tilt.y += (tilt.targetY - tilt.y) * 0.16;
-      displayGroup.rotation.y = tilt.y;
-      renderer.render(scene, camera);
-      const settled = !pressing && Math.abs(tilt.y - tilt.targetY) < 0.001;
-      rafId = settled ? 0 : requestAnimationFrame(animateTilt);
-    };
-    const startTiltAnimation = () => {
-      if (!rafId) rafId = requestAnimationFrame(animateTilt);
-    };
-    // 触れた側をカードの端を押し込むように奥へ傾ける
-    const applyPointer = (event) => {
-      const rect = dragTarget.getBoundingClientRect();
-      const nx = Math.max(-1, Math.min(1, ((event.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1));
-      tilt.targetY = nx * MAX_TILT_YAW;
-    };
-    dragTarget.style.cursor = "grab";
-    dragTarget.addEventListener("pointerdown", (event) => {
-      pressing = true;
-      dragTarget.setPointerCapture(event.pointerId);
-      dragTarget.style.cursor = "grabbing";
-      applyPointer(event);
-      startTiltAnimation();
-    });
-    dragTarget.addEventListener("pointermove", (event) => {
-      if (!pressing) return;
-      applyPointer(event);
-    });
-    const endTilt = () => {
-      pressing = false;
-      tilt.targetY = 0;
-      dragTarget.style.cursor = "grab";
-      startTiltAnimation();
-    };
-    dragTarget.addEventListener("pointerup", endTilt);
-    dragTarget.addEventListener("pointercancel", endTilt);
+    renderer.domElement.style.cursor = "grab";
   }
 }
 
