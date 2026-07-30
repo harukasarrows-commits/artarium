@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-94";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-94";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-94";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-94";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-94";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-96";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-96";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-96";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-96";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-96";
 import {
   STAGE_THRESHOLDS,
   COMPLETION_THRESHOLD,
@@ -12,19 +12,19 @@ import {
   getNextThreshold,
   isPlantComplete,
   trimStepHistory
-} from "./core/progress.js?v=20260710-94";
+} from "./core/progress.js?v=20260710-96";
 import {
   loadProgressState,
   saveProgressState
-} from "./storage/progress-store.js?v=20260710-94";
-import { createModalController } from "./ui/modal-controller.js?v=20260710-94";
-import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-94";
-import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-94";
+} from "./storage/progress-store.js?v=20260710-96";
+import { createModalController } from "./ui/modal-controller.js?v=20260710-96";
+import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-96";
+import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-96";
 import {
   bindHomeStatusView,
   renderCompletionPlaqueView,
   renderHomeProgressView
-} from "./views/home-status-view.js?v=20260710-94";
+} from "./views/home-status-view.js?v=20260710-96";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -92,7 +92,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-94";
+const ASSET_VERSION = "20260710-96";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const modalController = createModalController(document);
 const MODEL_STAGE_COUNT = 6;
@@ -2216,7 +2216,7 @@ function applyStepSnapshot(data, status) {
   render();
 }
 
-function addStepsToSelectedPlant(steps, status) {
+function addStepsToSelectedPlant(steps, status, { throttleRender = false } = {}) {
   resetDailyStepsIfNeeded();
   state.steps.todaySteps += steps;
   state.steps.totalSteps += steps;
@@ -2224,7 +2224,8 @@ function addStepsToSelectedPlant(steps, status) {
   recordDailySteps();
   state.steps.sourceStatus = status;
   saveProgress();
-  render();
+  if (throttleRender) scheduleStepRender();
+  else render();
 }
 
 function addGrowthFromSteps(steps) {
@@ -2531,7 +2532,20 @@ function handleDeviceMotion(event) {
 
   if (!isStepLikePeak) return;
   state.steps.lastStepAt = now;
-  addStepsToSelectedPlant(1, "簡易歩数計で歩数を検知しています");
+  addStepsToSelectedPlant(1, "簡易歩数計で歩数を検知しています", { throttleRender: true });
+}
+
+// 歩行中は1歩ごと（最短320ms間隔）に検知が続く。毎歩フル再描画すると
+// 画面がちらつくため（2026-07-30 実機報告）、歩数は即時加算しつつ
+// 画面の描き直しは1.2秒に1回へ間引く
+let stepRenderTimer = 0;
+
+function scheduleStepRender() {
+  if (stepRenderTimer) return;
+  stepRenderTimer = window.setTimeout(() => {
+    stepRenderTimer = 0;
+    render();
+  }, 1200);
 }
 
 function resetDailyStepsIfNeeded() {
@@ -4748,15 +4762,24 @@ function startSceneAnimationLoop(container, token, renderer, scene, camera, { wa
     frameCount++;
     if (container.getClientRects().length === 0) return;
     if (!needsFullFrameRate && frameCount % 2 === 0) return;
-    // 傾き視差: カメラをわずかに動かし、空は逆方向へずらして奥行きを出す
-    if (deviceTilt.active) {
-      parallaxX += (deviceTilt.x * 0.14 - parallaxX) * 0.08;
-      parallaxY += (deviceTilt.y * 0.08 - parallaxY) * 0.08;
+    // 傾き視差: カメラをわずかに動かし、空は逆方向へずらして奥行きを出す。
+    // 通常時は端末の揺れで画面が動かないよう、鑑賞モード中のみ効かせる
+    // （2026-07-30 ユーザー要望。デモの視差プレビューは従来どおり）
+    const parallaxOn = deviceTilt.active
+      && (document.body.classList.contains("is-viewing-mode") || (DEMO_MODE && demoMouseParallax));
+    const parallaxTargetX = parallaxOn ? deviceTilt.x * 0.14 : 0;
+    const parallaxTargetY = parallaxOn ? deviceTilt.y * 0.08 : 0;
+    if (parallaxOn || Math.abs(parallaxX) > 0.0005 || Math.abs(parallaxY) > 0.0005) {
+      parallaxX += (parallaxTargetX - parallaxX) * 0.08;
+      parallaxY += (parallaxTargetY - parallaxY) * 0.08;
       camera.position.x = baseCameraX + parallaxX;
       camera.position.y = baseCameraY - parallaxY;
       const skyCanvas = container.querySelector(":scope > .sky-canvas");
       if (skyCanvas) {
-        skyCanvas.style.transform = `translate(${(-parallaxX * 60).toFixed(1)}px, ${(parallaxY * 30).toFixed(1)}px) scale(1.08)`;
+        // 解除後に静定したら空の変形も外す（掛けっぱなしにしない）
+        skyCanvas.style.transform = parallaxOn || Math.abs(parallaxX) > 0.0005 || Math.abs(parallaxY) > 0.0005
+          ? `translate(${(-parallaxX * 60).toFixed(1)}px, ${(parallaxY * 30).toFixed(1)}px) scale(1.08)`
+          : "";
       }
     }
     const breatheTarget = !reduceMotion && document.body.classList.contains("is-viewing-mode") ? 1 : 0;
