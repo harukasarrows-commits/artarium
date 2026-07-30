@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#1C2B23"/>
-  <g transform="translate(107 95) scale(3.1)">
+  <!-- マスク用の全面版: Androidが円や角丸に切り抜くため、背景は四隅まで塗り、
+       モチーフは安全圏（中心の直径80%の円）に収める -->
+  <rect width="512" height="512" fill="#1C2B23"/>
+  <g transform="translate(116.8 105.2) scale(2.9)">
     <rect x="10" y="6" width="76" height="92" rx="8" fill="none" stroke="#C9A85C" stroke-width="5.5"/>
     <path d="M48 76 V41" stroke="#EDEAE0" stroke-width="5" stroke-linecap="round" fill="none"/>
     <path d="M48 52 C35 51 25.5 42 24 27 C38.5 29.5 47.5 39 48 52 Z" fill="#EDEAE0"/>
