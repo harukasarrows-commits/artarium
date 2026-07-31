@@ -518,9 +518,9 @@
     },
     "milk-pour-bloom": {
       "1": {
-        "plantScale": 0.131,
+        "plantScale": 0.2,
         "plantX": 0.0005,
-        "plantY": -0.4049,
+        "plantY": -0.37,
         "plantRotX": 0,
         "plantRotY": -1.57,
         "plantRotZ": 0,

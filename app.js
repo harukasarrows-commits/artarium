@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-98";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-98";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-98";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-98";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-98";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-100";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-100";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-100";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-100";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-100";
 import {
   STAGE_THRESHOLDS,
   COMPLETION_THRESHOLD,
@@ -12,19 +12,20 @@ import {
   getNextThreshold,
   isPlantComplete,
   trimStepHistory
-} from "./core/progress.js?v=20260710-98";
+} from "./core/progress.js?v=20260710-100";
 import {
   loadProgressState,
-  saveProgressState
-} from "./storage/progress-store.js?v=20260710-98";
-import { createModalController } from "./ui/modal-controller.js?v=20260710-98";
-import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-98";
-import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-98";
+  saveProgressState,
+  clearProgressState
+} from "./storage/progress-store.js?v=20260710-100";
+import { createModalController } from "./ui/modal-controller.js?v=20260710-100";
+import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-100";
+import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-100";
 import {
   bindHomeStatusView,
   renderCompletionPlaqueView,
   renderHomeProgressView
-} from "./views/home-status-view.js?v=20260710-98";
+} from "./views/home-status-view.js?v=20260710-100";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -92,7 +93,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-98";
+const ASSET_VERSION = "20260710-100";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const modalController = createModalController(document);
 const MODEL_STAGE_COUNT = 6;
@@ -835,6 +836,9 @@ async function init() {
   }
   migrateWaterSurfaceAssignments();
   normalizeCompletedPlants();
+  // 永続ストレージを要求: 端末のストレージ整理でサイトデータが自動削除されるのを防ぐ
+  // （2026-07-31 実機で進行データ消失の報告があったため。インストール済みPWAは通常許可される）
+  navigator.storage?.persist?.().catch(() => {});
   // 焼き込み値は「初期値」ボタンの戻し先としても使うため保持しておく
   state.bakedModelSettings = await loadBakedModelSettings();
   applyBakedModelSettings(state.bakedModelSettings);
@@ -1315,6 +1319,8 @@ function bindEvents() {
       return arePlantEffectsEnabled();
     },
     onReset: resetArtariumProgress,
+    onExportData: exportArtariumData,
+    onImportData: importArtariumData,
     onEditAuthor: openNameEntryModal,
     onStartMotion: startMotionStepCounter,
     onSyncSteps: syncSmartphoneSteps,
@@ -2874,9 +2880,54 @@ function renderDemoModelSettings() {
   `;
 }
 
+// データのバックアップ（2026-07-31 実機での進行データ消失の報告を受けて追加）:
+// 進行・作者名・調整オーバーライドをJSONファイルとして書き出し、別の端末や
+// 消失後の復元に使えるようにする
+function exportArtariumData() {
+  const payload = {
+    app: "artarium",
+    exportedAt: new Date().toISOString(),
+    progressState: JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"),
+    userName: localStorage.getItem(USER_PROFILE_STORAGE_KEY) || "",
+    tunedOverrides: state.tunedOverrides || {}
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+  link.href = url;
+  link.download = `artarium-backup-${stamp}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  state.steps.sourceStatus = "バックアップを書き出しました";
+  render();
+}
+
+async function importArtariumData(file) {
+  try {
+    const payload = JSON.parse(await file.text());
+    if (payload?.app !== "artarium" || !payload.progressState) {
+      alert("Artariumのバックアップファイルではないようです。");
+      return;
+    }
+    if (!confirm("バックアップの内容で現在のデータを置き換えます。よろしいですか？")) return;
+    saveProgressState(localStorage, STORAGE_KEY, payload.progressState);
+    if (payload.userName) localStorage.setItem(USER_PROFILE_STORAGE_KEY, payload.userName);
+    if (payload.tunedOverrides) {
+      state.tunedOverrides = payload.tunedOverrides;
+      saveTunedOverrides();
+    }
+    // 読み込んだ状態で開き直す（起動時の移行・焼き込み・オーバーライド適用を通すため）
+    window.location.reload();
+  } catch (error) {
+    console.warn("Backup import failed:", error);
+    alert("バックアップの読み込みに失敗しました。ファイルが壊れている可能性があります。");
+  }
+}
+
 function resetArtariumProgress() {
   if (!confirm("Artariumの進行状況を初期化しますか？")) return;
-  localStorage.removeItem(STORAGE_KEY);
+  clearProgressState(localStorage, STORAGE_KEY); // 予備コピーも消す（残すと再起動で復活する）
   localStorage.removeItem(MOTION_AUTO_KEY);
   state.progress = loadProgress(state.plants, {});
   state.steps = loadStepState({});

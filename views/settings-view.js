@@ -42,6 +42,15 @@ export function bindSettingsView(documentRef, handlers) {
     setText(documentRef, "settings-effects-state", handlers.onToggleEffects() ? "オン" : "オフ");
   });
   documentRef.getElementById("settings-reset-button")?.addEventListener("click", handlers.onReset);
+  documentRef.getElementById("settings-export-button")?.addEventListener("click", handlers.onExportData);
+  documentRef.getElementById("settings-import-button")?.addEventListener("click", () => {
+    documentRef.getElementById("settings-import-file")?.click();
+  });
+  documentRef.getElementById("settings-import-file")?.addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    if (file) handlers.onImportData(file);
+    event.target.value = "";
+  });
   documentRef.getElementById("settings-author-button")?.addEventListener("click", handlers.onEditAuthor);
   documentRef.getElementById("settings-motion-button")?.addEventListener("click", handlers.onStartMotion);
   documentRef.getElementById("settings-sync-button")?.addEventListener("click", handlers.onSyncSteps);

@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Artarium">
     <title>Artarium - 名画の庭</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260710-98">
-    <link rel="icon" href="./icon.svg?v=20260710-98" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="./icon-apple-180.png?v=20260710-98">
-    <link rel="stylesheet" href="./styles.css?v=20260710-98">
+    <link rel="manifest" href="./manifest.webmanifest?v=20260710-100">
+    <link rel="icon" href="./icon.svg?v=20260710-100" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon-apple-180.png?v=20260710-100">
+    <link rel="stylesheet" href="./styles.css?v=20260710-100">
   </head>
   <body>
     <div class="app-shell">
@@ -153,6 +153,15 @@
                   <span>接続状態</span>
                   <strong id="network-status-label">確認中</strong>
                 </div>
+                <button class="settings-row" id="settings-export-button" type="button">
+                  <span>データを書き出す（バックアップ）</span>
+                  <strong>保存</strong>
+                </button>
+                <button class="settings-row" id="settings-import-button" type="button">
+                  <span>データを読み込む（復元）</span>
+                  <strong>選択</strong>
+                </button>
+                <input type="file" id="settings-import-file" accept="application/json,.json" hidden>
                 <button class="settings-row is-danger" id="settings-reset-button" type="button">
                   <span>進行を初期化</span>
                   <strong>Reset</strong>
@@ -210,6 +219,6 @@
       </form>
     </div>
 
-    <script src="./app.js?v=20260710-98" type="module"></script>
+    <script src="./app.js?v=20260710-100" type="module"></script>
   </body>
 </html>
