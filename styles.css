@@ -444,6 +444,12 @@ h3 {
 
 .viewing-mode-button::before {
   content: "";
+  /* ボタン内には読み上げ用の隠し文字も並ぶため、その行の高さに
+     押されないよう目のアイコンは中心へ絶対配置する（2026-08-03） */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 19px;
   height: 19px;
   background: currentColor;
@@ -3259,7 +3265,6 @@ body.is-demo-mode .demo-control {
   width: 20px;
   height: 20px;
   margin: 0;
-  transform: none;
 }
 
 .daily-hero.has-growth-progress .daily-copy {
