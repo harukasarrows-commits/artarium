@@ -32,6 +32,9 @@ uniform float uBoltX;
 uniform float uCloudScale;
 uniform float uGlint;
 uniform float uMoonPhase;
+uniform float uSeasonId;    // 0=春 1=夏 2=秋 3=冬（季節の星座の切り替え）
+uniform vec3 uShoreTint;    // 対岸の季節色（春霞・夏の深緑・秋の茜・冬の雪化粧）
+uniform float uShoreTintAmt;
 
 float hash21(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
@@ -79,6 +82,8 @@ void main() {
     + 0.05 * fbm(vec2(p.x * 0.9 + 11.0, 2.0))
     + 0.012 * fbm(vec2(p.x * 7.0 + 3.0, 8.0));
   vec3 shoreCol = mix(uZenith, uHorizon, 0.35) * 0.42;
+  // 対岸の季節色: 春霞・夏の深緑・秋の茜・冬の雪化粧（強さはJS側で昼夜も加味）
+  shoreCol = mix(shoreCol, uShoreTint, uShoreTintAmt);
   float shoreVisibility = 1.0 - uFog * 0.75;
 
   vec3 col;
@@ -116,11 +121,62 @@ void main() {
         float twinkleBright = 0.55 + 0.45 * sin(uTime * (1.2 + h * 2.0) + h * 60.0);
         col += starCol * (core + spikes) * twinkleBright * 1.1 * uStars * horizonFade;
       }
-      // 天の川: 斜めに流れるごく淡い光の帯。
+      // 天の川: 深夜・快晴のときだけ浮かぶ光の帯（雲・薄明で消える。2026-08-03 強化）。
+      // 淡い雲状のむら + 暗黒帯 + 帯の中の微細な星粒で構成する。
       // pow(負値, 2.0) はGLSLで未定義（SafariでNaN化しうる）ため、乗算で二乗する
-      float bandDist = dot(p - vec2(0.15, 0.9), normalize(vec2(0.55, 1.0)));
-      float band = exp(-bandDist * bandDist * 26.0);
-      col += vec3(0.72, 0.8, 0.95) * band * fbm(p * 6.0 + 3.0) * 0.05 * uStars * horizonFade;
+      float deepNight = smoothstep(0.5, 0.9, uStars); // 21時ごろから見え始め、深夜に濃くなる
+      float clearSky = 1.0 - smoothstep(0.12, 0.45, uCloudAmount);
+      float mwOn = deepNight * clearSky;
+      if (mwOn > 0.004) {
+        float bandDist = dot(p - vec2(0.15, 0.9), normalize(vec2(0.55, 1.0)));
+        float band = exp(-bandDist * bandDist * 16.0);
+        float wisps = fbm(p * 5.0 + 3.0) * 0.65 + fbm(p * 11.0 - 2.0) * 0.35;
+        float darkLane = smoothstep(0.3, 0.72, fbm(p * 7.5 + 9.0));
+        col += vec3(0.7, 0.78, 0.95) * band * wisps * (0.5 + 0.5 * darkLane) * 0.14 * mwOn * horizonFade;
+        // 帯の中の星粒（既存の星より細かく淡い）
+        float grain = step(0.986, hash21(cell + 12.7));
+        col += vec3(0.85, 0.9, 1.0) * band * grain * exp(-d * d * 220.0) * 0.45 * mwOn * horizonFade;
+
+        // 季節の星座: 深夜の快晴時、季節ごとのひと組が浮かぶ（2026-08-03）。
+        // 位置は画面上部の空き（月と重なりにくい左上寄り）。座標は縦横比補正済み
+        vec2 cA = vec2(0.3 * ar, 0.68);
+        float cs = 0.0;
+        float csGlow = 0.0;
+        vec2 q;
+        if (uSeasonId < 0.5) {
+          // 春: 北斗七星（柄杓）
+          q = p - (cA + vec2(-0.105, 0.055)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(-0.066, 0.038)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(-0.03, 0.031)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.0, 0.015)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.045, 0.02)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.055, -0.026)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.006, -0.03)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+        } else if (uSeasonId < 1.5) {
+          // 夏: 夏の大三角（ベガ・デネブ・アルタイル）
+          q = p - (cA + vec2(-0.06, 0.07)); cs += exp(-dot(q, q) * 18000.0) * 1.25; csGlow += exp(-dot(q, q) * 2200.0) * 1.2;
+          q = p - (cA + vec2(0.075, 0.05)); cs += exp(-dot(q, q) * 20000.0) * 0.95; csGlow += exp(-dot(q, q) * 2400.0);
+          q = p - (cA + vec2(0.005, -0.078)); cs += exp(-dot(q, q) * 19000.0) * 1.1; csGlow += exp(-dot(q, q) * 2300.0);
+        } else if (uSeasonId < 2.5) {
+          // 秋: カシオペヤ座（W字）
+          q = p - (cA + vec2(-0.082, 0.012)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(-0.04, 0.048)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.0, 0.004)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.04, 0.052)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.082, 0.02)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+        } else {
+          // 冬: オリオン座（肩2・三つ星・足2）
+          q = p - (cA + vec2(-0.055, 0.078)); cs += exp(-dot(q, q) * 20000.0) * 1.05; csGlow += exp(-dot(q, q) * 2400.0);
+          q = p - (cA + vec2(0.056, 0.085)); cs += exp(-dot(q, q) * 22000.0) * 0.9; csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(-0.02, 0.006)); cs += exp(-dot(q, q) * 24000.0) * 0.85; csGlow += exp(-dot(q, q) * 2800.0);
+          q = p - (cA + vec2(0.0, 0.0)); cs += exp(-dot(q, q) * 24000.0) * 0.85; csGlow += exp(-dot(q, q) * 2800.0);
+          q = p - (cA + vec2(0.02, -0.006)); cs += exp(-dot(q, q) * 24000.0) * 0.85; csGlow += exp(-dot(q, q) * 2800.0);
+          q = p - (cA + vec2(-0.05, -0.082)); cs += exp(-dot(q, q) * 20000.0) * 1.15; csGlow += exp(-dot(q, q) * 2400.0);
+          q = p - (cA + vec2(0.052, -0.074)); cs += exp(-dot(q, q) * 22000.0) * 0.9; csGlow += exp(-dot(q, q) * 2600.0);
+        }
+        float csTwinkle = 0.82 + 0.18 * sin(uTime * 0.9 + uSeasonId * 7.0);
+        col += vec3(0.95, 0.97, 1.0) * (cs * 1.05 + csGlow * 0.2) * csTwinkle * mwOn * horizonFade;
+      }
     }
 
     // 月: 夜、今日の実際の月齢の形で昇る（影の円をずらして欠けを作る古典手法）
@@ -349,13 +405,28 @@ export function setSkySeasonOverride(key) {
   seasonOverride = SEASON_MODIFIERS[key] ? key : null;
 }
 
-function getSeasonModifier(month) {
-  if (seasonOverride) return SEASON_MODIFIERS[seasonOverride];
-  if (month >= 3 && month <= 5) return SEASON_MODIFIERS.spring;
-  if (month >= 6 && month <= 8) return SEASON_MODIFIERS.summer;
-  if (month >= 9 && month <= 11) return SEASON_MODIFIERS.autumn;
-  return SEASON_MODIFIERS.winter;
+function getSeasonKey(month) {
+  if (seasonOverride) return seasonOverride;
+  if (month >= 3 && month <= 5) return "spring";
+  if (month >= 6 && month <= 8) return "summer";
+  if (month >= 9 && month <= 11) return "autumn";
+  return "winter";
 }
+
+function getSeasonModifier(month) {
+  return SEASON_MODIFIERS[getSeasonKey(month)];
+}
+
+const SEASON_IDS = { spring: 0, summer: 1, autumn: 2, winter: 3 };
+
+// 対岸の季節色（2026-08-03）: 春霞のくすんだ薄紅・夏の深緑・秋の茜・冬の雪化粧。
+// amount は昼の最大値。夜は描画側で控えめにする
+const SHORE_SEASON_TINTS = {
+  spring: { color: [0.5, 0.46, 0.44], amount: 0.28 },
+  summer: { color: [0.15, 0.28, 0.19], amount: 0.34 },
+  autumn: { color: [0.42, 0.24, 0.13], amount: 0.34 },
+  winter: { color: [0.72, 0.76, 0.8], amount: 0.58 }
+};
 
 function mixColor(base, [target, amount]) {
   return base.map((v, i) => v + (target[i] - v) * amount);
@@ -553,7 +624,10 @@ export function mountSkyBackground(container, options = {}) {
     boltX: gl.getUniformLocation(program, "uBoltX"),
     cloudScale: gl.getUniformLocation(program, "uCloudScale"),
     glint: gl.getUniformLocation(program, "uGlint"),
-    moonPhase: gl.getUniformLocation(program, "uMoonPhase")
+    moonPhase: gl.getUniformLocation(program, "uMoonPhase"),
+    seasonId: gl.getUniformLocation(program, "uSeasonId"),
+    shoreTint: gl.getUniformLocation(program, "uShoreTint"),
+    shoreTintAmt: gl.getUniformLocation(program, "uShoreTintAmt")
   };
 
   // 落雷のタイミング管理（雷雨のときだけ数秒おきに光る）
@@ -914,6 +988,13 @@ export function mountSkyBackground(container, options = {}) {
     gl.uniform1f(u.cloudScale, season.cloudScale);
     gl.uniform1f(u.glint, stepProgress);
     gl.uniform1f(u.moonPhase, currentMoonPhase());
+    // 対岸の季節色と季節の星座（星座は深夜・快晴のみシェーダー側で表示判断）
+    const seasonKey = getSeasonKey(now.getMonth() + 1);
+    const shoreTint = SHORE_SEASON_TINTS[seasonKey];
+    const shoreDay = 1 - sky.stars; // 夜は季節色を控えめに（シルエットの闇を保つ）
+    gl.uniform1f(u.seasonId, SEASON_IDS[seasonKey]);
+    gl.uniform3fv(u.shoreTint, shoreTint.color);
+    gl.uniform1f(u.shoreTintAmt, shoreTint.amount * (0.3 + 0.7 * shoreDay));
 
     // 落雷: 数秒おきに稲妻 + 明滅（チカチカと減衰する）
     let flash = 0;
