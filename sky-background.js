@@ -64,6 +64,14 @@ float fbm(vec2 p) {
   return v;
 }
 
+// 星座の1星: 鋭い芯＋ごく淡い十字の煌めき（ガウス玉だけだと「にじみ」に見えるため）。
+// 周囲の星と馴染む大きさに抑える（2026-08-04 ユーザー指摘で縮小）
+float cstar(vec2 q, float k) {
+  float core = exp(-dot(q, q) * k * 20.0);
+  float spikes = (exp(-abs(q.x) * 1400.0) + exp(-abs(q.y) * 1400.0)) * exp(-length(q) * 240.0) * 0.34;
+  return core + spikes;
+}
+
 void main() {
   vec2 uv = gl_FragCoord.xy / uRes;
   float ar = uRes.x / uRes.y;
@@ -132,10 +140,19 @@ void main() {
         float band = exp(-bandDist * bandDist * 16.0);
         float wisps = fbm(p * 5.0 + 3.0) * 0.65 + fbm(p * 11.0 - 2.0) * 0.35;
         float darkLane = smoothstep(0.3, 0.72, fbm(p * 7.5 + 9.0));
-        col += vec3(0.7, 0.78, 0.95) * band * wisps * (0.5 + 0.5 * darkLane) * 0.14 * mwOn * horizonFade;
-        // 帯の中の星粒（既存の星より細かく淡い）
-        float grain = step(0.986, hash21(cell + 12.7));
-        col += vec3(0.85, 0.9, 1.0) * band * grain * exp(-d * d * 220.0) * 0.45 * mwOn * horizonFade;
+        col += vec3(0.7, 0.78, 0.95) * band * wisps * (0.5 + 0.5 * darkLane) * 0.11 * mwOn * horizonFade;
+        // 帯の中の星粒（帯の中心ほど密に。もやではなく粒の集まりに見せる主役）
+        float grain = step(0.986 - band * 0.05, hash21(cell + 12.7));
+        col += vec3(0.85, 0.9, 1.0) * band * grain * exp(-d * d * 220.0) * 0.5 * mwOn * horizonFade;
+        // さらに細かい微光星の層（細かいグリッドで無数の点を敷く・個別にゆっくり瞬く）
+        vec2 cell2 = floor(p * grid * 2.3);
+        vec2 f2 = fract(p * grid * 2.3);
+        vec2 sp2 = vec2(hash21(cell2 + 4.2), hash21(cell2 + 8.4)) * 0.8 + 0.1;
+        float d2 = length(f2 - sp2);
+        float h2 = hash21(cell2 + 17.3);
+        float grain2 = step(0.84 - band * 0.1, h2);
+        float tw2 = 0.72 + 0.28 * sin(uTime * (0.6 + h2 * 1.8) + h2 * 50.0);
+        col += vec3(0.8, 0.87, 1.0) * band * band * grain2 * exp(-d2 * d2 * 320.0) * 0.4 * tw2 * mwOn * horizonFade;
 
         // 季節の星座: 深夜の快晴時、季節ごとのひと組が浮かぶ（2026-08-03）。
         // 位置は画面上部の空き（月と重なりにくい左上寄り）。座標は縦横比補正済み
@@ -145,37 +162,37 @@ void main() {
         vec2 q;
         if (uSeasonId < 0.5) {
           // 春: 北斗七星（柄杓）
-          q = p - (cA + vec2(-0.105, 0.055)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
-          q = p - (cA + vec2(-0.066, 0.038)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
-          q = p - (cA + vec2(-0.03, 0.031)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
-          q = p - (cA + vec2(0.0, 0.015)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
-          q = p - (cA + vec2(0.045, 0.02)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
-          q = p - (cA + vec2(0.055, -0.026)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
-          q = p - (cA + vec2(0.006, -0.03)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(-0.105, 0.055)); cs += cstar(q, 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(-0.066, 0.038)); cs += cstar(q, 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(-0.03, 0.031)); cs += cstar(q, 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.0, 0.015)); cs += cstar(q, 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.045, 0.02)); cs += cstar(q, 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.055, -0.026)); cs += cstar(q, 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.006, -0.03)); cs += cstar(q, 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
         } else if (uSeasonId < 1.5) {
           // 夏: 夏の大三角（ベガ・デネブ・アルタイル）
-          q = p - (cA + vec2(-0.06, 0.07)); cs += exp(-dot(q, q) * 18000.0) * 1.25; csGlow += exp(-dot(q, q) * 2200.0) * 1.2;
-          q = p - (cA + vec2(0.075, 0.05)); cs += exp(-dot(q, q) * 20000.0) * 0.95; csGlow += exp(-dot(q, q) * 2400.0);
-          q = p - (cA + vec2(0.005, -0.078)); cs += exp(-dot(q, q) * 19000.0) * 1.1; csGlow += exp(-dot(q, q) * 2300.0);
+          q = p - (cA + vec2(-0.06, 0.07)); cs += cstar(q, 18000.0) * 1.25; csGlow += exp(-dot(q, q) * 2200.0) * 1.2;
+          q = p - (cA + vec2(0.075, 0.05)); cs += cstar(q, 20000.0) * 0.95; csGlow += exp(-dot(q, q) * 2400.0);
+          q = p - (cA + vec2(0.005, -0.078)); cs += cstar(q, 19000.0) * 1.1; csGlow += exp(-dot(q, q) * 2300.0);
         } else if (uSeasonId < 2.5) {
           // 秋: カシオペヤ座（W字）
-          q = p - (cA + vec2(-0.082, 0.012)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
-          q = p - (cA + vec2(-0.04, 0.048)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
-          q = p - (cA + vec2(0.0, 0.004)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
-          q = p - (cA + vec2(0.04, 0.052)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
-          q = p - (cA + vec2(0.082, 0.02)); cs += exp(-dot(q, q) * 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(-0.082, 0.012)); cs += cstar(q, 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(-0.04, 0.048)); cs += cstar(q, 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.0, 0.004)); cs += cstar(q, 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.04, 0.052)); cs += cstar(q, 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(0.082, 0.02)); cs += cstar(q, 22000.0); csGlow += exp(-dot(q, q) * 2600.0);
         } else {
           // 冬: オリオン座（肩2・三つ星・足2）
-          q = p - (cA + vec2(-0.055, 0.078)); cs += exp(-dot(q, q) * 20000.0) * 1.05; csGlow += exp(-dot(q, q) * 2400.0);
-          q = p - (cA + vec2(0.056, 0.085)); cs += exp(-dot(q, q) * 22000.0) * 0.9; csGlow += exp(-dot(q, q) * 2600.0);
-          q = p - (cA + vec2(-0.02, 0.006)); cs += exp(-dot(q, q) * 24000.0) * 0.85; csGlow += exp(-dot(q, q) * 2800.0);
-          q = p - (cA + vec2(0.0, 0.0)); cs += exp(-dot(q, q) * 24000.0) * 0.85; csGlow += exp(-dot(q, q) * 2800.0);
-          q = p - (cA + vec2(0.02, -0.006)); cs += exp(-dot(q, q) * 24000.0) * 0.85; csGlow += exp(-dot(q, q) * 2800.0);
-          q = p - (cA + vec2(-0.05, -0.082)); cs += exp(-dot(q, q) * 20000.0) * 1.15; csGlow += exp(-dot(q, q) * 2400.0);
-          q = p - (cA + vec2(0.052, -0.074)); cs += exp(-dot(q, q) * 22000.0) * 0.9; csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(-0.055, 0.078)); cs += cstar(q, 20000.0) * 1.05; csGlow += exp(-dot(q, q) * 2400.0);
+          q = p - (cA + vec2(0.056, 0.085)); cs += cstar(q, 22000.0) * 0.9; csGlow += exp(-dot(q, q) * 2600.0);
+          q = p - (cA + vec2(-0.02, 0.006)); cs += cstar(q, 24000.0) * 0.85; csGlow += exp(-dot(q, q) * 2800.0);
+          q = p - (cA + vec2(0.0, 0.0)); cs += cstar(q, 24000.0) * 0.85; csGlow += exp(-dot(q, q) * 2800.0);
+          q = p - (cA + vec2(0.02, -0.006)); cs += cstar(q, 24000.0) * 0.85; csGlow += exp(-dot(q, q) * 2800.0);
+          q = p - (cA + vec2(-0.05, -0.082)); cs += cstar(q, 20000.0) * 1.15; csGlow += exp(-dot(q, q) * 2400.0);
+          q = p - (cA + vec2(0.052, -0.074)); cs += cstar(q, 22000.0) * 0.9; csGlow += exp(-dot(q, q) * 2600.0);
         }
         float csTwinkle = 0.82 + 0.18 * sin(uTime * 0.9 + uSeasonId * 7.0);
-        col += vec3(0.95, 0.97, 1.0) * (cs * 1.05 + csGlow * 0.2) * csTwinkle * mwOn * horizonFade;
+        col += vec3(0.95, 0.97, 1.0) * (cs * 1.8 + csGlow * 0.07) * csTwinkle * mwOn * horizonFade;
       }
     }
 
