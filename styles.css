@@ -3017,14 +3017,15 @@ body::after {
   mask: var(--tab-icon) center / contain no-repeat;
 }
 
-/* ホーム: 額縁の中で育つ芽（ブランドマークの簡略形） */
+/* ホーム: 額縁の中で育つ双葉（アプリアイコンと同じ構図。葉1枚だと数字の1に見えるため） */
 .tab-button[data-view="home"] {
-  --tab-icon: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M12 17v-6"/><path d="M12 11c-2.6-.2-4.4-2-4.7-4.7C10 6.6 11.8 8.4 12 11Z" fill="black" stroke="none"/></svg>');
+  --tab-icon: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M12 17v-6"/><path d="M12 11c-2.6-.2-4.4-2-4.7-4.7C10 6.6 11.8 8.4 12 11Z" fill="black" stroke="none"/><path d="M12 11c2.6-.2 4.4-2 4.7-4.7C14 6.6 12.2 8.4 12 11Z" fill="black" stroke="none"/></svg>');
 }
 
-/* コレクション: 壁に並ぶ2枚の額 */
+/* コレクション: 重なって飾られた2枚の額（横並び2矩形は小サイズで「口o」と文字に読めたため）。
+   CSSマスク方式は透明度しか見ないため、背面の額はSVG内マスクで前面ぶんを切り抜く */
 .tab-button[data-view="gallery"] {
-  --tab-icon: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="9" height="12" rx="1.5"/><rect x="15" y="8" width="6" height="9" rx="1.5"/></svg>');
+  --tab-icon: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round"><defs><mask id="g"><rect width="24" height="24" fill="white"/><rect x="2.9" y="6.9" width="13.2" height="15.2" rx="1.6" fill="black"/></mask></defs><rect x="9" y="3" width="11" height="13" rx="1" mask="url(%23g)"/><rect x="4" y="8" width="11" height="13" rx="1"/></svg>');
 }
 
 /* 図鑑（将来用） */
