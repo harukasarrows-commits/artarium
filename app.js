@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-111";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener } from "./sky-background.js?v=20260710-111";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-111";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-111";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-111";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-115";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener, pokeSkyMoon } from "./sky-background.js?v=20260710-115";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-115";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-115";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-115";
 import {
   STAGE_THRESHOLDS,
   COMPLETION_THRESHOLD,
@@ -12,20 +12,20 @@ import {
   getNextThreshold,
   isPlantComplete,
   trimStepHistory
-} from "./core/progress.js?v=20260710-111";
+} from "./core/progress.js?v=20260710-115";
 import {
   loadProgressState,
   saveProgressState,
   clearProgressState
-} from "./storage/progress-store.js?v=20260710-111";
-import { createModalController } from "./ui/modal-controller.js?v=20260710-111";
-import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-111";
-import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-111";
+} from "./storage/progress-store.js?v=20260710-115";
+import { createModalController } from "./ui/modal-controller.js?v=20260710-115";
+import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-115";
+import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-115";
 import {
   bindHomeStatusView,
   renderCompletionPlaqueView,
   renderHomeProgressView
-} from "./views/home-status-view.js?v=20260710-111";
+} from "./views/home-status-view.js?v=20260710-115";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -93,7 +93,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-111";
+const ASSET_VERSION = "20260710-115";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const modalController = createModalController(document);
 const MODEL_STAGE_COUNT = 6;
@@ -185,6 +185,7 @@ let debugWeatherKey = "";
 let lastRealWeather = null;
 // デモ版の確認用: 季節・光の道の強制値と、PC用マウス視差
 let debugSeasonKey = "";
+let debugSpecialKey = ""; // 隠し要素の確認用（七夕・オーロラ・初日の出）
 let debugGlintOverride = null;
 let debugHourOverride = null;
 let demoMouseParallax = false;
@@ -356,6 +357,7 @@ const state = {
   frameChoicePlantId: "",
   galleryFocusPlantId: "",
   galleryFocusAngle: 0,
+  galleryFocusFlipped: false,
   demoModelStage: 1,
   demoStageGrowth: 1,
   demoModelSettings: loadDemoModelSettings(),
@@ -1360,13 +1362,33 @@ function bindEvents() {
   galleryFocusModal?.addEventListener("click", (event) => {
     if (event.target === galleryFocusModal || event.target.closest("[data-gallery-focus-close]")) {
       closeGalleryFocus();
+      return;
+    }
+    // 隠し要素: 裏返っている額はどこをタップしても表に戻る
+    // （裏返した長押しの指を離した瞬間のclickで即座に戻らないよう、1回だけ無視する）
+    if (galleryFlipClickGuard) {
+      galleryFlipClickGuard = false;
+      return;
+    }
+    const flip = event.target.closest("[data-gallery-focus-flip]");
+    if (flip && state.galleryFocusFlipped) {
+      state.galleryFocusFlipped = false;
+      flip.classList.remove("is-flipped");
     }
   });
 
   galleryFocusModal?.addEventListener("pointerdown", (event) => {
     const dragTarget = event.target.closest("[data-gallery-focus-drag]");
     if (!dragTarget) return;
+    // 裏返し中はドラッグ回転させない（表に戻すタップだけ受ける）
+    if (state.galleryFocusFlipped) return;
     startGalleryFocusDrag(event, dragTarget);
+  });
+
+  // 隠し要素: 夜、空にかかる月に触れると満ち欠けがひと巡りする（2026-08-05）
+  document.getElementById("home-view")?.addEventListener("click", (event) => {
+    if (event.target.closest("button, a, input, select, label")) return;
+    pokeSkyMoon(event.clientX, event.clientY);
   });
 
   document.addEventListener("keydown", (event) => {
@@ -1453,6 +1475,12 @@ function bindEvents() {
     if (hourSelect) {
       debugHourOverride = hourSelect.value === "" ? null : Number(hourSelect.value);
       setSkyHourOverride(debugHourOverride);
+      return;
+    }
+    const specialSelect = event.target.closest("[data-demo-special-select]");
+    if (specialSelect) {
+      debugSpecialKey = specialSelect.value;
+      window.__artariumSkySpecial = debugSpecialKey ? { [debugSpecialKey]: 1 } : {};
       return;
     }
     const glintSelect = event.target.closest("[data-demo-glint-select]");
@@ -2819,6 +2847,15 @@ function renderDemoModelSettings() {
         </select>
       </label>
       <label class="demo-control demo-select-control">
+        <span>特別な日（隠し要素）</span>
+        <select data-demo-special-select>
+          <option value="" ${debugSpecialKey === "" ? "selected" : ""}>通常</option>
+          <option value="tanabata" ${debugSpecialKey === "tanabata" ? "selected" : ""}>七夕（21時と併用）</option>
+          <option value="aurora" ${debugSpecialKey === "aurora" ? "selected" : ""}>オーロラ（冬・21時と併用）</option>
+          <option value="newYear" ${debugSpecialKey === "newYear" ? "selected" : ""}>初日の出（朝6時と併用）</option>
+        </select>
+      </label>
+      <label class="demo-control demo-select-control">
         <span>光の道（歩数達成度）</span>
         <select data-demo-glint-select>
           <option value="" ${debugGlintOverride === null ? "selected" : ""}>実際の歩数</option>
@@ -3034,6 +3071,7 @@ function openGalleryFocus(plantId) {
   if (!progress?.displayed) return;
   state.galleryFocusPlantId = plantId;
   state.galleryFocusAngle = 0;
+  state.galleryFocusFlipped = false;
   renderGalleryFocusModal();
   initGalleryModelViewers();
 }
@@ -3043,6 +3081,7 @@ function closeGalleryFocus() {
   const finish = () => {
     state.galleryFocusPlantId = "";
     state.galleryFocusAngle = 0;
+    state.galleryFocusFlipped = false;
     renderGalleryFocusModal();
   };
   if (!modal || modal.hidden) {
@@ -3085,6 +3124,8 @@ function updateGalleryFocusAngle() {
 // - 慣性で回っている最中に掴むと、その場で止まって指に追従する（中断可能）
 const GALLERY_FOCUS_ANGLE_LIMIT = 0.38;
 let galleryFocusInertiaFrame = 0;
+// 長押しで裏返した直後のclickを1回だけ握りつぶすためのガード
+let galleryFlipClickGuard = false;
 
 function rubberbandOvershoot(overshoot, range = GALLERY_FOCUS_ANGLE_LIMIT, give = 0.55) {
   return (overshoot * range * give) / (range + give * Math.abs(overshoot));
@@ -3095,13 +3136,26 @@ function startGalleryFocusDrag(event, target) {
   cancelAnimationFrame(galleryFocusInertiaFrame);
   const pointerId = event.pointerId;
   const startX = event.clientX;
+  const startY = event.clientY;
   const startAngle = state.galleryFocusAngle;
   const history = [{ x: event.clientX, t: performance.now() }];
   target.setPointerCapture?.(pointerId);
   target.classList.add("is-dragging");
+  let moved = false;
+
+  // 隠し要素: 指を動かさず押し続けると額が裏返り、キャンバスの裏の署名が見える（2026-08-05）
+  // クラスだけでなく state に持つ（開いている間の再レンダリングでもめくれたままにする）
+  const longPressTimer = setTimeout(() => {
+    if (moved) return;
+    state.galleryFocusFlipped = true;
+    galleryFlipClickGuard = true;
+    target.querySelector("[data-gallery-focus-flip]")?.classList.add("is-flipped");
+    stop({ pointerId, clientX: startX, synthetic: true });
+  }, 550);
 
   const move = (moveEvent) => {
     if (moveEvent.pointerId !== pointerId) return;
+    if (Math.abs(moveEvent.clientX - startX) > 8 || Math.abs(moveEvent.clientY - startY) > 8) moved = true;
     const raw = startAngle + (moveEvent.clientX - startX) * 0.004;
     let angle = raw;
     if (raw > GALLERY_FOCUS_ANGLE_LIMIT) {
@@ -3116,11 +3170,13 @@ function startGalleryFocusDrag(event, target) {
   };
   const stop = (stopEvent) => {
     if (stopEvent.pointerId !== pointerId) return;
+    clearTimeout(longPressTimer);
     target.releasePointerCapture?.(pointerId);
     target.classList.remove("is-dragging");
     target.removeEventListener("pointermove", move);
     target.removeEventListener("pointerup", stop);
     target.removeEventListener("pointercancel", stop);
+    if (stopEvent.synthetic) return; // 裏返しで終了したときは慣性を付けない
     // 直近~120msの移動から離した瞬間の速度を求める（角度/ms）
     const now = performance.now();
     const past = history.find((entry) => now - entry.t <= 120) || history[0];
@@ -3253,22 +3309,34 @@ function renderGalleryFocusModal() {
         data-gallery-focus-drag
         style="${paletteVars(plant)}${backdropVars(backdropType)}"
       >
-        <div
-          class="model-stage gallery-focus-stage ${plant.id === "pearl-light-bloom" ? "is-pearl-material" : ""}"
-          data-gallery-focus-stage
-          data-model-viewer
-          data-view-yaw="${state.galleryFocusAngle}"
-          data-stage="6"
-          data-plant-id="${plant.id}"
-          data-plant-model="${getPlantModelPath(plant, 6)}"
-          data-soil-model="${getSoilModelPath(plant)}"
-          data-environment="${getEnvironmentTypeForPlant(plant)}"
-          data-frame-model="${getFrameModelPath(plant)}"
-          data-frame-type="${progress.frameType}"
-          data-backdrop-type="${backdropType}"
-          data-settings-source="production"
-        >
-          ${galleryViewerMarkup(plant)}
+        <div class="gallery-focus-flip ${state.galleryFocusFlipped ? "is-flipped" : ""}" data-gallery-focus-flip>
+          <div class="gallery-focus-face gallery-focus-front">
+            <div
+              class="model-stage gallery-focus-stage ${plant.id === "pearl-light-bloom" ? "is-pearl-material" : ""}"
+              data-gallery-focus-stage
+              data-model-viewer
+              data-view-yaw="${state.galleryFocusAngle}"
+              data-stage="6"
+              data-plant-id="${plant.id}"
+              data-plant-model="${getPlantModelPath(plant, 6)}"
+              data-soil-model="${getSoilModelPath(plant)}"
+              data-environment="${getEnvironmentTypeForPlant(plant)}"
+              data-frame-model="${getFrameModelPath(plant)}"
+              data-frame-type="${progress.frameType}"
+              data-backdrop-type="${backdropType}"
+              data-settings-source="production"
+            >
+              ${galleryViewerMarkup(plant)}
+            </div>
+          </div>
+          <div class="gallery-focus-face gallery-focus-back" aria-hidden="true">
+            <div class="canvas-back">
+              <p class="canvas-back-eyebrow">Artarium Collection</p>
+              <p class="canvas-back-title">${getCollectionTitle(plant)}</p>
+              <div class="canvas-back-row"><span>Artist</span><p class="canvas-back-sign">${escapeHtml(state.userName || "Artarium Artist")}</p></div>
+              <div class="canvas-back-row"><span>収蔵</span><p class="canvas-back-date">${formatArchiveDate(progress.collectedAt) || escapeHtml(plant.year ?? "")}</p></div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="artwork-plaque gallery-focus-plaque">

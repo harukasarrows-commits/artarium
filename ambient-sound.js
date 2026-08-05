@@ -18,6 +18,7 @@ let windNodes = null;
 let timescapeTimer = 0;
 let birdTimer = 0;
 let flockTimer = 0;
+let owlTimer = 0;
 
 function ensureContext() {
   if (!audioCtx) {
@@ -226,11 +227,51 @@ function scheduleBirds() {
   }, 5000 + Math.random() * 8000);
 }
 
+// フクロウ: 深夜、遠くの森からかすかに「ホッ…ホー」と届く（隠し要素 2026-08-05）
+// デバッグ: window.__artariumOwl?.() で即時に1声鳴かせられる
+function playOwlHoot() {
+  const ctx = ensureContext();
+  const start = ctx.currentTime + 0.05;
+  const notes = [
+    { at: 0, freq: 340, dur: 0.22, vol: 0.012 },
+    { at: 0.45, freq: 312, dur: 0.6, vol: 0.016 }
+  ];
+  notes.forEach((n) => {
+    const t = start + n.at;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const lowpass = ctx.createBiquadFilter();
+    lowpass.type = "lowpass";
+    lowpass.frequency.value = 620; // 距離感: 高い成分を落として遠くの声にする
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(n.freq, t);
+    osc.frequency.exponentialRampToValueAtTime(n.freq * 0.93, t + n.dur);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(n.vol, t + 0.07);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + n.dur);
+    osc.connect(lowpass).connect(gain).connect(masterOut(ctx));
+    osc.start(t);
+    osc.stop(t + n.dur + 0.1);
+  });
+}
+window.__artariumOwl = playOwlHoot;
+
+function scheduleOwl() {
+  window.clearTimeout(owlTimer);
+  owlTimer = window.setTimeout(() => {
+    const hour = new Date().getHours();
+    // 深夜（23時〜3時）の静かな夜だけ、しかも毎回は鳴かない
+    if (enabled && (hour >= 23 || hour < 3) && rainLevel < 0.3 && Math.random() < 0.5) playOwlHoot();
+    scheduleOwl();
+  }, 50000 + Math.random() * 80000);
+}
+
 function startTimescape() {
   startCricketLoop();
   startWindLoop();
   if (!timescapeTimer) timescapeTimer = window.setInterval(updateTimescape, 60000);
   scheduleBirds();
+  scheduleOwl();
   updateTimescape();
 }
 

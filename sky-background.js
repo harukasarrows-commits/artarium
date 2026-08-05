@@ -35,6 +35,9 @@ uniform float uMoonPhase;
 uniform float uSeasonId;    // 0=春 1=夏 2=秋 3=冬（季節の星座の切り替え）
 uniform vec3 uShoreTint;    // 対岸の季節色（春霞・夏の深緑・秋の茜・冬の雪化粧）
 uniform float uShoreTintAmt;
+uniform float uMwBoost;     // 隠し要素: 七夕（7/7）の夜だけ天の川が一年で最も濃い
+uniform float uAurora;      // 隠し要素: 冬の深夜・当たり夜だけのオーロラ（0-1）
+uniform float uSunrise;     // 隠し要素: 初日の出（1/1朝）の光芒（0-1）
 
 float hash21(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
@@ -104,6 +107,16 @@ void main() {
     float nightMix = smoothstep(0.25, 0.75, uStars);
     col += uSunCol * (exp(-sd * sd * 900.0) * 0.6 + exp(-sd * 5.0) * 0.12) * (1.0 - nightMix);
 
+    // 初日の出（1/1の朝）: 昇る太陽から金色の光芒が静かに放射する（隠し要素 2026-08-05）
+    if (uSunrise > 0.004) {
+      vec2 dsp = p - sp;
+      float angS = atan(dsp.y, dsp.x);
+      float raysS = pow(0.5 + 0.5 * sin(angS * 11.0 + 0.6), 6.0);
+      float shimmerS = 0.85 + 0.15 * sin(uTime * 0.4 + angS * 3.0);
+      col += vec3(1.0, 0.86, 0.55) * raysS * exp(-length(dsp) * 3.2) * 0.5 * uSunrise * shimmerS * (1.0 - nightMix);
+      col += vec3(1.0, 0.9, 0.7) * exp(-length(dsp) * 6.0) * 0.25 * uSunrise * (1.0 - nightMix);
+    }
+
     // 星（夜のみ・地平線近くは薄く）。
     // セル内のランダム位置に丸い光点を置く（セルごと光る四角い星を避ける）
     if (uStars > 0.001) {
@@ -133,26 +146,40 @@ void main() {
       // 淡い雲状のむら + 暗黒帯 + 帯の中の微細な星粒で構成する。
       // pow(負値, 2.0) はGLSLで未定義（SafariでNaN化しうる）ため、乗算で二乗する
       float deepNight = smoothstep(0.5, 0.9, uStars); // 21時ごろから見え始め、深夜に濃くなる
+      // 七夕の夜は宵の口からすでに見頃（21時でも帯がはっきり浮かぶ）
+      deepNight = max(deepNight, uMwBoost * smoothstep(0.35, 0.6, uStars) * 0.9);
       float clearSky = 1.0 - smoothstep(0.12, 0.45, uCloudAmount);
       float mwOn = deepNight * clearSky;
       if (mwOn > 0.004) {
         float bandDist = dot(p - vec2(0.15, 0.9), normalize(vec2(0.55, 1.0)));
-        float band = exp(-bandDist * bandDist * 16.0);
+        // 七夕は帯そのものが太くなる（16→9でひと回り広い帯に）
+        float band = exp(-bandDist * bandDist * mix(16.0, 9.0, uMwBoost));
         float wisps = fbm(p * 5.0 + 3.0) * 0.65 + fbm(p * 11.0 - 2.0) * 0.35;
         float darkLane = smoothstep(0.3, 0.72, fbm(p * 7.5 + 9.0));
-        col += vec3(0.7, 0.78, 0.95) * band * wisps * (0.5 + 0.5 * darkLane) * 0.11 * mwOn * horizonFade;
+        // 七夕（7/7）の夜だけ、もや・星粒とも一年で最も濃くなる（隠し要素 2026-08-05）
+        float mwAmp = 1.0 + uMwBoost * 1.6;
+        col += vec3(0.7, 0.78, 0.95) * band * wisps * (0.5 + 0.5 * darkLane) * 0.11 * mwAmp * mwOn * horizonFade;
         // 帯の中の星粒（帯の中心ほど密に。もやではなく粒の集まりに見せる主役）
-        float grain = step(0.986 - band * 0.05, hash21(cell + 12.7));
-        col += vec3(0.85, 0.9, 1.0) * band * grain * exp(-d * d * 220.0) * 0.5 * mwOn * horizonFade;
+        float grain = step(0.978 - band * (0.07 + uMwBoost * 0.05), hash21(cell + 12.7));
+        col += vec3(0.85, 0.9, 1.0) * band * grain * exp(-d * d * 220.0) * 0.5 * mwAmp * mwOn * horizonFade;
         // さらに細かい微光星の層（細かいグリッドで無数の点を敷く・個別にゆっくり瞬く）
         vec2 cell2 = floor(p * grid * 2.3);
         vec2 f2 = fract(p * grid * 2.3);
         vec2 sp2 = vec2(hash21(cell2 + 4.2), hash21(cell2 + 8.4)) * 0.8 + 0.1;
         float d2 = length(f2 - sp2);
         float h2 = hash21(cell2 + 17.3);
-        float grain2 = step(0.84 - band * 0.1, h2);
+        float grain2 = step(0.76 - band * (0.14 + uMwBoost * 0.1), h2);
         float tw2 = 0.72 + 0.28 * sin(uTime * (0.6 + h2 * 1.8) + h2 * 50.0);
-        col += vec3(0.8, 0.87, 1.0) * band * band * grain2 * exp(-d2 * d2 * 320.0) * 0.4 * tw2 * mwOn * horizonFade;
+        col += vec3(0.8, 0.87, 1.0) * band * band * grain2 * exp(-d2 * d2 * 320.0) * 0.4 * mwAmp * tw2 * mwOn * horizonFade;
+        // 帯の芯だけの星屑の層（さらに細かく・無数に。天の川の「数え切れなさ」を作る）
+        vec2 cell3 = floor(p * grid * 3.4);
+        vec2 f3 = fract(p * grid * 3.4);
+        vec2 sp3 = vec2(hash21(cell3 + 6.6), hash21(cell3 + 2.9)) * 0.8 + 0.1;
+        float d3 = length(f3 - sp3);
+        float h3 = hash21(cell3 + 23.1);
+        float grain3 = step(0.68 - band * (0.2 + uMwBoost * 0.1), h3);
+        float tw3 = 0.7 + 0.3 * sin(uTime * (0.5 + h3 * 1.6) + h3 * 70.0);
+        col += vec3(0.78, 0.85, 1.0) * band * band * grain3 * exp(-d3 * d3 * 420.0) * 0.32 * mwAmp * tw3 * mwOn * horizonFade;
 
         // 季節の星座: 深夜の快晴時、季節ごとのひと組が浮かぶ（2026-08-03）。
         // 位置は画面上部の空き（月と重なりにくい左上寄り）。座標は縦横比補正済み
@@ -194,6 +221,17 @@ void main() {
         float csTwinkle = 0.82 + 0.18 * sin(uTime * 0.9 + uSeasonId * 7.0);
         col += vec3(0.95, 0.97, 1.0) * (cs * 1.8 + csGlow * 0.07) * csTwinkle * mwOn * horizonFade;
       }
+    }
+
+    // オーロラ: 冬の深夜・快晴で、日替わり抽選に当たった夜だけ緑のカーテンが揺れる
+    // （隠し要素 2026-08-05。強さと抽選はJS側 uAurora が持つ）
+    if (uAurora > 0.004) {
+      float rays = fbm(vec2(p.x * 3.2 + sin(uTime * 0.07) * 0.5, skyT * 0.35 - uTime * 0.02));
+      float curtain = smoothstep(0.36, 0.72, rays);
+      float bandA = smoothstep(0.28, 0.55, skyT) * (1.0 - smoothstep(0.62, 0.97, skyT));
+      vec3 aCol = mix(vec3(0.12, 0.75, 0.42), vec3(0.25, 0.4, 0.75), smoothstep(0.45, 0.9, skyT));
+      float waveA = 0.75 + 0.25 * sin(uTime * 0.18 + p.x * 4.0);
+      col += aCol * curtain * bandA * waveA * 0.95 * uAurora;
     }
 
     // 月: 夜、今日の実際の月齢の形で昇る（影の円をずらして欠けを作る古典手法）
@@ -574,6 +612,28 @@ export function triggerShootingStar() {
   shootingStarRequestId++;
 }
 
+// ── 隠し要素: 月に触れると満ち欠けがひと巡りする（2026-08-05）──
+// 最後にマウントされた空キャンバスを基準に、画面座標から月の当たり判定を取る
+let lastSkyCanvas = null;
+let moonPokeStart = 0;
+
+export function pokeSkyMoon(clientX, clientY) {
+  if (!lastSkyCanvas?.isConnected) return false;
+  const sky = skyAtHour(currentHour());
+  if (sky.stars < 0.25) return false; // 月が見えない時間帯
+  const rect = lastSkyCanvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return false;
+  const ar = rect.width / rect.height;
+  const x01 = (clientX - rect.left) / rect.width;
+  const yUp = 1 - (clientY - rect.top) / rect.height;
+  // シェーダーの月と同じ座標系（x は縦横比補正・y は画面高さ基準の等方距離）
+  const dx = (x01 - sky.sunPos[0]) * ar;
+  const dy = yUp - (0.3 + sky.sunPos[1] * 0.7);
+  if (Math.hypot(dx, dy) > 0.075) return false;
+  if (!moonPokeStart) moonPokeStart = performance.now();
+  return true;
+}
+
 export function mountSkyBackground(container, options = {}) {
   if (!container) return null;
   // フラグではなく実際のキャンバスの有無で判定する
@@ -644,7 +704,10 @@ export function mountSkyBackground(container, options = {}) {
     moonPhase: gl.getUniformLocation(program, "uMoonPhase"),
     seasonId: gl.getUniformLocation(program, "uSeasonId"),
     shoreTint: gl.getUniformLocation(program, "uShoreTint"),
-    shoreTintAmt: gl.getUniformLocation(program, "uShoreTintAmt")
+    shoreTintAmt: gl.getUniformLocation(program, "uShoreTintAmt"),
+    mwBoost: gl.getUniformLocation(program, "uMwBoost"),
+    aurora: gl.getUniformLocation(program, "uAurora"),
+    sunrise: gl.getUniformLocation(program, "uSunrise")
   };
 
   // 落雷のタイミング管理（雷雨のときだけ数秒おきに光る）
@@ -1004,7 +1067,18 @@ export function mountSkyBackground(container, options = {}) {
     gl.uniform1f(u.dark, weatherState.dark);
     gl.uniform1f(u.cloudScale, season.cloudScale);
     gl.uniform1f(u.glint, stepProgress);
-    gl.uniform1f(u.moonPhase, currentMoonPhase());
+    // 月タップの隠し要素: 触れた瞬間から約2.6秒で満ち欠けがひと巡りして戻る
+    let moonPhase = currentMoonPhase();
+    if (moonPokeStart) {
+      const tA = (performance.now() - moonPokeStart) / 2600;
+      if (tA >= 1) {
+        moonPokeStart = 0;
+      } else {
+        const eased = tA < 0.5 ? 4 * tA * tA * tA : 1 - Math.pow(-2 * tA + 2, 3) / 2;
+        moonPhase = (moonPhase + eased) % 1;
+      }
+    }
+    gl.uniform1f(u.moonPhase, moonPhase);
     // 対岸の季節色と季節の星座（星座は深夜・快晴のみシェーダー側で表示判断）
     const seasonKey = getSeasonKey(now.getMonth() + 1);
     const shoreTint = SHORE_SEASON_TINTS[seasonKey];
@@ -1012,6 +1086,28 @@ export function mountSkyBackground(container, options = {}) {
     gl.uniform1f(u.seasonId, SEASON_IDS[seasonKey]);
     gl.uniform3fv(u.shoreTint, shoreTint.color);
     gl.uniform1f(u.shoreTintAmt, shoreTint.amount * (0.3 + 0.7 * shoreDay));
+
+    // ── 暦の隠し要素（2026-08-05）──
+    // デバッグ: window.__artariumSkySpecial = { tanabata: 1, aurora: 1, newYear: 1 }
+    const special = window.__artariumSkySpecial || {};
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    // 七夕（7/7）: 天の川が一年で最も濃い
+    const tanabata = special.tanabata || (month === 7 && day === 7) ? 1 : 0;
+    gl.uniform1f(u.mwBoost, tanabata);
+    // オーロラ: 冬だけ、日替わりの抽選（約6%）に当たった夜、深夜の快晴時に浮かぶ
+    const dayNum = Math.floor(now.getTime() / 86400000);
+    const nightLuck = Math.abs(Math.sin(dayNum * 127.1) * 43758.5453) % 1;
+    const auroraNight = seasonKey === "winter" && nightLuck < 0.06;
+    const auroraDeep = Math.max(0, Math.min(1, (starLevel - 0.7) / 0.28));
+    const auroraClear = 1 - Math.min(1, Math.max(0, (weatherState.cloud - 0.12) / 0.33));
+    // デバッグフラグは数値で強さを直接指定できる（1で最大）
+    gl.uniform1f(u.aurora, special.aurora
+      ? Math.min(1, Number(special.aurora))
+      : auroraNight ? auroraDeep * auroraClear : 0);
+    // 初日の出（1/1）: 朝7時を中心に太陽の光芒
+    const newYear = special.newYear || (month === 1 && day === 1);
+    gl.uniform1f(u.sunrise, newYear ? Math.max(0, 1 - Math.abs(hour - 7) / 2) : 0);
 
     // 落雷: 数秒おきに稲妻 + 明滅（チカチカと減衰する）
     let flash = 0;
@@ -1045,6 +1141,7 @@ export function mountSkyBackground(container, options = {}) {
 
   container.prepend(canvas);
   canvas.after(fxCanvas);
+  lastSkyCanvas = canvas; // 月タップの当たり判定の基準
   rafId = requestAnimationFrame(frame);
   const instance = {
     canvas,
