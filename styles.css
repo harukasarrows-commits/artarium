@@ -1740,7 +1740,7 @@ body.is-viewing-mode {
   .app-shell {
     width: min(100%, 430px);
     min-height: 100dvh;
-    padding: max(16px, env(safe-area-inset-top)) 14px calc(120px + env(safe-area-inset-bottom));
+    padding: max(16px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) calc(120px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
   }
 
   .topbar {
