@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-115";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener, pokeSkyMoon } from "./sky-background.js?v=20260710-115";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-115";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-115";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-115";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-116";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener, pokeSkyMoon } from "./sky-background.js?v=20260710-116";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-116";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-116";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-116";
 import {
   STAGE_THRESHOLDS,
   COMPLETION_THRESHOLD,
@@ -12,20 +12,20 @@ import {
   getNextThreshold,
   isPlantComplete,
   trimStepHistory
-} from "./core/progress.js?v=20260710-115";
+} from "./core/progress.js?v=20260710-116";
 import {
   loadProgressState,
   saveProgressState,
   clearProgressState
-} from "./storage/progress-store.js?v=20260710-115";
-import { createModalController } from "./ui/modal-controller.js?v=20260710-115";
-import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-115";
-import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-115";
+} from "./storage/progress-store.js?v=20260710-116";
+import { createModalController } from "./ui/modal-controller.js?v=20260710-116";
+import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-116";
+import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-116";
 import {
   bindHomeStatusView,
   renderCompletionPlaqueView,
   renderHomeProgressView
-} from "./views/home-status-view.js?v=20260710-115";
+} from "./views/home-status-view.js?v=20260710-116";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -93,7 +93,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-115";
+const ASSET_VERSION = "20260710-116";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const modalController = createModalController(document);
 const MODEL_STAGE_COUNT = 6;
@@ -3711,6 +3711,12 @@ async function createGalleryScene(container, runtime, token) {
     const aspect = Math.max(0.4, camera.aspect || 1);
     const camY = camera.position.y;
     const camZ = camera.position.z;
+    // 額装内では池の奥行きを大きく縮めるため、植物のZオフセット（既定+0.2）が
+    // 相対的に拡大し「池の手前に立つ」構図になる（2026-08-05 ユーザー指摘）。
+    // 池の中心を植物の足元に合わせて、池の真ん中に立たせる
+    if (waterSurface) {
+      waterSurface.mesh.position.z = modelSettings.plantZ ?? 0;
+    }
     const plantBoxLocal = new THREE.Box3().setFromObject(plantGroup);
     // 仮の開口幅（植物基準）を出してから、水面・土台を箱に収まる寸法へ縮める
     // （幅・奥行きとも。着水UVは surfaceSize 経由で追随する）
