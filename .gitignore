@@ -1,3 +1,7 @@
 .DS_Store
 node_modules/
 次のタスク.command
+# Capacitor の生成物（www は build-www.mjs で再生成、android は `npx cap add android` で再生成できる。
+# ネイティブ側に手を入れ始めたら android/ はコミット対象に切り替えること）
+www/
+android/

@@ -1,0 +1,8 @@
+{
+  "appId": "com.arrows.artarium",
+  "appName": "Artarium",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}
