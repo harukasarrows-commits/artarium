@@ -3711,6 +3711,12 @@ async function createGalleryScene(container, runtime, token) {
     const aspect = Math.max(0.4, camera.aspect || 1);
     const camY = camera.position.y;
     const camZ = camera.position.z;
+    // 額装内では池の奥行きを大きく縮めるため、植物のZオフセット（既定+0.2）が
+    // 相対的に拡大し「池の手前に立つ」構図になる（2026-08-05 ユーザー指摘）。
+    // 池の中心を植物の足元に合わせて、池の真ん中に立たせる
+    if (waterSurface) {
+      waterSurface.mesh.position.z = modelSettings.plantZ ?? 0;
+    }
     const plantBoxLocal = new THREE.Box3().setFromObject(plantGroup);
     // 仮の開口幅（植物基準）を出してから、水面・土台を箱に収まる寸法へ縮める
     // （幅・奥行きとも。着水UVは surfaceSize 経由で追随する）
