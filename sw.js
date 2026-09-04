@@ -1,34 +1,34 @@
-const CACHE_NAME = "artarium-shell-v386";
+const CACHE_NAME = "artarium-shell-v387";
 const MODEL_CACHE_NAME = `${CACHE_NAME}-models`;
 const MODEL_CACHE_LIMIT = 18;
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=20260710-116",
-  "./app.js?v=20260710-116",
-  "./water-surface.js?v=20260710-116",
-  "./sky-background.js?v=20260710-116",
-  "./weather.js?v=20260710-116",
-  "./ambient-sound.js?v=20260710-116",
-  "./plant-effects.js?v=20260710-116",
-  "./core/progress.js?v=20260710-116",
-  "./storage/progress-store.js?v=20260710-116",
-  "./ui/modal-controller.js?v=20260710-116",
-  "./views/settings-view.js?v=20260710-116",
-  "./views/collection-view.js?v=20260710-116",
-  "./views/home-status-view.js?v=20260710-116",
-  "./data/plants.json?v=20260710-116",
-  "./data/model-settings.json?v=20260710-116",
+  "./styles.css?v=20260710-117",
+  "./app.js?v=20260710-117",
+  "./water-surface.js?v=20260710-117",
+  "./sky-background.js?v=20260710-117",
+  "./weather.js?v=20260710-117",
+  "./ambient-sound.js?v=20260710-117",
+  "./plant-effects.js?v=20260710-117",
+  "./core/progress.js?v=20260710-117",
+  "./storage/progress-store.js?v=20260710-117",
+  "./ui/modal-controller.js?v=20260710-117",
+  "./views/settings-view.js?v=20260710-117",
+  "./views/collection-view.js?v=20260710-117",
+  "./views/home-status-view.js?v=20260710-117",
+  "./data/plants.json?v=20260710-117",
+  "./data/model-settings.json?v=20260710-117",
   "./vendor/three.module.js",
   "./vendor/GLTFLoader.js",
   "./vendor/BufferGeometryUtils.js",
-  "./manifest.webmanifest?v=20260710-116",
-  "./icon.svg?v=20260710-116",
-  "./icon-192.png?v=20260710-116",
-  "./icon-512.png?v=20260710-116",
-  "./icon-maskable-192.png?v=20260710-116",
-  "./icon-maskable-512.png?v=20260710-116",
-  "./icon-apple-180.png?v=20260710-116"
+  "./manifest.webmanifest?v=20260710-117",
+  "./icon.svg?v=20260710-117",
+  "./icon-192.png?v=20260710-117",
+  "./icon-512.png?v=20260710-117",
+  "./icon-maskable-192.png?v=20260710-117",
+  "./icon-maskable-512.png?v=20260710-117",
+  "./icon-apple-180.png?v=20260710-117"
 ];
 
 self.addEventListener("install", (event) => {
