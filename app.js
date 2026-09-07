@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-123";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener, pokeSkyMoon } from "./sky-background.js?v=20260710-123";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-123";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-123";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-123";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-124";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener, pokeSkyMoon } from "./sky-background.js?v=20260710-124";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-124";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-124";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-124";
 import {
   STAGE_THRESHOLDS,
   COMPLETION_THRESHOLD,
@@ -12,22 +12,22 @@ import {
   getNextThreshold,
   isPlantComplete,
   trimStepHistory
-} from "./core/progress.js?v=20260710-123";
+} from "./core/progress.js?v=20260710-124";
 import {
   loadProgressState,
   saveProgressState,
   clearProgressState
-} from "./storage/progress-store.js?v=20260710-123";
-import { createNativeStepBridge } from "./core/native-step-counter.js?v=20260710-123";
-import { createHealthConnectBridge, mergeStepHistory, pickTodaySteps } from "./core/health-connect-steps.js?v=20260710-123";
-import { createModalController } from "./ui/modal-controller.js?v=20260710-123";
-import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-123";
-import { bindCollectionView, renderCodexView, renderCollectionView, renderGalleryPanes } from "./views/collection-view.js?v=20260710-123";
+} from "./storage/progress-store.js?v=20260710-124";
+import { createNativeStepBridge } from "./core/native-step-counter.js?v=20260710-124";
+import { createHealthConnectBridge, mergeStepHistory, pickTodaySteps } from "./core/health-connect-steps.js?v=20260710-124";
+import { createModalController } from "./ui/modal-controller.js?v=20260710-124";
+import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-124";
+import { bindCollectionView, renderCodexView, renderCollectionView, renderGalleryPanes } from "./views/collection-view.js?v=20260710-124";
 import {
   bindHomeStatusView,
   renderCompletionPlaqueView,
   renderHomeProgressView
-} from "./views/home-status-view.js?v=20260710-123";
+} from "./views/home-status-view.js?v=20260710-124";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -96,7 +96,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-123";
+const ASSET_VERSION = "20260710-124";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const modalController = createModalController(document);
 const MODEL_STAGE_COUNT = 6;
@@ -1338,6 +1338,7 @@ function bindEvents() {
     onEditAuthor: openNameEntryModal,
     onStartMotion: startMotionStepCounter,
     onSyncSteps: syncSmartphoneSteps,
+    onStepSourceAction: handleStepSourceAction,
     onOpenRecap: openWeeklyRecap,
     onCloseRecap: () => closeModalWithExit(document.getElementById("weekly-recap-modal")),
     onAddTestSteps: () => addStepsToSelectedPlant(100, "開発用に100歩分を加算しました")
@@ -2334,6 +2335,46 @@ async function installNativeStepBridge() {
   };
 }
 
+// 設定画面に出す「歩数の取得元」と導線（2026-09-07）。
+// アプリ版で Health Connect が未導入なら導入（Play ストア）、未許可なら許可画面、許可済みなら設定画面へ
+const HEALTH_CONNECT_STORE_URL = "https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata";
+
+function getStepSourceInfo() {
+  if (!isNativeApp()) {
+    return { kind: state.steps.motionEnabled ? "motion" : "none" };
+  }
+  if (healthConnectBridge && healthConnectStatus.permissionGranted) {
+    return { kind: "health-connect", action: "settings" };
+  }
+  const kind = nativeStepBridge ? "sensor" : "none";
+  if (healthConnectBridge) return { kind, action: "permission" };
+  if (healthConnectStatus.sdkStatus === "update_required" || healthConnectStatus.sdkStatus === "unavailable") {
+    return { kind, action: "install" };
+  }
+  return { kind };
+}
+
+async function handleStepSourceAction() {
+  const { action } = getStepSourceInfo();
+  if (action === "install") {
+    // Capacitor は外部 URL への遷移を端末のブラウザ／Play ストアに渡す（WebView 内では開かない）
+    window.location.assign(HEALTH_CONNECT_STORE_URL);
+    return;
+  }
+  if (action === "permission") {
+    await startNativeStepCounter();
+    render();
+    return;
+  }
+  if (action === "settings") {
+    try {
+      await healthConnectBridge.openSettings();
+    } catch (error) {
+      console.warn("Health Connect settings could not be opened:", error);
+    }
+  }
+}
+
 async function initStepSources() {
   await installNativeStepBridge();
   // 外部ブリッジ（ネイティブ以外）は起動時に同期する。ネイティブは許可済みのときだけ再開側で同期する
@@ -2862,7 +2903,8 @@ function renderSettings() {
     userName: state.userName,
     demoMode: DEMO_MODE,
     soundEnabled: isSoundEnabled(),
-    effectsEnabled: arePlantEffectsEnabled()
+    effectsEnabled: arePlantEffectsEnabled(),
+    stepSource: getStepSourceInfo()
   });
   renderDemoModelSettings();
 }

@@ -3,6 +3,26 @@ function setText(documentRef, id, value) {
   if (element) element.textContent = value;
 }
 
+/**
+ * 歩数の取得元の表示文と、導入・許可への導線（2026-09-07）。
+ * stepSource: { kind: "health-connect" | "sensor" | "motion" | "none", action?: "install" | "permission" | "settings" }
+ */
+export function describeStepSource(stepSource) {
+  const kind = stepSource?.kind ?? "none";
+  const labels = {
+    "health-connect": "取得元: Health Connect（Samsung Health などが数えた歩数。アプリを閉じていても記録）",
+    sensor: "取得元: 端末の歩数センサー（アプリが動いている間だけ記録）",
+    motion: "取得元: 簡易歩数計（画面を開いている間だけ記録）",
+    none: "取得元: 未接続"
+  };
+  const actions = {
+    install: "Health Connect を導入して、閉じている間も記録する",
+    permission: "Health Connect の歩数の読み取りを許可する",
+    settings: "Health Connect の設定を開く"
+  };
+  return { label: labels[kind] ?? labels.none, actionLabel: stepSource?.action ? actions[stepSource.action] ?? "" : "" };
+}
+
 export function renderSettingsView(documentRef, viewState) {
   const {
     todaySteps,
@@ -13,12 +33,20 @@ export function renderSettingsView(documentRef, viewState) {
     userName,
     demoMode,
     soundEnabled,
-    effectsEnabled
+    effectsEnabled,
+    stepSource
   } = viewState;
 
   setText(documentRef, "settings-motion-state", motionEnabled ? "接続中" : "未接続");
   setText(documentRef, "settings-today-steps", `${new Intl.NumberFormat("ja-JP").format(todaySteps || 0)}歩`);
   setText(documentRef, "settings-step-status", sourceStatus);
+  const source = describeStepSource(stepSource);
+  setText(documentRef, "settings-step-source", source.label);
+  const actionButton = documentRef.getElementById("settings-step-source-action");
+  if (actionButton) {
+    actionButton.textContent = source.actionLabel;
+    actionButton.hidden = !source.actionLabel;
+  }
   setText(documentRef, "settings-author-name", userName || "未設定");
   setText(documentRef, "settings-sound-state", soundEnabled ? "オン" : "オフ");
   setText(documentRef, "settings-effects-state", effectsEnabled ? "オン" : "オフ");
@@ -54,6 +82,7 @@ export function bindSettingsView(documentRef, handlers) {
   documentRef.getElementById("settings-author-button")?.addEventListener("click", handlers.onEditAuthor);
   documentRef.getElementById("settings-motion-button")?.addEventListener("click", handlers.onStartMotion);
   documentRef.getElementById("settings-sync-button")?.addEventListener("click", handlers.onSyncSteps);
+  documentRef.getElementById("settings-step-source-action")?.addEventListener("click", () => handlers.onStepSourceAction?.());
   documentRef.getElementById("settings-weekly-recap-button")?.addEventListener("click", handlers.onOpenRecap);
   documentRef.getElementById("settings-test-steps-button")?.addEventListener("click", handlers.onAddTestSteps);
   documentRef.querySelector("[data-recap-close]")?.addEventListener("click", handlers.onCloseRecap);
