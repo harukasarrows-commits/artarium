@@ -2931,12 +2931,44 @@ body::after {
   opacity: 0.62;
 }
 
+/* 行の補足（例: 今日の歩数の「タップで同期」） */
+.settings-hint {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
 .settings-note {
+  display: grid;
+  gap: 4px;
   padding: 12px 16px 14px;
   color: var(--muted);
   font-size: 0.78rem;
   line-height: 1.55;
   background: rgba(0, 0, 0, 0.12);
+}
+
+/* 歩数の取得元（Health Connect / センサー / 簡易歩数計） */
+.settings-source {
+  color: var(--ink);
+}
+
+/* 補足の中の導線（Health Connect の導入・許可）。行を増やさずテキストリンク風にする */
+.settings-link {
+  justify-self: start;
+  min-height: 32px;
+  margin-top: 2px;
+  padding: 4px 0;
+  border: 0;
+  border-bottom: 1px solid rgba(194, 164, 94, 0.5);
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-align: left;
+  cursor: pointer;
 }
 
 .demo-settings-panel {
@@ -4513,4 +4545,245 @@ p {
 .artwork-plaque small,
 .codex-source {
   letter-spacing: 0.06em;
+}
+
+/* コレクションの「作品 / 由来」切り替え（2026-09-07。縦に並べず、どちらか一方だけを表示する） */
+.gallery-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: rgba(17, 24, 19, 0.6);
+}
+
+.gallery-switch-button {
+  min-height: 34px;
+  padding: 4px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.gallery-switch-button.is-active {
+  background: rgba(194, 164, 94, 0.14); /* 金は現在地の表示に限定 */
+  color: var(--primary);
+}
+
+.gallery-pane {
+  display: none;
+}
+
+.gallery-pane.is-active {
+  display: block;
+}
+
+.gallery-pane[data-gallery-pane="codex"] .codex-head {
+  margin-top: 0;
+}
+
+#gallery-summary {
+  display: block;
+  margin: 0 0 10px;
+}
+
+#gallery-summary:empty {
+  display: none;
+}
+
+/* 固定シェル（2026-09-07 ユーザー要望: 画面を上下に動かさない・ホーム/コレクション/設定を下に固定）
+   ページ自体はスクロールさせず、ヘッダーとタブバーを常に同じ位置に置く。
+   ホームは画面の高さにぴったり収め（作品エリアが余りを受け持つ）、
+   コレクション・設定は main の内側だけがスクロールする。PC・デモ表示（901px 以上）は対象外 */
+@media (max-width: 900px) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    min-height: 0;
+  }
+
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    min-height: 0;
+    padding-bottom: 0;
+  }
+
+  .topbar {
+    flex: none;
+  }
+
+  .app-shell > main {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+
+  body[data-current-view="home"] .app-shell > main {
+    overflow: hidden;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+
+  /* 種選びの一覧（10種）は画面に収まらないので、作品エリアの内側だけをスクロールさせる。
+     ページがスクロールしていた頃のタブバー分の下余白（130px）は不要になったので詰める */
+  #home-view .daily-hero.is-seed-choice {
+    align-content: stretch;
+    padding-bottom: 26px;
+  }
+
+  #home-view .daily-hero.is-seed-choice .daily-artwork {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #home-view.is-active {
+    height: 100%;
+  }
+
+  #home-view .daily-home {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
+  }
+
+  #home-view .daily-hero {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+  }
+
+  #home-view .daily-artwork {
+    height: 100%;
+    min-height: 0;
+  }
+
+  /* コレクション: 見出しは右上の「作品 / 由来」切り替えだけにし（題字は読み上げ用に残す）、
+     壁と由来一覧はそれぞれ画面に収め、はみ出す分だけ内側でスクロールする */
+  body[data-current-view="gallery"] .app-shell {
+    position: relative;
+  }
+
+  body[data-current-view="gallery"] .app-shell > main {
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  #gallery-view.is-active {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  #gallery-view .gallery-head {
+    position: absolute;
+    top: calc(max(16px, env(safe-area-inset-top)) + 14px);
+    right: 14px;
+    z-index: 5;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  #gallery-view .gallery-head-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  #gallery-view .gallery-panes {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  #gallery-view .gallery-pane.is-active {
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+
+  #gallery-view .gallery-wall {
+    min-height: 100%;
+  }
+
+  /* 「展示を待つ壁」は固定の最低高さを持たせず、壁の高さ（画面の残り）に収める */
+  #gallery-view .empty-gallery {
+    min-height: 0;
+  }
+
+  #gallery-view #gallery-summary {
+    text-align: right;
+  }
+
+  /* 設定: 見出しはタブバーの「設定」と重複するので非表示（読み上げ用に残す）。
+     行と余白を詰めて 9 行をヘッダーとタブバーの間に収める（2026-09-07。収まらない端末では main の内側でスクロール） */
+  #settings-view .settings-head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  body[data-current-view="settings"] .app-shell > main {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  /* 設定・コレクションではヘッダー下の余白を詰める（題字を出さないため空きが目立つ） */
+  body[data-current-view="settings"] .topbar,
+  body[data-current-view="gallery"] .topbar {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+
+  #settings-view .settings-link {
+    min-height: 28px;
+    padding: 2px 0;
+  }
+
+  #settings-view .settings-page {
+    gap: 10px;
+  }
+
+  #settings-view .settings-group {
+    gap: 4px;
+  }
+
+  #settings-view .settings-label {
+    font-size: 0.7rem;
+  }
+
+  #settings-view .settings-row {
+    min-height: 44px;
+    padding: 0 16px;
+  }
+
+  #settings-view .settings-note {
+    padding: 8px 16px 10px;
+    font-size: 0.72rem;
+  }
 }

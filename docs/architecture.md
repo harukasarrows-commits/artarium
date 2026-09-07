@@ -96,6 +96,8 @@
 ```
 [歩数ソース]                       [変換]                [永続化]
  ネイティブブリッジ ─┐
+ Android歩数センサー ┤  （core/native-step-counter.js + StepCounterPlugin.java。2026-09-07）
+ Health Connect     ┤  （core/health-connect-steps.js + HealthConnectPlugin.java。閉じている間の分と日別履歴。2026-09-07）
  DeviceMotion歩数計 ─┼→ applyStepSnapshot / addStepsToSelectedPlant
  テスト加算        ─┘        │
                     addGrowthFromSteps(FR-1.1: 10歩=1pt, 端数繰越)

@@ -1,7 +1,10 @@
 .DS_Store
 node_modules/
 次のタスク.command
-# Capacitor の生成物（www は build-www.mjs で再生成、android は `npx cap add android` で再生成できる。
-# ネイティブ側に手を入れ始めたら android/ はコミット対象に切り替えること）
+# Capacitor の生成物（www は build-www.mjs で再生成）
 www/
-android/
+# android/ は 2026-09-07 からコミット対象（自前プラグイン StepCounterPlugin.java を含むため）。
+# ただし `npx cap sync` が www/ から複製する生成物と、ビルド出力（android/.gitignore 側）は除外する
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
