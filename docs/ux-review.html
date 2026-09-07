@@ -59,19 +59,19 @@
 <div class="table-wrap"><table>
 <thead><tr><th>ID</th><th>指摘</th><th>詳細</th><th>根拠</th></tr></thead>
 <tbody>
-<tr><td>U-4</td><td><strong><code>prefers-reduced-motion</code> 対応が点灯式の一部のみ</strong></td><td>無効化されるのはスポットライトveil/glowとcanvasのfilter遷移だけ。植物のスケール変化・ステージメーター・振り返りの棒グラフ・keyframes群・JS駆動の粒子/花火は残る。動きに敏感なユーザーには「対応していない」のと同じ</td><td>styles.css:3554-3560</td></tr>
-<tr><td>U-5</td><td><strong>11px未満の文字が多用されている</strong></td><td>eyebrow基底 0.7rem≈11.2px、額縁選択の状態表示 0.62rem≈9.9px、図鑑ステータス等 0.68rem≈10.9px。装飾ラベル（英語眉ラベル）は日本語併記ルールで救われているが、<strong>情報を運ぶテキスト</strong>（choice-state、codex-status、recap-day）が10px前後なのは可読下限を割る</td><td>styles.css:102,2344,3279,3358</td></tr>
-<tr><td>U-6</td><td><strong>補足テキストのコントラスト不足</strong></td><td><code>--muted-soft:#6c7266</code> を使う箇所（placeholder、図鑑ステータス、振り返りの曜日）は暗背景でWCAG 4.5:1未達の可能性大。<code>--muted:#8f9587</code> も境界線上。また没入ホームの動的背景上の白85%テキストは、昼の明るい空ではシーン次第で読めなくなる</td><td>styles.css:2277,3281,3357,3008</td></tr>
+<tr><td>U-4</td><td><strong><code>prefers-reduced-motion</code> 対応が点灯式の一部のみ</strong></td><td>無効化されるのはスポットライトveil/glowとcanvasのfilter遷移だけ。植物のスケール変化・ステージメーター・振り返りの棒グラフ・keyframes群・JS駆動の粒子/花火は残る。動きに敏感なユーザーには「対応していない」のと同じ → <strong>対応済み（2026-07-10）</strong>: reduced-motionブロックに <code>.plant-visual</code> <code>.recap-bar</code> <code>.model-loading span</code> <code>.tap-hint</code> <code>.completion-plaque</code> 等の <code>animation: none; transition: none</code> を追加</td><td>styles.css:3554-3560</td></tr>
+<tr><td>U-5</td><td><strong>11px未満の文字が多用されている</strong></td><td>eyebrow基底 0.7rem≈11.2px、額縁選択の状態表示 0.62rem≈9.9px、図鑑ステータス等 0.68rem≈10.9px。装飾ラベル（英語眉ラベル）は日本語併記ルールで救われているが、<strong>情報を運ぶテキスト</strong>（choice-state、codex-status、recap-day）が10px前後なのは可読下限を割る → <strong>対応済み（2026-07-10）</strong>: <code>.choice-state</code> <code>.codex-status</code> <code>.recap-day small</code> をいずれも0.72rem以上へ引き上げ</td><td>styles.css:102,2344,3279,3358</td></tr>
+<tr><td>U-6</td><td><strong>補足テキストのコントラスト不足</strong></td><td><code>--muted-soft:#6c7266</code> を使う箇所（placeholder、図鑑ステータス、振り返りの曜日）は暗背景でWCAG 4.5:1未達の可能性大。<code>--muted:#8f9587</code> も境界線上。また没入ホームの動的背景上の白85%テキストは、昼の明るい空ではシーン次第で読めなくなる → <strong>対応済み（2026-07-10）</strong>: <code>--muted-soft</code> はplaceholder用途のみに限定し、情報テキストは <code>--muted</code> 以上へ統一。<code>.daily-copy h2/p</code> の <code>text-shadow</code> を強化</td><td>styles.css:2277,3281,3357,3008</td></tr>
 <tr><td>U-7</td><td><strong>横向き（landscape）で破綻リスク</strong></td><td>orientation対応CSSがゼロ。ホームは100dvh＋絶対配置ボタン（bottom+safe-area）の構成のため、横向きの低い画面では daily-copy / 完成プレート / 眺めるボタンが過密・重複しうる。左右の <code>safe-area-inset-left/right</code> も未使用</td><td>styles.css:2947,3013-3025</td></tr>
-<tr><td>U-8</td><td><strong>3D読込中の表示が「待っている」と伝わらない</strong></td><td><code>.model-loading</code> は静的に光る円のみで回転等の動きが無い。GLB読込は回線次第で数秒かかるため、初回体験で「壊れている」と誤認されるリスク</td><td>styles.css:470-492</td></tr>
+<tr><td>U-8</td><td><strong>3D読込中の表示が「待っている」と伝わらない</strong></td><td><code>.model-loading</code> は静的に光る円のみで回転等の動きが無い。GLB読込は回線次第で数秒かかるため、初回体験で「壊れている」と誤認されるリスク → <strong>対応済み（2026-07-10）</strong>: <code>.model-loading span</code> にゆっくりした明滅（<code>loading-breathe</code>）を追加。reduced-motion時は <code>.model-loading small</code> の「読み込み中」文言表示に切替</td><td>styles.css:470-492</td></tr>
 </tbody></table></div>
 <h3 id="%E9%87%8D%E8%A6%81%E5%BA%A6-c-%E2%80%94-%E7%A3%A8%E3%81%8D%E8%BE%BC%E3%81%BF">重要度 C — 磨き込み</h3>
 <div class="table-wrap"><table>
 <thead><tr><th>ID</th><th>指摘</th></tr></thead>
 <tbody>
-<tr><td>U-9</td><td>PC幅のタブボタンが40px、オフライン通知内ボタンが38pxで、タップ領域44pxルール（FR方針）未達。モバイル幅は52pxで問題なし</td></tr>
-<tr><td>U-10</td><td>長文対策の不在: <code>text-overflow</code> / <code>line-clamp</code> / <code>overflow-wrap</code> の指定が皆無。植物名・作者名（最大24字）が狭幅セル（額縁選択の3列グリッド等）で不自然に折り返す恐れ</td></tr>
-<tr><td>U-11</td><td>額縁選択パネルの <code>max-height:100vh</code>（dvh未使用）。iOS Safariのアドレスバー分だけ確定ボタンが画面外に落ちうる</td></tr>
+<tr><td>U-9</td><td>PC幅のタブボタンが40px、オフライン通知内ボタンが38pxで、タップ領域44pxルール（FR方針）未達。モバイル幅は52pxで問題なし → <strong>対応済み（2026-07-10）</strong>: PC幅 <code>.tab-button</code> を min-height:52px に、<code>.app-notice .secondary-action</code> を min-height:44px に</td></tr>
+<tr><td>U-10</td><td>長文対策の不在: <code>text-overflow</code> / <code>line-clamp</code> / <code>overflow-wrap</code> の指定が皆無。植物名・作者名（最大24字）が狭幅セル（額縁選択の3列グリッド等）で不自然に折り返す恐れ → <strong>対応済み（2026-07-10）</strong>: 該当セルに <code>overflow-wrap: anywhere</code> を追加</td></tr>
+<tr><td>U-11</td><td>額縁選択パネルの <code>max-height:100vh</code>（dvh未使用）。iOS Safariのアドレスバー分だけ確定ボタンが画面外に落ちうる → <strong>対応済み（2026-07-10）</strong>: <code>.frame-choice-panel</code> の <code>max-height</code> を <code>calc(100dvh - 36px)</code> に変更</td></tr>
 <tr><td>U-12</td><td>週間振り返りの自動表示（日曜18時以降）は良い仕掛けだが、閉じ方が×のみ（U-3と同根）。また「今週の歩み」を見られることが設定タブにしか示されず、機能の存在に気づきにくい</td></tr>
 <tr><td>U-13</td><td>PWAインストール誘導が存在しない（G-2）。「ホーム画面に追加」はこのアプリの毎日の再訪動線そのものなので、実装しないなら少なくとも捕捉コードは削除（A-2）、実装するなら初回完成（点灯式後）など感情のピークに合わせるのが効果的 → <strong>対応済み（2026-07-10）</strong>: 初回額装の約2.6秒後に一度だけ提案するUIを実装</td></tr>
 </tbody></table></div>
