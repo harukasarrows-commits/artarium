@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Artarium</string>
+    <string name="title_activity_main">Artarium</string>
+    <string name="package_name">com.arrows.artarium</string>
+    <string name="custom_url_scheme">com.arrows.artarium</string>
+</resources>

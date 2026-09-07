@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Artarium">
     <title>Artarium - 名画の庭</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260710-116">
-    <link rel="icon" href="./icon.svg?v=20260710-116" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="./icon-apple-180.png?v=20260710-116">
-    <link rel="stylesheet" href="./styles.css?v=20260710-116">
+    <link rel="manifest" href="./manifest.webmanifest?v=20260710-123">
+    <link rel="icon" href="./icon.svg?v=20260710-123" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon-apple-180.png?v=20260710-123">
+    <link rel="stylesheet" href="./styles.css?v=20260710-123">
   </head>
   <body>
     <div class="app-shell">
@@ -60,27 +60,39 @@
         </section>
 
         <section class="view" id="gallery-view" aria-labelledby="gallery-title">
-          <div class="section-head">
-            <div>
+          <!-- 見出しはスマホ幅では右上の小さな切り替えだけを見せる（画面をスクロールさせないため。2026-09-07） -->
+          <div class="section-head gallery-head">
+            <div class="gallery-head-title">
               <p class="eyebrow">Private collection</p>
               <h2 id="gallery-title">コレクション</h2>
             </div>
-            <span id="gallery-summary"></span>
-          </div>
-          <div class="gallery-wall" id="gallery-wall"></div>
-          <div class="section-head codex-head">
-            <div>
-              <p class="eyebrow">Field guide</p>
-              <h2 id="codex-title">名画の由来</h2>
+            <div class="gallery-switch" role="tablist" aria-label="コレクションの表示">
+              <button class="gallery-switch-button is-active" type="button" role="tab" aria-selected="true" data-gallery-pane-target="works">作品</button>
+              <button class="gallery-switch-button" type="button" role="tab" aria-selected="false" data-gallery-pane-target="codex" hidden>由来</button>
             </div>
-            <p class="codex-summary" id="codex-summary"></p>
           </div>
-          <div class="codex-grid" id="codex-grid"></div>
+          <div class="gallery-panes">
+            <div class="gallery-pane is-active" data-gallery-pane="works">
+              <span id="gallery-summary"></span>
+              <div class="gallery-wall" id="gallery-wall"></div>
+            </div>
+            <div class="gallery-pane" data-gallery-pane="codex">
+              <div class="section-head codex-head">
+                <div>
+                  <p class="eyebrow">Field guide</p>
+                  <h2 id="codex-title">名画の由来</h2>
+                </div>
+                <p class="codex-summary" id="codex-summary"></p>
+              </div>
+              <div class="codex-grid" id="codex-grid"></div>
+            </div>
+          </div>
         </section>
 
         <section class="view" id="settings-view" aria-labelledby="settings-title">
           <div class="settings-page">
-            <div class="section-head">
+            <!-- 見出しはスマホ幅では非表示（タブバーの「設定」と重複するため。読み上げ用に残す。2026-09-07） -->
+            <div class="section-head settings-head">
               <div>
                 <p class="eyebrow">Preferences</p>
                 <h2 id="settings-title">設定</h2>
@@ -89,21 +101,14 @@
             <section class="settings-group">
               <p class="settings-label">歩数</p>
               <div class="settings-list">
-                <div class="settings-row">
-                  <span>今日の歩数</span>
+                <!-- 「歩数データを同期」の行を統合: この行のタップで同期する（2026-09-07 設定の圧縮） -->
+                <button class="settings-row" id="settings-sync-button" type="button">
+                  <span>今日の歩数<small class="settings-hint">タップで同期</small></span>
                   <strong id="settings-today-steps">0歩</strong>
-                </div>
-                <div class="settings-row">
-                  <span>成長換算</span>
-                  <strong>10歩 = 1pt</strong>
-                </div>
+                </button>
                 <button class="settings-row" id="settings-motion-button" type="button">
                   <span>スマホ歩数計を開始</span>
                   <strong id="settings-motion-state">未接続</strong>
-                </button>
-                <button class="settings-row" id="settings-sync-button" type="button">
-                  <span>歩数データを同期</span>
-                  <strong>確認</strong>
                 </button>
                 <button class="settings-row" id="settings-test-steps-button" type="button">
                   <span>開発用テスト加算</span>
@@ -123,10 +128,6 @@
                   <span>植物のエフェクト（ゆれ・花びら）</span>
                   <strong id="settings-effects-state">オン</strong>
                 </button>
-                <div class="settings-row">
-                  <span>テーマ</span>
-                  <strong>黒と真鍮</strong>
-                </div>
               </div>
             </section>
             <section class="settings-group">
@@ -140,19 +141,11 @@
                   <span>今週の振り返り</span>
                   <strong>表示</strong>
                 </button>
-                <div class="settings-row">
-                  <span>植物データ</span>
-                  <strong>JSON管理</strong>
-                </div>
               </div>
             </section>
             <section class="settings-group">
               <p class="settings-label">データ</p>
               <div class="settings-list">
-                <div class="settings-row" role="status" aria-live="polite">
-                  <span>接続状態</span>
-                  <strong id="network-status-label">確認中</strong>
-                </div>
                 <button class="settings-row" id="settings-export-button" type="button">
                   <span>データを書き出す（バックアップ）</span>
                   <strong>保存</strong>
@@ -219,6 +212,6 @@
       </form>
     </div>
 
-    <script src="./app.js?v=20260710-116" type="module"></script>
+    <script src="./app.js?v=20260710-123" type="module"></script>
   </body>
 </html>

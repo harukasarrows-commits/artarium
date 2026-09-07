@@ -26,6 +26,30 @@ export function bindCollectionView(documentRef, handlers) {
     event.preventDefault();
     handlers.onOpenArtwork(item.dataset.galleryOpen);
   });
+  // 「作品 / 由来」の切り替え（2026-09-07 固定シェル: 縦に並べずどちらか一方を画面に収める）
+  documentRef.querySelector?.(".gallery-switch")?.addEventListener("click", (event) => {
+    const button = event.target.closest?.("[data-gallery-pane-target]");
+    if (button) handlers.onSwitchPane?.(button.dataset.galleryPaneTarget);
+  });
+}
+
+/**
+ * 表示する面を切り替える。収蔵作品が無いときは「由来」を出さず「作品」に固定する。
+ * @returns {"works"|"codex"} 実際に表示した面
+ */
+export function renderGalleryPanes(documentRef, { activePane = "works", hasCodex = false }) {
+  const pane = hasCodex && activePane === "codex" ? "codex" : "works";
+  for (const element of documentRef.querySelectorAll?.("[data-gallery-pane]") ?? []) {
+    element.classList.toggle("is-active", element.dataset.galleryPane === pane);
+  }
+  for (const button of documentRef.querySelectorAll?.("[data-gallery-pane-target]") ?? []) {
+    const target = button.dataset.galleryPaneTarget;
+    const isActive = target === pane;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+    if (target === "codex") button.hidden = !hasCodex;
+  }
+  return pane;
 }
 
 export function renderCodexView(documentRef, { plants, progress, codexNotes, paletteVars, plantMarkup }) {

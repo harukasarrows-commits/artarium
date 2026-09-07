@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-116";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener, pokeSkyMoon } from "./sky-background.js?v=20260710-116";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-116";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-116";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-116";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-123";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener, pokeSkyMoon } from "./sky-background.js?v=20260710-123";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-123";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-123";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-123";
 import {
   STAGE_THRESHOLDS,
   COMPLETION_THRESHOLD,
@@ -12,20 +12,22 @@ import {
   getNextThreshold,
   isPlantComplete,
   trimStepHistory
-} from "./core/progress.js?v=20260710-116";
+} from "./core/progress.js?v=20260710-123";
 import {
   loadProgressState,
   saveProgressState,
   clearProgressState
-} from "./storage/progress-store.js?v=20260710-116";
-import { createModalController } from "./ui/modal-controller.js?v=20260710-116";
-import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-116";
-import { bindCollectionView, renderCodexView, renderCollectionView } from "./views/collection-view.js?v=20260710-116";
+} from "./storage/progress-store.js?v=20260710-123";
+import { createNativeStepBridge } from "./core/native-step-counter.js?v=20260710-123";
+import { createHealthConnectBridge, mergeStepHistory, pickTodaySteps } from "./core/health-connect-steps.js?v=20260710-123";
+import { createModalController } from "./ui/modal-controller.js?v=20260710-123";
+import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-123";
+import { bindCollectionView, renderCodexView, renderCollectionView, renderGalleryPanes } from "./views/collection-view.js?v=20260710-123";
 import {
   bindHomeStatusView,
   renderCompletionPlaqueView,
   renderHomeProgressView
-} from "./views/home-status-view.js?v=20260710-116";
+} from "./views/home-status-view.js?v=20260710-123";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -84,6 +86,7 @@ const PRODUCTION_SOIL_STORAGE_KEY = "artarium-production-soil-assignments";
 const PRODUCTION_SYNC_STORAGE_KEY = "artarium-production-sync";
 const INSTALL_HINT_KEY = "artarium-install-hinted";
 const MOTION_AUTO_KEY = "artarium-motion-auto";
+const GALLERY_PANE_KEY = "artarium-gallery-pane"; // コレクションで最後に見ていた面（作品 / 由来）
 const PLANT_EFFECTS_STORAGE_KEY = "artarium-plant-effects";
 // デモパネルで明示的に調整した値だけを覚えておく別枠（焼き込みより優先）。
 // 旧作からの自動保存値と違い、ユーザーの意図した操作のみが入るので起動時に勝たせてよい
@@ -93,7 +96,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-116";
+const ASSET_VERSION = "20260710-123";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const modalController = createModalController(document);
 const MODEL_STAGE_COUNT = 6;
@@ -352,6 +355,7 @@ const state = {
   },
   selectedPlantId: "",
   currentView: "home",
+  galleryPane: localStorage.getItem(GALLERY_PANE_KEY) === "codex" ? "codex" : "works",
   newlyCompletedPlantId: "",
   newlyCollectedPlantId: "",
   frameChoicePlantId: "",
@@ -854,8 +858,7 @@ async function init() {
   exposeStepBridge();
   exposeTuneBridge();
   render();
-  if (window.ArtariumStepBridge?.getTodaySteps) syncSmartphoneSteps();
-  resumeMotionCounterIfEnabled();
+  initStepSources();
   // 試作「今日の習作」（2026-07-10 不採用）の保存データを掃除する
   localStorage.removeItem("artarium-studies-v1");
   observeWaterSurfaces();
@@ -1226,11 +1229,18 @@ function loadProgress(plants, saved) {
 function loadStepState(saved) {
   const savedSteps = saved.__steps ?? {};
   const today = getTodayKey();
+  const history = { ...(savedSteps.history ?? {}) };
+  // 前回保存した日が今日でなければ、その日の歩数を履歴に確定させる
+  // （日付をまたいで開き直したときに前日分が消えていた。2026-09-07）
+  if (savedSteps.date && savedSteps.date !== today) {
+    history[savedSteps.date] = Math.max(history[savedSteps.date] ?? 0, savedSteps.todaySteps ?? 0);
+  }
   return {
     ...state.steps,
     todaySteps: savedSteps.date === today ? savedSteps.todaySteps ?? 0 : 0,
     totalSteps: savedSteps.totalSteps ?? 0,
     date: today,
+    history: trimStepHistory(history),
     sourceStatus: savedSteps.sourceStatus ?? "歩数データは未同期です"
   };
 }
@@ -1243,6 +1253,8 @@ function saveProgress() {
       todaySteps: state.steps.todaySteps,
       totalSteps: state.steps.totalSteps,
       date: state.steps.date,
+      // 日ごとの履歴（週間振り返り用）。保存していなかったため開き直すと 0 になっていた（2026-09-07）
+      history: state.steps.history ?? {},
       sourceStatus: state.steps.sourceStatus
     }
   });
@@ -1335,7 +1347,12 @@ function bindEvents() {
       state.currentView = "home";
       render();
     },
-    onOpenArtwork: openGalleryFocus
+    onOpenArtwork: openGalleryFocus,
+    onSwitchPane: (pane) => {
+      state.galleryPane = pane === "codex" ? "codex" : "works";
+      localStorage.setItem(GALLERY_PANE_KEY, state.galleryPane);
+      render();
+    }
   });
 
   document.getElementById("frame-choice-modal")?.addEventListener("click", (event) => {
@@ -1768,8 +1785,20 @@ function bindAppLifecycleEvents() {
     deferredInstallPrompt = event;
   });
 
-  window.addEventListener("online", renderNetworkStatus);
-  window.addEventListener("offline", renderNetworkStatus);
+  // ネイティブ版: アプリが前面に戻るたびに、閉じている間の歩数を OS のセンサーから取り込む
+  const syncNativeStepsOnResume = () => {
+    if (!hasNativeStepSource() || !state.steps.motionEnabled) return;
+    if (document.visibilityState === "hidden") return;
+    syncSmartphoneSteps();
+  };
+  document.addEventListener("visibilitychange", syncNativeStepsOnResume);
+  window.addEventListener("artariumNativeResume", syncNativeStepsOnResume);
+  // 前面表示中に歩数が進んだときも追随する（センサーの変化をプラグインが知らせてくる）。
+  // このときは Health Connect を読まず、センサー値だけで軽く更新する
+  window.addEventListener("artariumNativeStepsChanged", () => {
+    if (!nativeStepBridge || !state.steps.motionEnabled) return;
+    syncSmartphoneSteps({ quick: true });
+  });
   window.addEventListener("storage", (event) => {
     if (DEMO_MODE) return;
     const watchedKeys = [
@@ -1801,7 +1830,6 @@ function render() {
   // 今日の歩数の達成度を湖の「光の道」の長さに反映する（デバッグの強制値が優先）
   setSkyStepProgress(debugGlintOverride ?? (state.steps?.todaySteps || 0) / DAILY_STEP_GOAL);
   renderTabs();
-  renderNetworkStatus();
   renderHome();
   initSeedChoiceThumbnail();
   renderCollectionViews();
@@ -1842,13 +1870,14 @@ function renderCollectionViews() {
     paletteVars,
     plantMarkup
   });
+  // 収蔵直後は「作品」面を見せる。それ以外は最後に見ていた面（由来は収蔵作品があるときだけ）
+  if (state.newlyCollectedPlantId) state.galleryPane = "works";
+  state.galleryPane = renderGalleryPanes(document, {
+    activePane: state.galleryPane,
+    hasCodex: state.plants.some((plant) => state.progress[plant.id]?.displayed)
+  });
 }
 
-function renderNetworkStatus() {
-  const label = document.getElementById("network-status-label");
-  if (!label) return;
-  label.textContent = navigator.onLine ? "オンライン / 進行は端末に保存中" : "オフライン / 保存済みデータで表示中";
-}
 
 function renderTabs() {
   document.querySelectorAll(".view").forEach((view) => {
@@ -2192,7 +2221,9 @@ function renderCompletionPlaque(plant, shouldShow) {
   });
 }
 
-async function syncSmartphoneSteps() {
+let stepSyncInFlight = null;
+
+async function syncSmartphoneSteps({ quick = false } = {}) {
   const bridge = window.ArtariumStepBridge;
   if (!bridge?.getTodaySteps) {
     state.steps.sourceStatus = "スマホ歩数計ブリッジが未接続です。ホームの進捗ラインか設定から歩数計を開始できます。";
@@ -2200,16 +2231,33 @@ async function syncSmartphoneSteps() {
     render();
     return;
   }
-
-  try {
-    const data = await bridge.getTodaySteps();
-    applyStepSnapshot(data, "スマホ歩数計から同期しました");
-  } catch (error) {
-    console.warn(error);
-    state.steps.sourceStatus = "歩数データを取得できませんでした。しばらくして再度お試しください。";
-    saveProgress();
-    render();
+  // 起動時と復帰イベントが重なって二重に同期しないよう、進行中の同期に相乗りする。
+  // ただし「軽い同期（quick）」の最中に「通常の同期」を頼まれたら、終わってから通常の同期を行う
+  if (stepSyncInFlight) {
+    if (quick || !stepSyncInFlight.quick) return stepSyncInFlight.promise;
+    await stepSyncInFlight.promise;
   }
+
+  const promise = (async () => {
+    try {
+      const data = await bridge.getTodaySteps({ quick });
+      applyStepSnapshot(data, "スマホ歩数計から同期しました");
+    } catch (error) {
+      console.warn(error);
+      // ネイティブ歩数センサーは登録直後の初回値が遅れることがある。
+      // その場合は失敗扱いにせず、歩数が進んだ通知（artariumNativeStepsChanged）で取り込む
+      const isSensorWarmup = error?.code === "TIMEOUT" || /届きませんでした/.test(String(error?.message ?? error));
+      state.steps.sourceStatus = isSensorWarmup
+        ? "歩数センサーの準備中です。少し歩くと反映されます。"
+        : "歩数データを取得できませんでした。しばらくして再度お試しください。";
+      saveProgress();
+      render();
+    } finally {
+      stepSyncInFlight = null;
+    }
+  })();
+  stepSyncInFlight = { quick, promise };
+  return promise;
 }
 
 function exposeStepBridge() {
@@ -2217,6 +2265,116 @@ function exposeStepBridge() {
     ...(window.Artarium ?? {}),
     receiveStepData: (data) => applyStepSnapshot(data, "スマホ歩数計から同期しました")
   };
+}
+
+// 歩数の取り込み元。ネイティブアプリ（Capacitor）では OS の歩数センサーを優先する。
+// センサーは端末が常時数えているので、アプリを閉じている間の歩数も次に開いたときに取り込める
+// （DeviceMotion の簡易歩数計はアプリを表示している間しか数えられない。2026-09-07）
+let nativeStepBridge = null; // 歩数センサー: 前面表示中の即時反映（プロセス生存中のみ数える）
+let healthConnectBridge = null; // Health Connect: 閉じていた間の歩数と日別履歴（Samsung Health 等が数えた値。2026-09-07 B案）
+let healthConnectStatus = { sdkStatus: "unavailable", permissionGranted: false };
+
+function isNativeApp() {
+  const cap = window.Capacitor;
+  return typeof cap?.isNativePlatform === "function" && cap.isNativePlatform() && typeof cap.nativePromise === "function";
+}
+
+function hasNativeStepSource() {
+  return Boolean(nativeStepBridge || healthConnectBridge);
+}
+
+async function installNativeStepBridge() {
+  if (!isNativeApp() || window.ArtariumStepBridge) return;
+  const callNative = (plugin, method, options) => window.Capacitor.nativePromise(plugin, method, options);
+  const sensor = createNativeStepBridge({
+    storage: localStorage,
+    callNative,
+    getTodayKey,
+    getCurrentTodaySteps: () => state.steps.todaySteps
+  });
+  const health = createHealthConnectBridge({ callNative, getTodayKey, days: 7 });
+  const [sensorAvailable, healthStatus] = await Promise.all([sensor.isAvailable(), health.getStatus()]);
+  healthConnectStatus = healthStatus;
+  if (sensorAvailable) nativeStepBridge = sensor;
+  if (healthStatus.sdkStatus === "available") healthConnectBridge = health;
+  // 診断: Health Connect に歩数レコードが何件あり、どのアプリが書いたかをログに残す（結果はネイティブ側のログに出る）
+  if (healthConnectBridge && healthStatus.permissionGranted) {
+    callNative("HealthConnect", "inspectRecords", { days: 7 }).catch((error) => console.warn("Health Connect inspect failed:", error));
+  }
+  if (!hasNativeStepSource()) return;
+
+  window.ArtariumStepBridge = {
+    // quick: センサーの変化通知からの呼び出し。Health Connect は読まず、センサー値だけで即時反映する
+    async getTodaySteps({ quick = false } = {}) {
+      let sensorToday = null;
+      if (nativeStepBridge) {
+        try {
+          sensorToday = (await nativeStepBridge.getTodaySteps()).todaySteps;
+        } catch (error) {
+          if (quick || !healthConnectBridge || !healthConnectStatus.permissionGranted) throw error;
+        }
+      }
+      if (quick || !healthConnectBridge || !healthConnectStatus.permissionGranted) {
+        if (sensorToday === null) throw new Error("歩数の取得元がありません");
+        return { todaySteps: sensorToday };
+      }
+      try {
+        const health = await healthConnectBridge.readDailySteps();
+        return {
+          todaySteps: pickTodaySteps(sensorToday, health.todaySteps),
+          history: health.history,
+          source: "health-connect"
+        };
+      } catch (error) {
+        console.warn("Health Connect read failed:", error);
+        if (sensorToday === null) throw error;
+        return { todaySteps: sensorToday };
+      }
+    }
+  };
+}
+
+async function initStepSources() {
+  await installNativeStepBridge();
+  // 外部ブリッジ（ネイティブ以外）は起動時に同期する。ネイティブは許可済みのときだけ再開側で同期する
+  if (window.ArtariumStepBridge?.getTodaySteps && !hasNativeStepSource()) syncSmartphoneSteps();
+  resumeMotionCounterIfEnabled();
+}
+
+// ネイティブ版: 歩数センサーの許可を取り、以後は起動・復帰のたびに同期する。
+// Android は許可ダイアログを同時に1件しか出せず、起動直後は天気の位置情報プロンプトと
+// ぶつかって自動拒否されることがある（2026-09-07 実機）。少し待ってから要求し、拒否なら1回だけ再試行する
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function requestNativeStepPermission() {
+  if (await nativeStepBridge.requestPermission()) return true;
+  await wait(2000);
+  return nativeStepBridge.requestPermission();
+}
+
+async function startNativeStepCounter({ delayMs = 0 } = {}) {
+  try {
+    if (delayMs > 0) await wait(delayMs);
+    // Health Connect が使える端末では、先にその読み取り許可を取る（Health Connect 側の許可画面が開く）
+    if (healthConnectBridge && !healthConnectStatus.permissionGranted) {
+      healthConnectStatus = { ...healthConnectStatus, permissionGranted: await healthConnectBridge.requestPermission() };
+    }
+    const granted = nativeStepBridge ? await requestNativeStepPermission() : healthConnectStatus.permissionGranted;
+    if (!granted) {
+      state.steps.sourceStatus = "歩数センサーの利用が許可されませんでした。端末の設定 → アプリ → Artarium → 権限 から許可できます。";
+      saveProgress();
+      render();
+      return;
+    }
+    state.steps.motionEnabled = true;
+    localStorage.setItem(MOTION_AUTO_KEY, "1");
+    await syncSmartphoneSteps();
+  } catch (error) {
+    console.warn(error);
+    state.steps.sourceStatus = "歩数計を開始できませんでした。しばらくして再度お試しください。";
+    saveProgress();
+    render();
+  }
 }
 
 // デモ専用: 配置調整の自動化用ブリッジ（?demo=1 のときだけ生える）
@@ -2244,8 +2402,13 @@ function applyStepSnapshot(data, status) {
   state.steps.todaySteps = Math.max(state.steps.todaySteps, Math.floor(nextTodaySteps));
   state.steps.totalSteps = Math.max(state.steps.totalSteps + deltaSteps, Math.floor(nextTotalSteps));
   addGrowthFromSteps(deltaSteps);
+  // Health Connect からの日別履歴（過去日）は、アプリ内の記録と大きい方で統合する（2026-09-07）
+  if (data?.history && typeof data.history === "object") {
+    state.steps.history = mergeStepHistory(state.steps.history, data.history);
+  }
   recordDailySteps();
-  state.steps.sourceStatus = deltaSteps > 0 ? status : "歩数は同期済みです。新しい歩数はありません。";
+  const syncedLabel = data?.source === "health-connect" ? "Health Connect から同期しました" : status;
+  state.steps.sourceStatus = deltaSteps > 0 ? syncedLabel : "歩数は同期済みです。新しい歩数はありません。";
   saveProgress();
   render();
 }
@@ -2504,6 +2667,10 @@ function bindDeviceTiltParallax() {
 }
 
 async function startMotionStepCounter() {
+  if (hasNativeStepSource()) {
+    await startNativeStepCounter();
+    return;
+  }
   if (!window.DeviceMotionEvent) {
     state.steps.sourceStatus = "この端末ではモーション歩数検知を利用できません。";
     saveProgress();
@@ -2540,6 +2707,11 @@ async function startMotionStepCounter() {
 // iOSは権限リクエストにユーザー操作が必要なため、最初のタップまで待つ
 function resumeMotionCounterIfEnabled() {
   if (!localStorage.getItem(MOTION_AUTO_KEY)) return;
+  if (hasNativeStepSource()) {
+    // 以前に歩数計を開始済みなら、許可確認（初回だけダイアログ）を経て同期する
+    startNativeStepCounter({ delayMs: 1500 });
+    return;
+  }
   if (!window.DeviceMotionEvent || state.steps.motionEnabled) return;
   if (typeof DeviceMotionEvent.requestPermission === "function") {
     window.addEventListener("pointerdown", () => startMotionStepCounter(), { once: true });
@@ -2585,6 +2757,8 @@ function scheduleStepRender() {
 function resetDailyStepsIfNeeded() {
   const today = getTodayKey();
   if (state.steps.date === today) return;
+  // 前日分を履歴に確定させてから日付を進める（先に進めると前日の歩数が履歴から消える。2026-09-07）
+  recordDailySteps();
   state.steps.date = today;
   state.steps.todaySteps = 0;
   recordDailySteps();
@@ -3022,10 +3196,10 @@ function finalizeFrameChoice(plantId, progress) {
   saveProgress();
   render();
   window.requestAnimationFrame(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
-    });
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    // スマホ版はページでなく main の内側がスクロールする（固定シェル。2026-09-07）ので、両方を先頭に戻す
+    document.querySelector(".app-shell > main")?.scrollTo({ top: 0, behavior });
+    window.scrollTo({ top: 0, behavior });
   });
   // 収蔵演出が落ち着いてから、一度だけホーム画面追加を提案する
   window.setTimeout(() => maybeOfferInstallInvite(), 2600);
