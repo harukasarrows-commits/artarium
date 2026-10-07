@@ -891,7 +891,7 @@ body.is-viewing-mode {
 .gallery-wall {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   overflow: hidden;
   min-height: 620px;
@@ -1251,12 +1251,13 @@ body.is-viewing-mode {
 
 .gallery-wall .artwork-plaque {
   width: 100%;
-  min-height: 82px;
-  padding: 10px 10px;
+  min-height: 86px;
+  padding: 10px 12px;
 }
 
 .gallery-wall .artwork-plaque h3 {
-  font-size: 0.9rem;
+  font-size: 1.02rem;
+  line-height: 1.4;
 }
 
 .gallery-wall .artwork-plaque p {
@@ -1682,7 +1683,7 @@ body.is-viewing-mode {
   }
 
   .gallery-wall {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .intro-panel {
@@ -1711,7 +1712,7 @@ body.is-viewing-mode {
   }
 
   .gallery-wall {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     padding-inline: 10px;
   }
@@ -1873,7 +1874,7 @@ body.is-viewing-mode {
   }
 
   .gallery-wall {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 26px 16px 34px;
   }
 }
@@ -1936,7 +1937,7 @@ body.is-viewing-mode {
   }
 
   .gallery-wall {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
