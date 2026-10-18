@@ -182,7 +182,7 @@ Androidアプリ版（2026-09-07）:
 - ~~Android Health Connect の実装方針を決める~~ → まずは OS の歩数センサー（`TYPE_STEP_COUNTER`）を自前プラグインで読む方式で実装（Health Connect は不要。詳細は specification.md「歩数連携」）
 - 日をまたいでアプリを開かなかった分の日別内訳は近似（累計は正確）。厳密にするならバックグラウンド計測が必要で、これは次の検討課題
 - ~~検討課題: 常駐サービスによる常時計測~~ → 2026-09-07 ユーザー判断で **Health Connect 連携（B案）を採用**。Samsung Health 等が数えた歩数を Health Connect 経由で読み、アプリを閉じている間の分も反映する。常駐サービス（通知が常に出る）は不採用
-- 次の改善候補: Health Connect や歩数アプリが未導入の端末向けの案内（設定画面に導入状況と Play ストアへの導線を出す）
+- ~~次の改善候補: Health Connect や歩数アプリが未導入の端末向けの案内（設定画面に導入状況と Play ストアへの導線を出す）~~ → **対応済み（2026-09-07）**: コミット `78ab310`「設定に歩数の取得元と Health Connect への導線を表示」で実装。設定の「歩数」補足欄に取得元（Health Connect／端末の歩数センサー／簡易歩数計／未接続）を表示し、未導入ならPlayストア、未許可なら許可画面、許可済みなら設定画面へのテキストリンクを出す（`views/settings-view.js` の `describeStepSource`、`app.js` の `HEALTH_CONNECT_STORE_URL` 等）。`docs/specification.md`「設定」節には同日付で記載済みだったが、本roadmap行への反映が漏れていた
 
 ### 7. スマホアプリ化準備
 
