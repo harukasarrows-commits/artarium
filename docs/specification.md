@@ -1,6 +1,6 @@
 # Artarium 仕様書
 
-最終更新: 2026-07-10
+最終更新: 2026-11-01
 
 ## 更新ルール
 
@@ -28,9 +28,9 @@ Artarium - 名画の庭
 
 将来:
 
-- iOSアプリ
-- Androidアプリ
-- Expo / React Native への移行を想定
+- iOSアプリ（未着手）
+- Androidアプリ → **方針決定・実装中（2026-09-07）**: Capacitorで既存のWeb版（Three.js含む）をそのままラップする方式を採用。`React Native / expo-three` への全面移行ではなく、WebViewの上にネイティブプラグイン（歩数センサー・Health Connect）を足す構成（詳細は本書「歩数連携」節のAndroidアプリ版の記載、実機: Galaxy S10で確認済み）
+- Expo / React Native への移行は上記の決定により**当面不要と判断**。将来3D層の移植コストが問題になった場合の選択肢としては残す（architecture.md §8.3参照）
 
 ## 対象ユーザー
 

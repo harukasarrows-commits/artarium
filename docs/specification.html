@@ -24,7 +24,7 @@
       </aside>
       <main class="doc-main">
         <h1 id="artarium-%E4%BB%95%E6%A7%98%E6%9B%B8">Artarium 仕様書</h1>
-<p>最終更新: 2026-07-10</p>
+<p>最終更新: 2026-11-01</p>
 <h2 id="%E6%9B%B4%E6%96%B0%E3%83%AB%E3%83%BC%E3%83%AB">更新ルール</h2>
 <p>この仕様書は Artarium の現在仕様を記録する。 仕様変更があった場合は、実装と同時に該当項目を書き換える。 外部説明用の要約は <code>presentation.md</code>、作業手順は <code>development-instructions.md</code> に反映する。 要件・設計・UI/UXの監査記録（日付つきスナップショット）は <code>requirements.md</code> / <code>architecture.md</code> / <code>ux-review.md</code> を参照する。</p>
 <h2 id="%E3%82%A2%E3%83%97%E3%83%AA%E5%90%8D">アプリ名</h2>
@@ -40,9 +40,9 @@
 </ul>
 <p>将来:</p>
 <ul>
-<li>iOSアプリ</li>
-<li>Androidアプリ</li>
-<li>Expo / React Native への移行を想定</li>
+<li>iOSアプリ（未着手）</li>
+<li>Androidアプリ → <strong>方針決定・実装中（2026-09-07）</strong>: Capacitorで既存のWeb版（Three.js含む）をそのままラップする方式を採用。<code>React Native / expo-three</code> への全面移行ではなく、WebViewの上にネイティブプラグイン（歩数センサー・Health Connect）を足す構成（詳細は本書「歩数連携」節のAndroidアプリ版の記載、実機: Galaxy S10で確認済み）</li>
+<li>Expo / React Native への移行は上記の決定により<strong>当面不要と判断</strong>。将来3D層の移植コストが問題になった場合の選択肢としては残す（architecture.md §8.3参照）</li>
 </ul>
 <h2 id="%E5%AF%BE%E8%B1%A1%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC">対象ユーザー</h2>
 <p>主な対象:</p>
