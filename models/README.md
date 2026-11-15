@@ -27,10 +27,4 @@ reference.png
 
 ## Frames
 
-Put frame models here:
-
-```text
-frames/walnut-shadow-box/frame.glb
-frames/museum-black/frame.glb
-frames/floating-maple/frame.glb
-```
+Frames do not use GLB models. All 7 frame types are generated procedurally in code (`FRAME_TYPES` / `buildShadowBoxFrame` in `app.js`, decision 2026-07-14). Do not place frame GLB files under `frames/` — they are not loaded.

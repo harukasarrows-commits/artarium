@@ -139,7 +139,7 @@ getSceneModelSettings(stage, plantId) → シーン構築へ</code></pre>
 <div class="table-wrap"><table>
 <thead><tr><th></th><th>createPlantScene（ホーム育成）</th><th>createGalleryScene（額装・コレクション）</th></tr></thead>
 <tbody>
-<tr><td>内容</td><td>植物GLB＋土/水面＋植物エフェクト</td><td>額縁（GLBまたは <code>buildShadowBoxFrame</code> で生成）＋開花植物＋反射</td></tr>
+<tr><td>内容</td><td>植物GLB＋土/水面＋植物エフェクト</td><td>額縁（<code>buildShadowBoxFrame</code> で手続き生成。GLBは不使用）＋開花植物＋反射</td></tr>
 <tr><td>使用箇所</td><td>ホーム、種プレビュー</td><td>コレクション壁、額縁選択プレビュー、拡大鑑賞</td></tr>
 <tr><td>共通処理</td><td><code>normalizeModel</code>（寸法正規化）、<code>createTunedModelGroup</code>（焼き込み値適用）、水面なら <code>createWaterEnvironmentGroup</code>（shader水面＋Y反転クローン反射）</td><td>同左</td></tr>
 </tbody></table></div>

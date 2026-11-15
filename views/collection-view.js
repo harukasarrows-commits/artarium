@@ -98,7 +98,6 @@ export function renderCollectionView(documentRef, options) {
     getPlantModelPath,
     getSoilModelPath,
     getEnvironmentTypeForPlant,
-    getFrameModelPath,
     galleryViewerMarkup
   } = options;
   const wall = documentRef.getElementById("gallery-wall");
@@ -164,7 +163,6 @@ export function renderCollectionView(documentRef, options) {
             data-plant-model="${escapeHtml(getPlantModelPath(plant, 6))}"
             data-soil-model="${escapeHtml(getSoilModelPath(plant))}"
             data-environment="${escapeHtml(getEnvironmentTypeForPlant(plant))}"
-            data-frame-model="${escapeHtml(getFrameModelPath(plant))}"
             data-frame-type="${escapeHtml(frameType)}"
             data-backdrop-type="nocturne"
             data-settings-source="production"

@@ -130,7 +130,7 @@
 | G-2 | **高** | **PWAインストール誘導が未完成**。`beforeinstallprompt` を捕捉・保持するが、`prompt()` を呼ぶUIが存在しない（`install-notice` 要素も index.html にない）。実装するか削除するかの決定が必要 → **対応済み（2026-07-10）**: 初回額装後に一度だけ提案するUIを実装 |
 | G-3 | 中 | 仕様書（specification.md）は植物5種のままだが実装は**9種**。localStorage キー一覧にも新キー4つ（音・タップヒント・天気挨拶・週次振り返り）が未記載。天気連携・環境音・点灯式・週間振り返り・図鑑・鑑賞モード自体が仕様書に未記載 → **対応済み（2026-07-10）**: specification.md を現状に同期 |
 | G-4 | 中 | README の起動URL・バージョン表記が古い（`v=20260701-23`、現在は `20260709-99`）。実装内容リストにも9種化・演出系が未反映 → **対応済み（2026-07-10）**: README を更新し、ドキュメントの役割分担も追記 |
-| G-5 | 低 | 額縁GLBは museum-black のみ実配置。walnut / floating-maple はCSSフォールバック表示（roadmap の既知項目だが、額装体験の均質性に影響） |
+| G-5 | 低 | 額縁GLBは museum-black のみ実配置。walnut / floating-maple はCSSフォールバック表示（roadmap の既知項目だが、額装体験の均質性に影響） → **対応済み（2026-11-15）**: 2026-07-14の方針変更で額縁は全7種を手続き生成に統一（GLB不使用）となり、前提自体が解消。museum-blackの実配置GLBも2026-07-29のランタイム掃除で読込対象から外れていたが、`FRAME_TYPES.modelPath` / `getFrameModelPath` / `data-frame-model` 属性など未使用のまま残っていたコードを削除し、`specification.md` の額縁仕様（旧3種・GLB配置記述）も現状（7種・全手続き生成）に同期した |
 | G-6 | 低 | `DESIGN.md` は Artarium の設計書ではなく Claude ブランドのデザイントークン集。CLAUDE.md に「色は不採用・構造原則のみ参照」と明記済みだが、ファイル名が誤解を招く → **対応済み（2026-07-10）**: `docs/claude-design-tokens.md` へ移動・改名 |
 
 ## 6. 未実装要件（優先度付きバックログ）

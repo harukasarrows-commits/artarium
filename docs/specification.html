@@ -572,26 +572,26 @@
 </ul>
 <p>植物は自動回転しない。 ユーザー操作による回転も現在は無効。</p>
 <h2 id="%E9%A1%8D%E7%B8%81%E4%BB%95%E6%A7%98">額縁仕様</h2>
-<p>現在の額縁タイプ:</p>
+<p>現在の額縁タイプ（2026-07-14 拡充で7種に。全種とも手続き生成でGLBは使用しない）:</p>
 <div class="table-wrap"><table>
-<thead><tr><th>frameType</th><th>日本語名</th><th>英語名</th><th>素材の物語</th></tr></thead>
+<thead><tr><th>frameType</th><th>日本語名</th><th>英語名</th><th>仕上げ</th><th>マット紙</th><th>素材の物語</th></tr></thead>
 <tbody>
-<tr><td><code>walnut</code></td><td>胡桃の深箱</td><td>Walnut Shadow Box</td><td>深く艶めく木目が、花をしずかに抱く。</td></tr>
-<tr><td><code>museum-black</code></td><td>美術館の黒</td><td>Museum Black</td><td>光を呑む漆黒が、色彩だけを浮かび上がらせる。</td></tr>
-<tr><td><code>floating-maple</code></td><td>浮かぶ楓</td><td>Floating Maple</td><td>額と作品のあいだに光の隙間。花が宙に浮いて見える。</td></tr>
+<tr><td><code>walnut</code></td><td>胡桃の深箱</td><td>Walnut Shadow Box</td><td>wood</td><td>あり</td><td>深く艶めく木目が、花をしずかに抱く。</td></tr>
+<tr><td><code>museum-black</code></td><td>美術館の黒</td><td>Museum Black</td><td>lacquer</td><td>なし（縁取りも無し）</td><td>光を呑む漆黒が、色彩だけを浮かび上がらせる。</td></tr>
+<tr><td><code>floating-maple</code></td><td>浮かぶ楓</td><td>Floating Maple</td><td>wood</td><td>なし</td><td>額と作品のあいだに光の隙間。花が宙に浮いて見える。</td></tr>
+<tr><td><code>gilded-gold</code></td><td>金箔の額</td><td>Gilded Gold</td><td>gold</td><td>あり</td><td>金箔のきらめきが、祝祭の光を纏わせる。</td></tr>
+<tr><td><code>white-gallery</code></td><td>白の画廊</td><td>White Gallery</td><td>gesso</td><td>あり</td><td>白の余白が、作品に呼吸をあたえる。</td></tr>
+<tr><td><code>antique-silver</code></td><td>古銀の額</td><td>Antique Silver</td><td>silver</td><td>あり</td><td>古びた銀が、月の光をしずかに映す。</td></tr>
+<tr><td><code>ebony-gold</code></td><td>黒檀と金</td><td>Ebony &amp; Gold</td><td>ebony</td><td>あり</td><td>闇と金のあわいに、色彩が目を覚ます。</td></tr>
 </tbody></table></div>
-<p>GLB配置状況（2026-07-10時点）:</p>
-<ul>
-<li><code>museum-black</code>: 配置済み（<code>models/frames/museum-black/</code>）</li>
-<li><code>walnut</code> / <code>floating-maple</code>: 未配置。CSSの額縁フォールバックで表示</li>
-</ul>
-<p>GLB未配置の額は、手続き生成の3D箱額で表示する（2026-07-10 品質改善）:</p>
+<p>額はすべて手続き生成の3D箱額で表示する（2026-07-14 方針決定でGLBを廃止し、全種を手続き生成に統一）:</p>
 <ul>
 <li>額縁は手続き生成の木目テクスチャ（横木は横目・縦木は縦目）。<code>museum-black</code> のみ艶のあるラッカー仕上げ</li>
-<li>開口の内側に金のフィレット、その奥にマット紙（アイボリーの台紙）。<code>floating-maple</code> は「光の隙間」が個性のためマット紙なし</li>
+<li>開口の内側に金のフィレット、その奥にマット紙（アイボリーの台紙）。<code>museum-black</code> と <code>floating-maple</code> はマット紙なし（前者は金縁もない純黒ミニマル、後者は「光の隙間」が個性のため）</li>
 <li>箱の内壁は暗色に沈める（立体感を抑え、絵画として見せる。2026-07-10 ユーザー決定）</li>
 <li>背板には植物のパレット4色から生成した「絵の具の背景」を描く（作品ごとに異なる。配置固定・カンヴァス質感・周辺減光つき）</li>
 </ul>
+<p>旧仕様（2026-07-10時点）では <code>museum-black</code> のみ実GLBを配置し、残り2種はCSSフォールバックだった。2026-07-14にGLBを廃止して全額縁を手続き生成へ統一し、2026-07-29にはランタイムの額GLB読込コードも削除した。2026-11-15、<code>FRAME_TYPES.modelPath</code> と <code>getFrameModelPath</code>（<code>data-frame-model</code> 属性）など、その後も未使用のまま残っていた額GLBパスの参照をコードから削除（<code>models/frames/museum-black/</code> の実ファイル自体は未使用のまま残置）。</p>
 <p>Three.js自体が使えない場合はCSSの額縁フォールバックを使う（こちらにもマット紙表現あり）。</p>
 <h2 id="%E3%83%87%E3%82%B6%E3%82%A4%E3%83%B3%E4%BB%95%E6%A7%98">デザイン仕様</h2>
 <p>方向性:</p>
@@ -677,7 +677,6 @@
 <h2 id="%E6%9C%AA%E5%AE%9F%E8%A3%85%E3%83%BB%E4%BB%8A%E5%BE%8C%E3%81%AE%E6%A4%9C%E8%A8%8E">未実装・今後の検討</h2>
 <ul>
 <li>実機のHealthKit / Health Connect連携</li>
-<li>額縁GLB残り2種（walnut / floating-maple）の本番投入</li>
 <li>背景選択機能</li>
 <li>成長履歴の表示UI（Stage到達日の記録自体は2026-07-10から開始済み）</li>
 <li>コレクション画面の展示演出強化</li>

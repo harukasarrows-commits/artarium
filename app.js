@@ -1,8 +1,8 @@
-import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-124";
-import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener, pokeSkyMoon } from "./sky-background.js?v=20260710-124";
-import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-124";
-import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-124";
-import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-124";
+import { observeWaterSurfaces, rainBurst, createThreeWater, setAmbientRain } from "./water-surface.js?v=20260710-125";
+import { mountSkyBackground, setSkyWeather, getSkySunState, setSkyStepProgress, setSkySeasonOverride, setSkyHourOverride, triggerShootingStar, setSkyFlockListener, pokeSkyMoon } from "./sky-background.js?v=20260710-125";
+import { initWeatherSync, WEATHER_PRESETS } from "./weather.js?v=20260710-125";
+import { createPlantEffects, setPlantWind, setPlantRain, calmPlantEffects, shedPetalsNow } from "./plant-effects.js?v=20260710-125";
+import { setSoundEnabled, isSoundEnabled, setRainSoundLevel, setWindSoundLevel, playRipplePlop, setFlockCalls, setAmbienceQuiet } from "./ambient-sound.js?v=20260710-125";
 import {
   STAGE_THRESHOLDS,
   COMPLETION_THRESHOLD,
@@ -12,22 +12,22 @@ import {
   getNextThreshold,
   isPlantComplete,
   trimStepHistory
-} from "./core/progress.js?v=20260710-124";
+} from "./core/progress.js?v=20260710-125";
 import {
   loadProgressState,
   saveProgressState,
   clearProgressState
-} from "./storage/progress-store.js?v=20260710-124";
-import { createNativeStepBridge } from "./core/native-step-counter.js?v=20260710-124";
-import { createHealthConnectBridge, mergeStepHistory, pickTodaySteps } from "./core/health-connect-steps.js?v=20260710-124";
-import { createModalController } from "./ui/modal-controller.js?v=20260710-124";
-import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-124";
-import { bindCollectionView, renderCodexView, renderCollectionView, renderGalleryPanes } from "./views/collection-view.js?v=20260710-124";
+} from "./storage/progress-store.js?v=20260710-125";
+import { createNativeStepBridge } from "./core/native-step-counter.js?v=20260710-125";
+import { createHealthConnectBridge, mergeStepHistory, pickTodaySteps } from "./core/health-connect-steps.js?v=20260710-125";
+import { createModalController } from "./ui/modal-controller.js?v=20260710-125";
+import { bindSettingsView, renderSettingsView } from "./views/settings-view.js?v=20260710-125";
+import { bindCollectionView, renderCodexView, renderCollectionView, renderGalleryPanes } from "./views/collection-view.js?v=20260710-125";
 import {
   bindHomeStatusView,
   renderCompletionPlaqueView,
   renderHomeProgressView
-} from "./views/home-status-view.js?v=20260710-124";
+} from "./views/home-status-view.js?v=20260710-125";
 
 // 渡り鳥が空を渡っている間だけ、遠くの鳴き交わしを流す（目と耳の同期）
 setSkyFlockListener(setFlockCalls);
@@ -96,7 +96,7 @@ function arePlantEffectsEnabled() {
   return localStorage.getItem(PLANT_EFFECTS_STORAGE_KEY) !== "off";
 }
 const THREE_CDN_VERSION = "0.164.1";
-const ASSET_VERSION = "20260710-124";
+const ASSET_VERSION = "20260710-125";
 const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
 const modalController = createModalController(document);
 const MODEL_STAGE_COUNT = 6;
@@ -247,7 +247,6 @@ const FRAME_TYPES = {
     label: "Walnut Shadow Box",
     jp: "胡桃の深箱",
     story: "深く艶めく木目が、花をしずかに抱く。",
-    modelPath: "./models/frames/walnut-shadow-box/frame.glb",
     material: "#5a3b25",
     materialDeep: "#31200f",
     finish: "wood",
@@ -257,7 +256,6 @@ const FRAME_TYPES = {
     label: "Museum Black",
     jp: "美術館の黒",
     story: "光を呑む漆黒が、色彩だけを浮かび上がらせる。",
-    modelPath: "./models/frames/museum-black/picture+frame+3d+model+1k.glb",
     material: "#171716",
     materialDeep: "#050505",
     finish: "lacquer",
@@ -268,7 +266,6 @@ const FRAME_TYPES = {
     label: "Floating Maple",
     jp: "浮かぶ楓",
     story: "額と作品のあいだに光の隙間。花が宙に浮いて見える。",
-    modelPath: "./models/frames/floating-maple/frame.glb",
     material: "#b98248",
     materialDeep: "#7d5227",
     finish: "wood",
@@ -278,7 +275,6 @@ const FRAME_TYPES = {
     label: "Gilded Gold",
     jp: "金箔の額",
     story: "金箔のきらめきが、祝祭の光を纏わせる。",
-    modelPath: "",
     material: "#c9a44f",
     materialDeep: "#7a5a1e",
     finish: "gold",
@@ -288,7 +284,6 @@ const FRAME_TYPES = {
     label: "White Gallery",
     jp: "白の画廊",
     story: "白の余白が、作品に呼吸をあたえる。",
-    modelPath: "",
     material: "#e8e4da",
     materialDeep: "#b9b2a4",
     finish: "gesso",
@@ -298,7 +293,6 @@ const FRAME_TYPES = {
     label: "Antique Silver",
     jp: "古銀の額",
     story: "古びた銀が、月の光をしずかに映す。",
-    modelPath: "",
     material: "#9aa0a6",
     materialDeep: "#4d5257",
     finish: "silver",
@@ -308,7 +302,6 @@ const FRAME_TYPES = {
     label: "Ebony & Gold",
     jp: "黒檀と金",
     story: "闇と金のあわいに、色彩が目を覚ます。",
-    modelPath: "",
     material: "#1b1712",
     materialDeep: "#060402",
     finish: "ebony",
@@ -1862,7 +1855,6 @@ function renderCollectionViews() {
     getPlantModelPath,
     getSoilModelPath,
     getEnvironmentTypeForPlant,
-    getFrameModelPath,
     galleryViewerMarkup
   });
   renderCodexView(document, {
@@ -3466,7 +3458,6 @@ function renderFrameChoiceModal() {
         data-plant-model="${getPlantModelPath(plant, 6)}"
         data-soil-model="${getSoilModelPath(plant)}"
         data-environment="${getEnvironmentTypeForPlant(plant)}"
-        data-frame-model="${FRAME_TYPES[frameType]?.modelPath ?? ""}"
         data-frame-type="${frameType}"
         data-backdrop-type="nocturne"
       >
@@ -3537,7 +3528,6 @@ function renderGalleryFocusModal() {
               data-plant-model="${getPlantModelPath(plant, 6)}"
               data-soil-model="${getSoilModelPath(plant)}"
               data-environment="${getEnvironmentTypeForPlant(plant)}"
-              data-frame-model="${getFrameModelPath(plant)}"
               data-frame-type="${progress.frameType}"
               data-backdrop-type="${backdropType}"
               data-settings-source="production"
@@ -3611,11 +3601,6 @@ function getFrameOptions(plant) {
   // 2026-07-14: 額のラインナップ拡充にあわせ、全植物ですべての額から選べるようにする
   // （plants.json の frameOptions は旧3種のみの記載で残っているため参照しない）
   return Object.keys(FRAME_TYPES);
-}
-
-function getFrameModelPath(plant) {
-  const frameType = state.progress[plant.id]?.frameType ?? plant.defaultFrameType ?? "walnut";
-  return FRAME_TYPES[frameType]?.modelPath ?? "";
 }
 
 function getPlantModelPath(plant, stage) {
