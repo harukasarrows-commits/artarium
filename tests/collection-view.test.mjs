@@ -57,7 +57,6 @@ const helpers = {
   getPlantModelPath: () => "./plant.glb",
   getSoilModelPath: () => "./soil.glb",
   getEnvironmentTypeForPlant: () => "soil",
-  getFrameModelPath: () => "",
   galleryViewerMarkup: () => "<span data-fallback></span>"
 };
 
