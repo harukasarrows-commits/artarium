@@ -162,15 +162,7 @@ models/shared/bases/water-surface/water+dish+3d+model+1k.glb
 
 ## 額縁モデル
 
-現在は額縁GLBが未配置の場合、CSSのフォールバック額縁を表示する。
-
-将来GLBを配置する場所:
-
-```text
-models/frames/walnut-shadow-box/frame.glb
-models/frames/museum-black/frame.glb
-models/frames/floating-maple/frame.glb
-```
+額縁はGLBを使わない（2026-07-14 方針決定。全7種とも `app.js` の `buildShadowBoxFrame` による手続き生成）。額縁GLBを `models/frames/` に配置しても読み込まれないため、ここにファイルを置かないこと。
 
 額縁タイプ定義は `app.js` の `FRAME_TYPES`。
 
