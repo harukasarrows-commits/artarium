@@ -177,7 +177,7 @@ getSceneModelSettings(stage, plantId) → シーン構築へ</code></pre>
 <div class="table-wrap"><table>
 <thead><tr><th>#</th><th>課題</th><th>提案</th></tr></thead>
 <tbody>
-<tr><td>A-4</td><td><strong>自動テスト不足</strong> → <strong>一部対応（2026-07-21）</strong>: <code>core/progress.js</code> と <code>tests/progress.test.mjs</code> を追加し、端数繰越・ステージ境界・完成上限・21日履歴を検証。日付跨ぎ・保存移行・画面遷移は引き続き追加が必要</td><td>次はstorage層の分離と同時に、保存移行・日付リセットを <code>node:test</code> へ追加する</td></tr>
+<tr><td>A-4</td><td><strong>自動テスト不足</strong> → <strong>一部対応（2026-07-21）</strong>: <code>core/progress.js</code> と <code>tests/progress.test.mjs</code> を追加し、端数繰越・ステージ境界・完成上限・21日履歴を検証。<strong>日付跨ぎは対応済み（2026-11-22）</strong>: <code>app.js</code> の <code>resetDailyStepsIfNeeded</code>（前日分の履歴確定＋当日リセット）を <code>core/progress.js</code> の純関数 <code>advanceStepsDate</code> に抽出し、同日呼び出し・日付跨ぎ・複数日スキップ（近似動作）・履歴21日トリムの4パターンを <code>tests/progress.test.mjs</code> で検証。保存移行（<code>loadStepState</code> 側の履歴マージ）・画面遷移は引き続き追加が必要</td><td>次はstorage層の分離と同時に、<code>loadStepState</code> の保存移行ロジックを <code>storage/progress-store.js</code> 側へ揃えて <code>node:test</code> へ追加する</td></tr>
 <tr><td>A-5</td><td><strong>localStorage 直書きの散在</strong> → <strong>進行データは対応（2026-07-22）</strong>: <code>storage/progress-store.js</code> へ読込・保存・migrationを分離し、<code>__schemaVersion: 1</code> を自動付与。モデル調整設定は鉄則を守るため現状維持</td><td>ネイティブ移行時は同じ関数境界のstorage引数をAsyncStorageアダプターへ差し替える</td></tr>
 <tr><td>A-6</td><td><strong>fallbackPlants の二重管理</strong>: plants.json とapp.js内配列の重複。sync-models.mjs が同期するが、手編集すると乖離しうる</td><td>当面は「plants.json を手で編集したら必ず sync-models.mjs を通す」を運用ルール化。分割後は fetch失敗時のみ動的importする別ファイルへ</td></tr>
 </tbody></table></div>

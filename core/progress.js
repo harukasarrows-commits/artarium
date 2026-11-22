@@ -49,3 +49,21 @@ export function trimStepHistory(history, maximumDays = 21) {
   while (keys.length > maximumDays) delete safeHistory[keys.shift()];
   return safeHistory;
 }
+
+// 日付が変わっていなければ何もしない（前日分の履歴確定は呼び出し側が別途行う）。
+// 変わっていれば、前日分を履歴に確定してから今日分を0歩で開始する
+// （先に日付を進めると前日の歩数が履歴から消えるため。2026-09-07の不具合と同じ原因）。
+export function advanceStepsDate(steps, todayKey) {
+  if (!steps || steps.date === todayKey) return steps;
+  const previousDate = steps.date;
+  const previousTodaySteps = Math.max(0, Number(steps.todaySteps) || 0);
+  const history = { ...(steps.history ?? {}) };
+  if (previousDate) history[previousDate] = previousTodaySteps;
+  history[todayKey] = 0;
+  return {
+    ...steps,
+    date: todayKey,
+    todaySteps: 0,
+    history: trimStepHistory(history)
+  };
+}

@@ -190,7 +190,7 @@ app.js（エントリ・結線のみに縮小）
 
 | # | 課題 | 提案 |
 |---|---|---|
-| A-4 | **自動テスト不足** → **一部対応（2026-07-21）**: `core/progress.js` と `tests/progress.test.mjs` を追加し、端数繰越・ステージ境界・完成上限・21日履歴を検証。日付跨ぎ・保存移行・画面遷移は引き続き追加が必要 | 次はstorage層の分離と同時に、保存移行・日付リセットを `node:test` へ追加する |
+| A-4 | **自動テスト不足** → **一部対応（2026-07-21）**: `core/progress.js` と `tests/progress.test.mjs` を追加し、端数繰越・ステージ境界・完成上限・21日履歴を検証。**日付跨ぎは対応済み（2026-11-22）**: `app.js` の `resetDailyStepsIfNeeded`（前日分の履歴確定＋当日リセット）を `core/progress.js` の純関数 `advanceStepsDate` に抽出し、同日呼び出し・日付跨ぎ・複数日スキップ（近似動作）・履歴21日トリムの4パターンを `tests/progress.test.mjs` で検証。保存移行（`loadStepState` 側の履歴マージ）・画面遷移は引き続き追加が必要 | 次はstorage層の分離と同時に、`loadStepState` の保存移行ロジックを `storage/progress-store.js` 側へ揃えて `node:test` へ追加する |
 | A-5 | **localStorage 直書きの散在** → **進行データは対応（2026-07-22）**: `storage/progress-store.js` へ読込・保存・migrationを分離し、`__schemaVersion: 1` を自動付与。モデル調整設定は鉄則を守るため現状維持 | ネイティブ移行時は同じ関数境界のstorage引数をAsyncStorageアダプターへ差し替える |
 | A-6 | **fallbackPlants の二重管理**: plants.json とapp.js内配列の重複。sync-models.mjs が同期するが、手編集すると乖離しうる | 当面は「plants.json を手で編集したら必ず sync-models.mjs を通す」を運用ルール化。分割後は fetch失敗時のみ動的importする別ファイルへ |
 
