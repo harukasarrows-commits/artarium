@@ -7,7 +7,8 @@ import {
   getNextThreshold,
   getStage,
   isPlantComplete,
-  trimStepHistory
+  trimStepHistory,
+  advanceStepsDate
 } from "../core/progress.js";
 
 test("stage boundaries map to stages 1 through 6", () => {
@@ -58,4 +59,38 @@ test("step history retains the most recent 21 date keys", () => {
   assert.equal(Object.keys(trimmed).length, 21);
   assert.equal(trimmed["2026-07-01"], undefined);
   assert.equal(trimmed["2026-07-04"], 3);
+});
+
+test("same-day call is a no-op (date crossing not yet happened)", () => {
+  const steps = { date: "2026-11-20", todaySteps: 3200, totalSteps: 50000, history: { "2026-11-19": 8000 } };
+  const result = advanceStepsDate(steps, "2026-11-20");
+  assert.equal(result, steps);
+});
+
+test("crossing midnight records yesterday's total and starts today at 0", () => {
+  const steps = { date: "2026-11-20", todaySteps: 9100, totalSteps: 50000, history: { "2026-11-19": 8000 } };
+  const result = advanceStepsDate(steps, "2026-11-21");
+  assert.equal(result.date, "2026-11-21");
+  assert.equal(result.todaySteps, 0);
+  assert.equal(result.totalSteps, 50000);
+  assert.deepEqual(result.history, { "2026-11-19": 8000, "2026-11-20": 9100, "2026-11-21": 0 });
+});
+
+test("skipping several days without opening the app only records the last active day", () => {
+  // アプリを数日開かなかった場合、中日は記録されない（累計は正確・日別内訳は近似。roadmap.md「歩数連携」参照）
+  const steps = { date: "2026-11-18", todaySteps: 4000, totalSteps: 50000, history: {} };
+  const result = advanceStepsDate(steps, "2026-11-21");
+  assert.deepEqual(result.history, { "2026-11-18": 4000, "2026-11-21": 0 });
+});
+
+test("date crossing keeps only the most recent 21 history entries", () => {
+  const history = Object.fromEntries(
+    Array.from({ length: 21 }, (_, index) => [`2026-10-${String(index + 1).padStart(2, "0")}`, index])
+  );
+  const steps = { date: "2026-10-21", todaySteps: 500, totalSteps: 1000, history };
+  const result = advanceStepsDate(steps, "2026-10-22");
+  assert.equal(Object.keys(result.history).length, 21);
+  assert.equal(result.history["2026-10-01"], undefined);
+  assert.equal(result.history["2026-10-21"], 500);
+  assert.equal(result.history["2026-10-22"], 0);
 });
